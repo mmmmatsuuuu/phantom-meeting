@@ -6,6 +6,7 @@ import {
   getSubjectById,
   getQuestionsByLessonId,
   getPostsByLessonId,
+  getMemosByLessonId,
 } from "@/lib/mock-data";
 import LessonTabs from "@/components/lesson/lesson-tabs";
 import MemoSection from "@/components/lesson/memo-section";
@@ -25,6 +26,8 @@ export default async function LessonPage({ params }: Props) {
   const subject = unit ? getSubjectById(unit.subject_id) : undefined;
   const questions = getQuestionsByLessonId(lessonId);
   const posts = getPostsByLessonId(lessonId);
+  const memos = getMemosByLessonId(lessonId);
+  const postedMemoIds = posts.map((p) => p.memo_id);
 
   return (
     <div className="max-w-7xl mx-auto px-4 py-6">
@@ -73,7 +76,11 @@ export default async function LessonPage({ params }: Props) {
 
         {/* 右カラム: メモ（常時表示・sticky） */}
         <div className="col-span-1">
-          <MemoSection lessonId={lessonId} />
+          <MemoSection
+            lessonId={lessonId}
+            initialMemos={memos}
+            initialPostedMemoIds={postedMemoIds}
+          />
         </div>
       </div>
     </div>

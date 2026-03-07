@@ -283,6 +283,60 @@ export function getPostsByLessonId(lessonId: string): Post[] {
   );
 }
 
+export const MOCK_MEMOS: Memo[] = [
+  {
+    id: "memo-1",
+    lesson_id: "lesson-1",
+    user_id: "student-1",
+    content: {
+      type: "doc",
+      content: [
+        {
+          type: "paragraph",
+          content: [
+            {
+              type: "text",
+              text: "CPUは演算装置、メモリは作業スペース。メモリが少ないとスワップが起きて遅くなる。",
+            },
+          ],
+        },
+      ],
+    },
+    timestamp_seconds: 83,
+    created_at: "2024-04-02T10:15:00Z",
+    updated_at: "2024-04-02T10:15:00Z",
+  },
+  {
+    id: "memo-2",
+    lesson_id: "lesson-1",
+    user_id: "student-1",
+    content: {
+      type: "doc",
+      content: [
+        {
+          type: "paragraph",
+          content: [
+            {
+              type: "text",
+              text: "キャッシュメモリがCPUとメモリの間にある理由がわかった。よく使うデータを手元に置いておく感じ。",
+            },
+          ],
+        },
+      ],
+    },
+    timestamp_seconds: 245,
+    created_at: "2024-04-02T10:30:00Z",
+    updated_at: "2024-04-02T10:30:00Z",
+  },
+];
+
+export function getMemosByLessonId(lessonId: string): Memo[] {
+  return MOCK_MEMOS.filter((m) => m.lesson_id === lessonId).sort(
+    (a, b) =>
+      new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
+  );
+}
+
 export function extractYouTubeVideoId(url: string): string | null {
   const match = url.match(/(?:v=|youtu\.be\/)([^&?/]+)/);
   return match?.[1] ?? null;
