@@ -8,9 +8,7 @@ import {
   getPostsByLessonId,
   getMemosByLessonId,
 } from "@/lib/mock-data";
-import LessonTabs from "@/components/lesson/lesson-tabs";
-import MemoSection from "@/components/lesson/memo-section";
-import PostList from "@/components/lesson/post-list";
+import LessonContent from "@/components/lesson/lesson-content";
 
 type Props = {
   params: Promise<{ lessonId: string }>;
@@ -54,35 +52,14 @@ export default async function LessonPage({ params }: Props) {
 
       <h1 className="text-xl font-bold mb-5">{lesson.title}</h1>
 
-      {/*
-        architecture.md のレイアウト:
-        ┌─────────────────────┬──────────────┐
-        │  [動画] [小テスト]  │              │
-        │                     │  ✏️ メモ     │
-        │   動画 or 小テスト  │  （常時表示）│
-        │                     │              │
-        ├─────────────────────┤              │
-        │  共有されたメモ一覧  │              │
-        └─────────────────────┴──────────────┘
-      */}
-      <div className="grid grid-cols-3 gap-6">
-        {/* 左カラム: タブ（動画/小テスト）＋ クラス投稿 */}
-        <div className="col-span-2 space-y-8">
-          <LessonTabs youtubeUrl={lesson.youtube_url} questions={questions} />
-          <div className="border-t pt-6">
-            <PostList posts={posts} />
-          </div>
-        </div>
-
-        {/* 右カラム: メモ（常時表示・sticky） */}
-        <div className="col-span-1">
-          <MemoSection
-            lessonId={lessonId}
-            initialMemos={memos}
-            initialPostedMemoIds={postedMemoIds}
-          />
-        </div>
-      </div>
+      <LessonContent
+        lessonId={lessonId}
+        youtubeUrl={lesson.youtube_url}
+        questions={questions}
+        posts={posts}
+        memos={memos}
+        postedMemoIds={postedMemoIds}
+      />
     </div>
   );
 }

@@ -7,6 +7,7 @@ type Props = {
   lessonId: string;
   initialMemos: Memo[];
   initialPostedMemoIds: string[];
+  onClose?: () => void;
 };
 
 function formatTimestamp(seconds: number): string {
@@ -36,6 +37,7 @@ export default function MemoSection({
   lessonId,
   initialMemos,
   initialPostedMemoIds,
+  onClose,
 }: Props) {
   const [memo, setMemo] = useState("");
   const [timestamp, setTimestamp] = useState<number | null>(null);
@@ -79,7 +81,18 @@ export default function MemoSection({
 
   return (
     <div className="sticky top-20 rounded-md border bg-card p-4 space-y-3 max-h-[calc(100vh-6rem)] overflow-y-auto">
-      <h2 className="text-base font-semibold">✏️ メモ</h2>
+      <div className="flex items-center justify-between">
+        <h2 className="text-base font-semibold">✏️ メモ</h2>
+        {onClose && (
+          <button
+            onClick={onClose}
+            className="p-1 rounded text-muted-foreground hover:text-foreground hover:bg-muted transition-colors"
+            aria-label="メモを閉じる"
+          >
+            ✕
+          </button>
+        )}
+      </div>
 
       {/* 新規メモ入力 */}
       <button
