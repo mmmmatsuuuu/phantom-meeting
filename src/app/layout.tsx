@@ -41,13 +41,13 @@ export default function RootLayout({
                 href="/"
                 className="text-muted-foreground hover:text-foreground transition-colors"
               >
-                📺 動画一覧
+                📺 レッスン一覧
               </Link>
               <Link
                 href="/teacher/lessons/new"
                 className="px-3 py-1.5 rounded-md bg-primary text-primary-foreground hover:opacity-90 transition-opacity"
               >
-                + 動画を登録
+                + レッスンを登録
               </Link>
             </nav>
           </div>

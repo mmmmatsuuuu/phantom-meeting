@@ -52,7 +52,7 @@ export default function LessonNewPage() {
   return (
     <div className="max-w-3xl mx-auto px-4 py-8">
       <div className="mb-8">
-        <h1 className="text-2xl font-bold mb-1">📺 動画を登録する</h1>
+        <h1 className="text-2xl font-bold mb-1">📺 レッスンを登録する</h1>
         <p className="text-sm text-muted-foreground">
           動画と ❓ 発問を登録して、生徒の探究を促しましょう。
         </p>

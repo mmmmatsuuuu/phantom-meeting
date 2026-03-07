@@ -34,7 +34,7 @@ export default async function LessonPage({ params }: Props) {
       {/* パンくずリスト */}
       <nav className="flex items-center gap-1.5 text-sm text-muted-foreground mb-3">
         <Link href="/" className="hover:text-foreground transition-colors">
-          📺 動画一覧
+          📺 レッスン一覧
         </Link>
         {subject && (
           <>
