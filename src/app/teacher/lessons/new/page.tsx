@@ -1,7 +1,6 @@
 "use client";
 
 import { useState } from "react";
-import { Plus, Trash2, ExternalLink } from "lucide-react";
 import { MOCK_SUBJECTS, getUnitsBySubjectId } from "@/lib/mock-data";
 
 type QuestionInput = {
@@ -53,16 +52,16 @@ export default function LessonNewPage() {
   return (
     <div className="max-w-3xl mx-auto px-4 py-8">
       <div className="mb-8">
-        <h1 className="text-2xl font-bold mb-1">動画を登録する</h1>
+        <h1 className="text-2xl font-bold mb-1">📺 動画を登録する</h1>
         <p className="text-sm text-muted-foreground">
-          動画と発問を登録して、生徒の探究を促しましょう。
+          動画と ❓ 発問を登録して、生徒の探究を促しましょう。
         </p>
       </div>
 
-      <div className="space-y-6">
+      <div className="space-y-5">
         {/* 科目・単元 */}
-        <div className="p-5 rounded-lg border bg-card space-y-4">
-          <h2 className="text-sm font-semibold text-muted-foreground uppercase tracking-wide">
+        <div className="p-5 rounded-md border bg-card space-y-4">
+          <h2 className="text-xs font-semibold text-muted-foreground uppercase tracking-widest">
             分類
           </h2>
           <div className="grid grid-cols-2 gap-4">
@@ -104,8 +103,8 @@ export default function LessonNewPage() {
         </div>
 
         {/* 動画情報 */}
-        <div className="p-5 rounded-lg border bg-card space-y-4">
-          <h2 className="text-sm font-semibold text-muted-foreground uppercase tracking-wide">
+        <div className="p-5 rounded-md border bg-card space-y-4">
+          <h2 className="text-xs font-semibold text-muted-foreground uppercase tracking-widest">
             動画
           </h2>
 
@@ -136,14 +135,13 @@ export default function LessonNewPage() {
               <button
                 onClick={() => setShowPreview(true)}
                 disabled={!videoId}
-                className="flex items-center gap-1.5 px-3 py-2 rounded-md border text-sm hover:bg-muted transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
+                className="px-3 py-2 rounded-md border text-sm hover:bg-muted transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
               >
-                <ExternalLink size={14} />
-                プレビュー
+                🔍 プレビュー
               </button>
             </div>
             {showPreview && videoId && (
-              <div className="w-full aspect-video rounded-lg overflow-hidden bg-black mt-2">
+              <div className="w-full aspect-video rounded-md overflow-hidden bg-black mt-2">
                 <iframe
                   src={`https://www.youtube.com/embed/${videoId}`}
                   className="w-full h-full"
@@ -157,13 +155,15 @@ export default function LessonNewPage() {
         </div>
 
         {/* 発問 */}
-        <div className="p-5 rounded-lg border bg-card space-y-4">
-          <h2 className="text-sm font-semibold text-muted-foreground uppercase tracking-wide">
-            発問
-          </h2>
-          <p className="text-xs text-muted-foreground">
-            正解のない問いを設定しましょう。生徒のメモ・思考のきっかけになります。
-          </p>
+        <div className="p-5 rounded-md border bg-card space-y-4">
+          <div>
+            <h2 className="text-xs font-semibold text-muted-foreground uppercase tracking-widest mb-1">
+              ❓ 発問
+            </h2>
+            <p className="text-xs text-muted-foreground">
+              正解のない問いを設定しましょう。生徒のメモ・思考のきっかけになります。
+            </p>
+          </div>
 
           <div className="space-y-3">
             {questions.map((q, i) => (
@@ -186,7 +186,7 @@ export default function LessonNewPage() {
                   className="mt-5 p-2 rounded-md text-muted-foreground hover:text-destructive hover:bg-destructive/10 transition-colors disabled:opacity-30 disabled:cursor-not-allowed"
                   aria-label="発問を削除"
                 >
-                  <Trash2 size={16} />
+                  🗑️
                 </button>
               </div>
             ))}
@@ -194,10 +194,9 @@ export default function LessonNewPage() {
 
           <button
             onClick={addQuestion}
-            className="flex items-center gap-1.5 text-sm text-muted-foreground hover:text-foreground transition-colors"
+            className="text-sm text-muted-foreground hover:text-foreground transition-colors"
           >
-            <Plus size={16} />
-            発問を追加
+            ＋ 発問を追加
           </button>
         </div>
 
@@ -206,7 +205,7 @@ export default function LessonNewPage() {
           onClick={handleSave}
           className="w-full py-2.5 rounded-md bg-primary text-primary-foreground font-medium hover:opacity-90 transition-opacity"
         >
-          {savedState === "saved" ? "保存しました！" : "保存する"}
+          {savedState === "saved" ? "✅ 保存しました！" : "保存する"}
         </button>
       </div>
     </div>

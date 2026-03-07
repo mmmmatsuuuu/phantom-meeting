@@ -24,8 +24,8 @@ function formatDate(dateString: string): string {
 export default function PostList({ posts }: Props) {
   return (
     <section>
-      <h2 className="text-lg font-semibold mb-4">
-        クラスの投稿
+      <h2 className="text-base font-semibold mb-4">
+        💬 クラスの投稿
         {posts.length > 0 && (
           <span className="ml-2 text-sm font-normal text-muted-foreground">
             {posts.length}件
@@ -34,11 +34,9 @@ export default function PostList({ posts }: Props) {
       </h2>
 
       {posts.length === 0 ? (
-        <p className="text-sm text-muted-foreground">
-          まだ投稿はありません。
-        </p>
+        <p className="text-sm text-muted-foreground">📭 まだ投稿はありません。</p>
       ) : (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
           {posts.map((post) => (
             <div key={post.id} className="p-4 rounded-lg border bg-card">
               <p className="text-sm leading-relaxed">{extractText(post.content)}</p>

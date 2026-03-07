@@ -1,5 +1,4 @@
 import Link from "next/link";
-import { Play, ChevronRight } from "lucide-react";
 import {
   MOCK_SUBJECTS,
   getUnitsBySubjectId,
@@ -9,10 +8,12 @@ import {
 export default function HomePage() {
   return (
     <div className="max-w-4xl mx-auto px-4 py-8">
-      <h1 className="text-2xl font-bold mb-2">動画一覧</h1>
-      <p className="text-sm text-muted-foreground mb-8">
-        動画を視聴して、発問に答え、気づきをメモしましょう。
-      </p>
+      <div className="mb-8">
+        <h1 className="text-2xl font-bold mb-1">🎯 今日のレッスン</h1>
+        <p className="text-sm text-muted-foreground">
+          動画を視聴して、❓ 発問に答え、✏️ 気づきをメモしましょう。
+        </p>
+      </div>
 
       <div className="space-y-10">
         {MOCK_SUBJECTS.map((subject) => {
@@ -36,17 +37,15 @@ export default function HomePage() {
                       </h3>
 
                       {/* レッスン一覧 */}
-                      <div className="space-y-2">
+                      <div className="space-y-1.5">
                         {lessons.map((lesson, index) => (
                           <Link
                             key={lesson.id}
                             href={`/lessons/${lesson.id}`}
-                            className="flex items-center justify-between p-3 rounded-lg border bg-card hover:border-primary hover:shadow-sm transition-all group"
+                            className="flex items-center justify-between p-3 rounded-md border bg-card hover:border-primary hover:shadow-sm transition-all group"
                           >
                             <div className="flex items-center gap-3">
-                              <div className="w-8 h-8 rounded-full bg-muted flex items-center justify-center shrink-0 group-hover:bg-primary group-hover:text-primary-foreground transition-colors">
-                                <Play size={13} className="ml-0.5" />
-                              </div>
+                              <span className="text-lg">📺</span>
                               <div>
                                 <span className="text-xs text-muted-foreground mr-2">
                                   #{index + 1}
@@ -56,10 +55,9 @@ export default function HomePage() {
                                 </span>
                               </div>
                             </div>
-                            <ChevronRight
-                              size={16}
-                              className="text-muted-foreground group-hover:text-primary transition-colors shrink-0"
-                            />
+                            <span className="text-muted-foreground group-hover:text-primary transition-colors text-sm">
+                              →
+                            </span>
                           </Link>
                         ))}
                       </div>

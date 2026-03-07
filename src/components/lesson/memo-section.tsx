@@ -1,7 +1,6 @@
 "use client";
 
 import { useState } from "react";
-import { Clock } from "lucide-react";
 
 type Props = {
   lessonId: string;
@@ -36,15 +35,14 @@ export default function MemoSection({ lessonId: _lessonId }: Props) {
   };
 
   return (
-    <div className="sticky top-20 rounded-lg border bg-card p-4 space-y-3">
-      <h2 className="text-base font-semibold">メモ</h2>
+    <div className="sticky top-20 rounded-md border bg-card p-4 space-y-3">
+      <h2 className="text-base font-semibold">✏️ メモ</h2>
 
       <button
         onClick={handleTimestamp}
         className="flex items-center gap-1.5 text-sm px-3 py-1.5 rounded-md border hover:bg-muted transition-colors w-full justify-center"
       >
-        <Clock size={14} />
-        タイムスタンプを記録
+        ⏱️ タイムスタンプを記録
       </button>
 
       {timestamp !== null && (
@@ -65,13 +63,13 @@ export default function MemoSection({ lessonId: _lessonId }: Props) {
           onClick={handleSave}
           className="flex-1 py-2 text-sm rounded-md bg-primary text-primary-foreground hover:opacity-90 transition-opacity"
         >
-          {savedState === "saved" ? "保存しました！" : "保存する"}
+          {savedState === "saved" ? "✅ 保存しました！" : "保存する"}
         </button>
         <button
           onClick={handlePost}
           className="flex-1 py-2 text-sm rounded-md border hover:bg-muted transition-colors"
         >
-          {savedState === "posted" ? "投稿しました！" : "クラスに投稿"}
+          {savedState === "posted" ? "✅ 投稿しました！" : "クラスに投稿"}
         </button>
       </div>
     </div>

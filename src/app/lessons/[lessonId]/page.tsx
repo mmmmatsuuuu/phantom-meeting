@@ -7,8 +7,7 @@ import {
   getQuestionsByLessonId,
   getPostsByLessonId,
 } from "@/lib/mock-data";
-import VideoPlayer from "@/components/lesson/video-player";
-import QuestionSection from "@/components/lesson/question-section";
+import LessonTabs from "@/components/lesson/lesson-tabs";
 import MemoSection from "@/components/lesson/memo-section";
 import PostList from "@/components/lesson/post-list";
 
@@ -30,9 +29,9 @@ export default async function LessonPage({ params }: Props) {
   return (
     <div className="max-w-7xl mx-auto px-4 py-6">
       {/* パンくずリスト */}
-      <nav className="flex items-center gap-1.5 text-sm text-muted-foreground mb-4">
+      <nav className="flex items-center gap-1.5 text-sm text-muted-foreground mb-3">
         <Link href="/" className="hover:text-foreground transition-colors">
-          動画一覧
+          📺 動画一覧
         </Link>
         {subject && (
           <>
@@ -50,22 +49,32 @@ export default async function LessonPage({ params }: Props) {
         <span className="text-foreground font-medium">{lesson.title}</span>
       </nav>
 
-      <h1 className="text-xl font-bold mb-6">{lesson.title}</h1>
+      <h1 className="text-xl font-bold mb-5">{lesson.title}</h1>
 
-      {/* メインレイアウト: 左に動画＋発問、右にメモ */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-10">
-        <div className="lg:col-span-2 space-y-6">
-          <VideoPlayer youtubeUrl={lesson.youtube_url} />
-          <QuestionSection questions={questions} />
+      {/*
+        architecture.md のレイアウト:
+        ┌─────────────────────┬──────────────┐
+        │  [動画] [小テスト]  │              │
+        │                     │  ✏️ メモ     │
+        │   動画 or 小テスト  │  （常時表示）│
+        │                     │              │
+        ├─────────────────────┤              │
+        │  共有されたメモ一覧  │              │
+        └─────────────────────┴──────────────┘
+      */}
+      <div className="grid grid-cols-3 gap-6">
+        {/* 左カラム: タブ（動画/小テスト）＋ クラス投稿 */}
+        <div className="col-span-2 space-y-8">
+          <LessonTabs youtubeUrl={lesson.youtube_url} questions={questions} />
+          <div className="border-t pt-6">
+            <PostList posts={posts} />
+          </div>
         </div>
-        <div className="lg:col-span-1">
+
+        {/* 右カラム: メモ（常時表示・sticky） */}
+        <div className="col-span-1">
           <MemoSection lessonId={lessonId} />
         </div>
-      </div>
-
-      {/* クラスの投稿 */}
-      <div className="border-t pt-8">
-        <PostList posts={posts} />
       </div>
     </div>
   );
