@@ -1,4 +1,4 @@
-import type { Question } from "@/lib/mock-data";
+import type { Question } from "@/lib/db/contents";
 
 type Props = {
   questions: Question[];

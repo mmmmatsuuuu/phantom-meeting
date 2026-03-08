@@ -3,7 +3,7 @@
 import { useState } from "react";
 import VideoPlayer from "@/components/lesson/video-player";
 import QuestionSection from "@/components/lesson/question-section";
-import type { Question } from "@/lib/mock-data";
+import type { Question } from "@/lib/db/contents";
 
 type Tab = "video" | "quiz";
 

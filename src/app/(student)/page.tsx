@@ -1,11 +1,9 @@
 import Link from "next/link";
-import {
-  MOCK_SUBJECTS,
-  getUnitsBySubjectId,
-  getLessonsByUnitId,
-} from "@/lib/mock-data";
+import { getContents } from "@/lib/db/contents";
 
-export default function HomePage() {
+export default async function HomePage() {
+  const subjects = await getContents();
+
   return (
     <div className="max-w-4xl mx-auto px-4 py-8">
       <div className="mb-8">
@@ -15,60 +13,57 @@ export default function HomePage() {
         </p>
       </div>
 
-      <div className="space-y-10">
-        {MOCK_SUBJECTS.map((subject) => {
-          const units = getUnitsBySubjectId(subject.id);
-          return (
+      {subjects.length === 0 ? (
+        <p className="text-muted-foreground text-sm">
+          レッスンがまだ登録されていません。
+        </p>
+      ) : (
+        <div className="space-y-10">
+          {subjects.map((subject) => (
             <div key={subject.id}>
-              {/* 科目ヘッダー */}
               <div className="flex items-center gap-3 mb-5">
                 <span className="w-1 h-7 bg-primary rounded-full" />
                 <h2 className="text-xl font-semibold">{subject.name}</h2>
               </div>
 
               <div className="space-y-6 pl-4">
-                {units.map((unit) => {
-                  const lessons = getLessonsByUnitId(unit.id);
-                  return (
-                    <div key={unit.id}>
-                      {/* 単元ラベル */}
-                      <h3 className="text-xs font-semibold tracking-widest text-muted-foreground uppercase mb-2">
-                        {unit.name}
-                      </h3>
+                {subject.units.map((unit) => (
+                  <div key={unit.id}>
+                    <h3 className="text-xs font-semibold tracking-widest text-muted-foreground uppercase mb-2">
+                      {unit.name}
+                    </h3>
 
-                      {/* レッスン一覧 */}
-                      <div className="space-y-1.5">
-                        {lessons.map((lesson, index) => (
-                          <Link
-                            key={lesson.id}
-                            href={`/lessons/${lesson.id}`}
-                            className="flex items-center justify-between p-3 rounded-md border bg-card hover:border-primary hover:shadow-sm transition-all group"
-                          >
-                            <div className="flex items-center gap-3">
-                              <span className="text-lg">📺</span>
-                              <div>
-                                <span className="text-xs text-muted-foreground mr-2">
-                                  #{index + 1}
-                                </span>
-                                <span className="text-sm font-medium">
-                                  {lesson.title}
-                                </span>
-                              </div>
+                    <div className="space-y-1.5">
+                      {unit.lessons.map((lesson, index) => (
+                        <Link
+                          key={lesson.id}
+                          href={`/lessons/${lesson.id}`}
+                          className="flex items-center justify-between p-3 rounded-md border bg-card hover:border-primary hover:shadow-sm transition-all group"
+                        >
+                          <div className="flex items-center gap-3">
+                            <span className="text-lg">📺</span>
+                            <div>
+                              <span className="text-xs text-muted-foreground mr-2">
+                                #{index + 1}
+                              </span>
+                              <span className="text-sm font-medium">
+                                {lesson.title}
+                              </span>
                             </div>
-                            <span className="text-muted-foreground group-hover:text-primary transition-colors text-sm">
-                              →
-                            </span>
-                          </Link>
-                        ))}
-                      </div>
+                          </div>
+                          <span className="text-muted-foreground group-hover:text-primary transition-colors text-sm">
+                            →
+                          </span>
+                        </Link>
+                      ))}
                     </div>
-                  );
-                })}
+                  </div>
+                ))}
               </div>
             </div>
-          );
-        })}
-      </div>
+          ))}
+        </div>
+      )}
     </div>
   );
 }

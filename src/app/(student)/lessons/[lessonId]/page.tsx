@@ -1,13 +1,6 @@
 import { notFound } from "next/navigation";
 import Link from "next/link";
-import {
-  getLessonById,
-  getUnitById,
-  getSubjectById,
-  getQuestionsByLessonId,
-  getPostsByLessonId,
-  getMemosByLessonId,
-} from "@/lib/mock-data";
+import { getLessonWithQuestions } from "@/lib/db/contents";
 import LessonContent from "@/components/lesson/lesson-content";
 
 type Props = {
@@ -17,15 +10,11 @@ type Props = {
 export default async function LessonPage({ params }: Props) {
   const { lessonId } = await params;
 
-  const lesson = getLessonById(lessonId);
+  const lesson = await getLessonWithQuestions(lessonId);
   if (!lesson) return notFound();
 
-  const unit = getUnitById(lesson.unit_id);
-  const subject = unit ? getSubjectById(unit.subject_id) : undefined;
-  const questions = getQuestionsByLessonId(lessonId);
-  const posts = getPostsByLessonId(lessonId);
-  const memos = getMemosByLessonId(lessonId);
-  const postedMemoIds = posts.map((p) => p.memo_id);
+  const { unit, questions } = lesson;
+  const subject = unit.subject;
 
   return (
     <div className="max-w-7xl mx-auto px-4 py-6">
@@ -34,18 +23,10 @@ export default async function LessonPage({ params }: Props) {
         <Link href="/" className="hover:text-foreground transition-colors">
           📺 レッスン一覧
         </Link>
-        {subject && (
-          <>
-            <span>/</span>
-            <span>{subject.name}</span>
-          </>
-        )}
-        {unit && (
-          <>
-            <span>/</span>
-            <span>{unit.name}</span>
-          </>
-        )}
+        <span>/</span>
+        <span>{subject.name}</span>
+        <span>/</span>
+        <span>{unit.name}</span>
         <span>/</span>
         <span className="text-foreground font-medium">{lesson.title}</span>
       </nav>
@@ -56,9 +37,9 @@ export default async function LessonPage({ params }: Props) {
         lessonId={lessonId}
         youtubeUrl={lesson.youtube_url}
         questions={questions}
-        posts={posts}
-        memos={memos}
-        postedMemoIds={postedMemoIds}
+        posts={[]}
+        memos={[]}
+        postedMemoIds={[]}
       />
     </div>
   );
