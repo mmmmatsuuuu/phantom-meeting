@@ -53,6 +53,87 @@ export async function getContents(): Promise<SubjectWithUnits[]> {
 }
 
 /**
+ * 科目を作成する
+ */
+export async function createSubject(name: string): Promise<Subject | null> {
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) return null;
+
+  const { count } = await supabase
+    .from("subjects")
+    .select("*", { count: "exact", head: true });
+
+  const { data, error } = await supabase
+    .from("subjects")
+    .insert({ name, order: count ?? 0, created_by: user.id })
+    .select()
+    .single();
+
+  if (error || !data) return null;
+  return data;
+}
+
+/**
+ * 科目名を更新する
+ */
+export async function updateSubject(id: string, name: string): Promise<boolean> {
+  const supabase = await createClient();
+  const { error } = await supabase.from("subjects").update({ name }).eq("id", id);
+  return !error;
+}
+
+/**
+ * 科目を削除する
+ */
+export async function deleteSubject(id: string): Promise<boolean> {
+  const supabase = await createClient();
+  const { error } = await supabase.from("subjects").delete().eq("id", id);
+  return !error;
+}
+
+/**
+ * 単元を作成する
+ */
+export async function createUnit(subjectId: string, name: string): Promise<Unit | null> {
+  const supabase = await createClient();
+
+  const { count } = await supabase
+    .from("units")
+    .select("*", { count: "exact", head: true })
+    .eq("subject_id", subjectId);
+
+  const { data, error } = await supabase
+    .from("units")
+    .insert({ subject_id: subjectId, name, order: count ?? 0 })
+    .select()
+    .single();
+
+  if (error || !data) return null;
+  return data;
+}
+
+/**
+ * 単元名を更新する
+ */
+export async function updateUnit(id: string, name: string): Promise<boolean> {
+  const supabase = await createClient();
+  const { error } = await supabase.from("units").update({ name }).eq("id", id);
+  return !error;
+}
+
+/**
+ * 単元を削除する
+ */
+export async function deleteUnit(id: string): Promise<boolean> {
+  const supabase = await createClient();
+  const { error } = await supabase.from("units").delete().eq("id", id);
+  return !error;
+}
+
+/**
  * レッスンと発問を一括作成する（teacher/admin のみ）
  */
 export async function createLesson(params: {

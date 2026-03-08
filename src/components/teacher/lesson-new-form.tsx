@@ -17,11 +17,17 @@ function extractVideoId(url: string): string | null {
 
 type Props = {
   subjects: SubjectWithUnits[];
+  defaultUnitId?: string;
 };
 
-export default function LessonNewForm({ subjects }: Props) {
-  const [subjectId, setSubjectId] = useState("");
-  const [unitId, setUnitId] = useState("");
+export default function LessonNewForm({ subjects, defaultUnitId }: Props) {
+  const defaultSubjectId =
+    defaultUnitId
+      ? (subjects.find((s) => s.units.some((u) => u.id === defaultUnitId))?.id ?? "")
+      : "";
+
+  const [subjectId, setSubjectId] = useState(defaultSubjectId);
+  const [unitId, setUnitId] = useState(defaultUnitId ?? "");
   const [title, setTitle] = useState("");
   const [youtubeUrl, setYoutubeUrl] = useState("");
   const [showPreview, setShowPreview] = useState(false);

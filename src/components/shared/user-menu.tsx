@@ -52,6 +52,9 @@ export default function UserMenu({ displayName }: Props) {
           <Link href="/">📺 レッスン一覧</Link>
         </DropdownMenuItem>
         <DropdownMenuItem asChild>
+          <Link href="/teacher/contents">📚 コンテンツ管理</Link>
+        </DropdownMenuItem>
+        <DropdownMenuItem asChild>
           <Link href="/teacher/lessons/new">+ レッスンを登録</Link>
         </DropdownMenuItem>
         <DropdownMenuSeparator />
