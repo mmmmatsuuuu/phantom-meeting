@@ -83,13 +83,14 @@
 
 ### タスク
 
-- [ ] Supabase 型定義を生成（`src/lib/supabase/types.ts`）
-- [ ] `src/lib/db/contents.ts` を実装
+- [x] Supabase 型定義を生成（`src/lib/supabase/types.ts`）
+- [x] `src/lib/db/contents.ts` を実装
   - `getContents()` — 科目・単元・レッスン一覧
   - `getLessonWithQuestions(lessonId)` — レッスン詳細 + 発問
-- [ ] レッスン一覧ページ（Server Component）を実データ対応
-- [ ] レッスン視聴ページ（Server Component）を実データ対応
-- [ ] `mock-data.ts` の型・ヘルパーを `lib/db/` に移植し除去
+- [x] レッスン一覧ページ（Server Component）を実データ対応
+- [x] レッスン視聴ページ（Server Component）を実データ対応
+- [x] `mock-data.ts` の型・ヘルパーを `lib/db/` に移植し除去
+- [x] teacher フォームを Server Component wrapper + Client Component に分離
 
 ### 方針
 
@@ -186,11 +187,11 @@ teacher ロール以外が登録・編集できないことを確認してから
 [✅] Phase 0 完了
 [✅] Phase 1: 認証基盤
 [✅] Phase 2: ルートグループ再構成
-[ ] Phase 3: レッスン一覧・視聴（実データ）
+[✅] Phase 3: レッスン一覧・視聴（実データ）
 [ ] Phase 4: メモ機能
 [ ] Phase 5: 共有投稿機能
 [ ] Phase 6: 教師機能
 [ ] Phase 7: 小テスト
 ```
 
-次の着手は **Phase 3: レッスン一覧・視聴（実データ）**。
+次の着手は **Phase 4: メモ機能**。
