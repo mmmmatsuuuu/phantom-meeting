@@ -46,6 +46,7 @@ export default function MemoSection({
   const [saveState, setSaveState] = useState<"idle" | "saving" | "saved">("idle");
 
   const editor = useEditor({
+    immediatelyRender: false,
     extensions: [
       StarterKit,
       Placeholder.configure({ placeholder: "動画を見て気づいたことや疑問をメモしよう..." }),
