@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { createClient } from "@/lib/supabase/server";
-import LogoutButton from "@/components/shared/logout-button";
+import UserMenu from "@/components/shared/user-menu";
 
 export default async function NavBar() {
   const supabase = await createClient();
@@ -27,27 +27,8 @@ export default async function NavBar() {
         >
           情報Ⅰ 授業プラットフォーム
         </Link>
-        <nav className="flex items-center gap-4 text-sm">
-          {user && (
-            <>
-              <Link
-                href="/"
-                className="text-muted-foreground hover:text-foreground transition-colors"
-              >
-                📺 レッスン一覧
-              </Link>
-              <Link
-                href="/teacher/lessons/new"
-                className="px-3 py-1.5 rounded-md bg-primary text-primary-foreground hover:opacity-90 transition-opacity"
-              >
-                + レッスンを登録
-              </Link>
-              <span className="text-muted-foreground text-xs border-l pl-4">
-                {displayName}
-              </span>
-              <LogoutButton />
-            </>
-          )}
+        <nav className="flex items-center text-sm">
+          {user && <UserMenu displayName={displayName} />}
         </nav>
       </div>
     </header>
