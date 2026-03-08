@@ -62,14 +62,14 @@
 
 ### タスク
 
-- [ ] `(student)` route group を作成
-  - `layout.tsx`（studentロール確認）
-  - 現在の `/` → `(student)/contents/` へ移動
-  - 現在の `/lessons/[lessonId]` → `(student)/contents/[subjectId]/[unitId]/[lessonId]/` へ移動
-- [ ] `(teacher)` route group を作成
-  - `layout.tsx`（teacherロール確認）
-  - 現在の `/teacher/lessons/new` → `(teacher)/contents/new/` へ移動
-- [ ] モックアップ用の仮パスをリダイレクトで保持（必要に応じて）
+- [x] `(student)` route group を作成
+  - `layout.tsx`（ログイン確認）
+  - `/` と `/lessons/[lessonId]` を `(student)` 配下に移動（URL変更なし）
+- [x] `(teacher)` route group を作成
+  - `layout.tsx`（teacher/admin ロール確認、それ以外は `/` にリダイレクト）
+  - `/teacher/lessons/new` を `(teacher)` 配下に移動（URL変更なし）
+- [x] NavBar右側をDropdownMenuに統合（ユーザー名・レッスン一覧・登録・ログアウト）
+- [ ] DropdownMenuの表示項目をロールによって切り替え（後回し可：ページ自体はRLS/layoutで保護済み）
 
 ### マージ判断
 
@@ -177,7 +177,7 @@ teacher ロール以外が登録・編集できないことを確認してから
 ```
 [✅] Phase 0 完了
 [✅] Phase 1: 認証基盤
-[ ] Phase 2: ルートグループ再構成
+[✅] Phase 2: ルートグループ再構成
 [ ] Phase 3: レッスン一覧・視聴（実データ）
 [ ] Phase 4: メモ機能
 [ ] Phase 5: 共有投稿機能
@@ -185,4 +185,4 @@ teacher ロール以外が登録・編集できないことを確認してから
 [ ] Phase 7: 小テスト
 ```
 
-次の着手は **Phase 2: ルートグループ再構成**。
+次の着手は **Phase 3: レッスン一覧・視聴（実データ）**。
