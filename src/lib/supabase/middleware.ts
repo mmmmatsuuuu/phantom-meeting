@@ -4,10 +4,24 @@ import { NextResponse, type NextRequest } from "next/server";
 export async function updateSession(request: NextRequest) {
   let supabaseResponse = NextResponse.next({ request });
 
+  const publicUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
+  const internalUrl = process.env.SUPABASE_INTERNAL_URL;
+
   const supabase = createServerClient(
-    process.env.SUPABASE_INTERNAL_URL ?? process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    publicUrl,
     process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY!,
     {
+      global: internalUrl
+        ? {
+            fetch: (input, init) => {
+              const url =
+                typeof input === "string"
+                  ? input.replace(publicUrl, internalUrl)
+                  : input;
+              return fetch(url, init);
+            },
+          }
+        : undefined,
       cookies: {
         getAll() {
           return request.cookies.getAll();
