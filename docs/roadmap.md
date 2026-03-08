@@ -83,12 +83,18 @@
 
 ### タスク
 
-- [ ] `api/contents/` Route Handler を実装
-  - `GET /api/contents` — 科目・単元・レッスン一覧
-  - `GET /api/contents/[lessonId]` — レッスン詳細 + 発問
-- [ ] レッスン一覧ページを実データ対応
-- [ ] レッスン視聴ページを実データ対応（動画・発問）
-- [ ] `mock-data.ts` の参照を段階的に除去
+- [ ] Supabase 型定義を生成（`src/lib/supabase/types.ts`）
+- [ ] `src/lib/db/contents.ts` を実装
+  - `getContents()` — 科目・単元・レッスン一覧
+  - `getLessonWithQuestions(lessonId)` — レッスン詳細 + 発問
+- [ ] レッスン一覧ページ（Server Component）を実データ対応
+- [ ] レッスン視聴ページ（Server Component）を実データ対応
+- [ ] `mock-data.ts` の型・ヘルパーを `lib/db/` に移植し除去
+
+### 方針
+
+- Server Component は `lib/db/contents.ts` を直接呼ぶ（API Route 不要）
+- データアクセスロジックは `lib/db/` に集約（改修時の影響範囲を明確化）
 
 ### マージ判断
 
@@ -104,7 +110,8 @@
 
 - [ ] tiptap をインストール（`@tiptap/react`, `@tiptap/starter-kit`）
 - [ ] `MemoSection` の `<textarea>` を tiptap エディタに置き換え
-- [ ] `api/memos/` Route Handler を実装
+- [ ] `src/lib/db/memos.ts` を実装（メモ CRUD のクエリを集約）
+- [ ] `api/memos/` Route Handler を実装（Client Component から `lib/db/memos.ts` を呼ぶ）
   - `GET /api/memos?lessonId=xxx` — 自分のメモ一覧
   - `POST /api/memos` — 新規保存
   - `PUT /api/memos/[memoId]` — 更新
@@ -125,10 +132,11 @@
 
 ### タスク
 
-- [ ] `api/posts/` Route Handler を実装
+- [ ] `src/lib/db/posts.ts` を実装（投稿クエリを集約）
+- [ ] `api/posts/` Route Handler を実装（Client Component から `lib/db/posts.ts` を呼ぶ）
   - `GET /api/posts?lessonId=xxx` — 投稿一覧（全員閲覧可）
   - `POST /api/posts` — メモから投稿（スナップショット保存）
-- [ ] `PostList` を実データ対応
+- [ ] `PostList` を実データ対応（Server Component から `lib/db/posts.ts` を直接呼ぶ）
 - [ ] 自分の投稿 / 他者の投稿を明示的に区別して表示
 - [ ] 投稿は匿名表示（`display_name` を出さない）
 
