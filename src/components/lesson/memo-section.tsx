@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import type { Memo, TiptapContent } from "@/lib/mock-data";
+import type { Memo, TiptapContent } from "@/lib/db/memos";
 
 type Props = {
   lessonId: string;

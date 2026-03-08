@@ -1,4 +1,5 @@
-import type { Post, TiptapContent } from "@/lib/mock-data";
+import type { Post } from "@/lib/db/posts";
+import type { TiptapContent } from "@/lib/db/memos";
 
 type Props = {
   posts: Post[];

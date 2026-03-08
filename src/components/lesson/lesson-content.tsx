@@ -1,7 +1,9 @@
 "use client";
 
 import { useState } from "react";
-import type { Memo, Post, Question } from "@/lib/mock-data";
+import type { Question } from "@/lib/db/contents";
+import type { Memo } from "@/lib/db/memos";
+import type { Post } from "@/lib/db/posts";
 import LessonTabs from "@/components/lesson/lesson-tabs";
 import MemoSection from "@/components/lesson/memo-section";
 import PostList from "@/components/lesson/post-list";

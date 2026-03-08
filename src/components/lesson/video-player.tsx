@@ -1,6 +1,6 @@
 "use client";
 
-import { extractYouTubeVideoId } from "@/lib/mock-data";
+import { extractYouTubeVideoId } from "@/lib/utils";
 
 type Props = {
   youtubeUrl: string;
