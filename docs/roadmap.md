@@ -109,15 +109,14 @@
 
 ### タスク
 
-- [ ] tiptap をインストール（`@tiptap/react`, `@tiptap/starter-kit`）
-- [ ] `MemoSection` の `<textarea>` を tiptap エディタに置き換え
-- [ ] `src/lib/db/memos.ts` を実装（メモ CRUD のクエリを集約）
-- [ ] `api/memos/` Route Handler を実装（Client Component から `lib/db/memos.ts` を呼ぶ）
+- [x] tiptap をインストール（`@tiptap/react`, `@tiptap/starter-kit`, `@tiptap/extension-placeholder`）
+- [x] `MemoSection` の `<textarea>` を tiptap エディタに置き換え
+- [x] `src/lib/db/memos.ts` を実装（メモ CRUD のクエリを集約）
+- [x] `api/memos/` Route Handler を実装（Client Component から `lib/db/memos.ts` を呼ぶ）
   - `GET /api/memos?lessonId=xxx` — 自分のメモ一覧
   - `POST /api/memos` — 新規保存
-  - `PUT /api/memos/[memoId]` — 更新
   - `DELETE /api/memos/[memoId]` — 削除
-- [ ] YouTube Player API 連携
+- [x] YouTube Player API 連携（`react-youtube`）
   - タイムスタンプ記録（`player.getCurrentTime()`）
   - タイムスタンプクリックでシーク（`player.seekTo(秒数)`）
 
@@ -188,10 +187,10 @@ teacher ロール以外が登録・編集できないことを確認してから
 [✅] Phase 1: 認証基盤
 [✅] Phase 2: ルートグループ再構成
 [✅] Phase 3: レッスン一覧・視聴（実データ）
-[ ] Phase 4: メモ機能
+[✅] Phase 4: メモ機能
 [ ] Phase 5: 共有投稿機能
 [ ] Phase 6: 教師機能
 [ ] Phase 7: 小テスト
 ```
 
-次の着手は **Phase 4: メモ機能**。
+次の着手は **Phase 5: 共有投稿機能**。
