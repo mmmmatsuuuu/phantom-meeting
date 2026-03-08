@@ -28,20 +28,20 @@ export default async function NavBar() {
           情報Ⅰ 授業プラットフォーム
         </Link>
         <nav className="flex items-center gap-4 text-sm">
-          <Link
-            href="/"
-            className="text-muted-foreground hover:text-foreground transition-colors"
-          >
-            📺 レッスン一覧
-          </Link>
-          <Link
-            href="/teacher/lessons/new"
-            className="px-3 py-1.5 rounded-md bg-primary text-primary-foreground hover:opacity-90 transition-opacity"
-          >
-            + レッスンを登録
-          </Link>
           {user && (
             <>
+              <Link
+                href="/"
+                className="text-muted-foreground hover:text-foreground transition-colors"
+              >
+                📺 レッスン一覧
+              </Link>
+              <Link
+                href="/teacher/lessons/new"
+                className="px-3 py-1.5 rounded-md bg-primary text-primary-foreground hover:opacity-90 transition-opacity"
+              >
+                + レッスンを登録
+              </Link>
               <span className="text-muted-foreground text-xs border-l pl-4">
                 {displayName}
               </span>
