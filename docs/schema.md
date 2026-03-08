@@ -79,6 +79,7 @@ subjects
 | id | uuid | PK |
 | memo_id | uuid | FK → memos |
 | lesson_id | uuid | FK → lessons（クエリ効率化のため非正規化） |
+| user_id | uuid | FK → profiles（投稿者。自分の投稿判定・削除権限に使用） |
 | content | jsonb | 共有時点のスナップショット |
 | created_at | timestamptz | |
 
