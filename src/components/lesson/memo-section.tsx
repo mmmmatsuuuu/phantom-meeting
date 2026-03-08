@@ -5,11 +5,10 @@ import { useEditor, EditorContent } from "@tiptap/react";
 import StarterKit from "@tiptap/starter-kit";
 import Placeholder from "@tiptap/extension-placeholder";
 import type { Memo } from "@/lib/db/memos";
+import type { Post } from "@/lib/db/posts";
 
 type Props = {
   lessonId: string;
-  initialMemos: Memo[];
-  initialPostedMemoIds: string[];
   getCurrentTime: () => number | null;
   seekTo: (seconds: number) => void;
   onClose?: () => void;
@@ -30,19 +29,10 @@ function formatDate(dateString: string): string {
   });
 }
 
-export default function MemoSection({
-  lessonId,
-  initialMemos,
-  initialPostedMemoIds,
-  getCurrentTime,
-  seekTo,
-  onClose,
-}: Props) {
+export default function MemoSection({ lessonId, getCurrentTime, seekTo, onClose }: Props) {
   const [timestamp, setTimestamp] = useState<number | null>(null);
-  const [memos, setMemos] = useState<Memo[]>(initialMemos);
-  const [postedIds, setPostedIds] = useState<Set<string>>(
-    new Set(initialPostedMemoIds)
-  );
+  const [memos, setMemos] = useState<Memo[]>([]);
+  const [postedIds, setPostedIds] = useState<Set<string>>(new Set());
   const [saveState, setSaveState] = useState<"idle" | "saving" | "saved">("idle");
   const [editorEmpty, setEditorEmpty] = useState(true);
 
@@ -57,19 +47,27 @@ export default function MemoSection({
     ],
     editorProps: {
       attributes: {
-        class:
-          "min-h-[120px] p-3 text-sm focus:outline-none",
+        class: "min-h-[120px] p-3 text-sm focus:outline-none",
       },
     },
   });
 
   useEffect(() => {
-    fetch(`/api/memos?lessonId=${lessonId}`)
-      .then((res) => res.json())
-      .then((json: { data: Memo[] | null; error: string | null }) => {
-        if (json.data) setMemos(json.data);
-      })
-      .catch(() => {});
+    const fetchData = async () => {
+      const [memosRes, postsRes] = await Promise.all([
+        fetch(`/api/memos?lessonId=${lessonId}`),
+        fetch(`/api/posts?lessonId=${lessonId}`),
+      ]);
+      const memosJson = (await memosRes.json()) as { data: Memo[] | null };
+      const postsJson = (await postsRes.json()) as { data: Post[] | null };
+
+      if (memosJson.data) setMemos(memosJson.data);
+      if (postsJson.data) {
+        const ids = new Set(postsJson.data.map((p) => p.memo_id));
+        setPostedIds(ids);
+      }
+    };
+    fetchData().catch(() => {});
   }, [lessonId]);
 
   const handleTimestamp = () => {
@@ -105,8 +103,15 @@ export default function MemoSection({
     }
   };
 
-  const handlePost = (memoId: string) => {
-    setPostedIds((prev) => new Set([...prev, memoId]));
+  const handlePost = async (memo: Memo) => {
+    const res = await fetch("/api/posts", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ memoId: memo.id, lessonId, content: memo.content }),
+    });
+    if (res.ok) {
+      setPostedIds((prev) => new Set([...prev, memo.id]));
+    }
   };
 
   return (
@@ -163,10 +168,7 @@ export default function MemoSection({
           </p>
           <div className="space-y-2">
             {memos.map((m) => (
-              <div
-                key={m.id}
-                className="p-3 rounded-md border bg-background space-y-1.5"
-              >
+              <div key={m.id} className="p-3 rounded-md border bg-background space-y-1.5">
                 <div className="flex items-start justify-between gap-2">
                   <p className="text-xs text-muted-foreground">
                     {m.timestamp_seconds !== null ? (
@@ -199,7 +201,7 @@ export default function MemoSection({
                   <p className="text-xs text-muted-foreground">投稿済み ✅</p>
                 ) : (
                   <button
-                    onClick={() => handlePost(m.id)}
+                    onClick={() => handlePost(m)}
                     className="text-xs px-2 py-1 rounded-md border hover:bg-muted transition-colors"
                   >
                     クラスに投稿

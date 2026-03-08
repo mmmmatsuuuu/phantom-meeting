@@ -3,8 +3,6 @@
 import { useState, useRef } from "react";
 import type { YouTubePlayer } from "react-youtube";
 import type { Question } from "@/lib/db/contents";
-import type { Memo } from "@/lib/db/memos";
-import type { Post } from "@/lib/db/posts";
 import LessonTabs from "@/components/lesson/lesson-tabs";
 import MemoSection from "@/components/lesson/memo-section";
 import PostList from "@/components/lesson/post-list";
@@ -13,18 +11,14 @@ type Props = {
   lessonId: string;
   youtubeUrl: string;
   questions: Question[];
-  posts: Post[];
-  memos: Memo[];
-  postedMemoIds: string[];
+  currentUserId: string;
 };
 
 export default function LessonContent({
   lessonId,
   youtubeUrl,
   questions,
-  posts,
-  memos,
-  postedMemoIds,
+  currentUserId,
 }: Props) {
   const [memoVisible, setMemoVisible] = useState(true);
   const playerRef = useRef<YouTubePlayer | null>(null);
@@ -56,10 +50,12 @@ export default function LessonContent({
           <LessonTabs
             youtubeUrl={youtubeUrl}
             questions={questions}
-            onPlayerReady={(player) => { playerRef.current = player; }}
+            onPlayerReady={(player) => {
+              playerRef.current = player;
+            }}
           />
           <div className="border-t pt-6">
-            <PostList posts={posts} />
+            <PostList lessonId={lessonId} currentUserId={currentUserId} />
           </div>
         </div>
 
@@ -67,11 +63,9 @@ export default function LessonContent({
           <div className="col-span-1">
             <MemoSection
               lessonId={lessonId}
-              initialMemos={memos}
-              initialPostedMemoIds={postedMemoIds}
-              onClose={() => setMemoVisible(false)}
               getCurrentTime={getCurrentTime}
               seekTo={seekTo}
+              onClose={() => setMemoVisible(false)}
             />
           </div>
         )}

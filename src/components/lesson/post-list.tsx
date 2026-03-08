@@ -1,8 +1,13 @@
+"use client";
+
+import { useState, useEffect } from "react";
+import { createClient } from "@/lib/supabase/client";
 import type { Post } from "@/lib/db/posts";
 import type { TiptapContent } from "@/lib/db/memos";
 
 type Props = {
-  posts: Post[];
+  lessonId: string;
+  currentUserId: string;
 };
 
 function extractText(content: TiptapContent): string {
@@ -22,7 +27,39 @@ function formatDate(dateString: string): string {
   });
 }
 
-export default function PostList({ posts }: Props) {
+export default function PostList({ lessonId, currentUserId }: Props) {
+  const [posts, setPosts] = useState<Post[]>([]);
+
+  useEffect(() => {
+    fetch(`/api/posts?lessonId=${lessonId}`)
+      .then((res) => res.json())
+      .then((json: { data: Post[] | null; error: string | null }) => {
+        if (json.data) setPosts(json.data);
+      })
+      .catch(() => {});
+
+    const supabase = createClient();
+    const channel = supabase
+      .channel(`posts:${lessonId}`)
+      .on(
+        "postgres_changes",
+        {
+          event: "INSERT",
+          schema: "public",
+          table: "posts",
+          filter: `lesson_id=eq.${lessonId}`,
+        },
+        (payload) => {
+          setPosts((prev) => [payload.new as Post, ...prev]);
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [lessonId]);
+
   return (
     <section>
       <h2 className="text-base font-semibold mb-4">
@@ -38,14 +75,21 @@ export default function PostList({ posts }: Props) {
         <p className="text-sm text-muted-foreground">📭 まだ投稿はありません。</p>
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-          {posts.map((post) => (
-            <div key={post.id} className="p-4 rounded-lg border bg-card">
-              <p className="text-sm leading-relaxed">{extractText(post.content)}</p>
-              <p className="text-xs text-muted-foreground mt-3">
-                {formatDate(post.created_at)}
-              </p>
-            </div>
-          ))}
+          {posts.map((post) => {
+            const isMyPost = post.user_id === currentUserId;
+            return (
+              <div
+                key={post.id}
+                className={`p-4 rounded-lg border bg-card ${isMyPost ? "border-primary/40" : ""}`}
+              >
+                {isMyPost && (
+                  <p className="text-xs text-primary font-medium mb-1">自分の投稿</p>
+                )}
+                <p className="text-sm leading-relaxed">{extractText(post.content)}</p>
+                <p className="text-xs text-muted-foreground mt-3">{formatDate(post.created_at)}</p>
+              </div>
+            );
+          })}
         </div>
       )}
     </section>

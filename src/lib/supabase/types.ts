@@ -121,6 +121,7 @@ export type Database = {
           id: string
           lesson_id: string
           memo_id: string
+          user_id: string
         }
         Insert: {
           content?: Json
@@ -128,6 +129,7 @@ export type Database = {
           id?: string
           lesson_id: string
           memo_id: string
+          user_id: string
         }
         Update: {
           content?: Json
@@ -135,6 +137,7 @@ export type Database = {
           id?: string
           lesson_id?: string
           memo_id?: string
+          user_id?: string
         }
         Relationships: [
           {

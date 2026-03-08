@@ -1,7 +1,7 @@
 import { notFound } from "next/navigation";
 import Link from "next/link";
 import { getLessonWithQuestions } from "@/lib/db/contents";
-import { getMemosByLessonId } from "@/lib/db/memos";
+import { createClient } from "@/lib/supabase/server";
 import LessonContent from "@/components/lesson/lesson-content";
 
 type Props = {
@@ -11,11 +11,14 @@ type Props = {
 export default async function LessonPage({ params }: Props) {
   const { lessonId } = await params;
 
-  const [lesson, memos] = await Promise.all([
+  const supabase = await createClient();
+  const [lesson, { data: { user } }] = await Promise.all([
     getLessonWithQuestions(lessonId),
-    getMemosByLessonId(lessonId),
+    supabase.auth.getUser(),
   ]);
+
   if (!lesson) return notFound();
+  if (!user) return notFound();
 
   const { unit, questions } = lesson;
   const subject = unit.subject;
@@ -41,9 +44,7 @@ export default async function LessonPage({ params }: Props) {
         lessonId={lessonId}
         youtubeUrl={lesson.youtube_url}
         questions={questions}
-        posts={[]}
-        memos={memos}
-        postedMemoIds={[]}
+        currentUserId={user.id}
       />
     </div>
   );
