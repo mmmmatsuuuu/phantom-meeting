@@ -1,12 +1,17 @@
 "use client";
 
-import { useState } from "react";
-import type { Memo, TiptapContent } from "@/lib/db/memos";
+import { useState, useEffect } from "react";
+import { useEditor, EditorContent } from "@tiptap/react";
+import StarterKit from "@tiptap/starter-kit";
+import Placeholder from "@tiptap/extension-placeholder";
+import type { Memo } from "@/lib/db/memos";
 
 type Props = {
   lessonId: string;
   initialMemos: Memo[];
   initialPostedMemoIds: string[];
+  getCurrentTime: () => number | null;
+  seekTo: (seconds: number) => void;
   onClose?: () => void;
 };
 
@@ -25,54 +30,79 @@ function formatDate(dateString: string): string {
   });
 }
 
-function extractText(content: TiptapContent): string {
-  return content.content
-    .flatMap((node) => node.content ?? [])
-    .filter((node) => node.type === "text")
-    .map((node) => node.text)
-    .join("");
-}
-
 export default function MemoSection({
   lessonId,
   initialMemos,
   initialPostedMemoIds,
+  getCurrentTime,
+  seekTo,
   onClose,
 }: Props) {
-  const [memo, setMemo] = useState("");
   const [timestamp, setTimestamp] = useState<number | null>(null);
   const [memos, setMemos] = useState<Memo[]>(initialMemos);
   const [postedIds, setPostedIds] = useState<Set<string>>(
     new Set(initialPostedMemoIds)
   );
-  const [saveState, setSaveState] = useState<"idle" | "saved">("idle");
+  const [saveState, setSaveState] = useState<"idle" | "saving" | "saved">("idle");
+  const [editorEmpty, setEditorEmpty] = useState(true);
+
+  const editor = useEditor({
+    immediatelyRender: false,
+    onUpdate: ({ editor }) => {
+      setEditorEmpty(editor.isEmpty);
+    },
+    extensions: [
+      StarterKit,
+      Placeholder.configure({ placeholder: "動画を見て気づいたことや疑問をメモしよう..." }),
+    ],
+    editorProps: {
+      attributes: {
+        class:
+          "min-h-[120px] p-3 text-sm focus:outline-none",
+      },
+    },
+  });
+
+  useEffect(() => {
+    fetch(`/api/memos?lessonId=${lessonId}`)
+      .then((res) => res.json())
+      .then((json: { data: Memo[] | null; error: string | null }) => {
+        if (json.data) setMemos(json.data);
+      })
+      .catch(() => {});
+  }, [lessonId]);
 
   const handleTimestamp = () => {
-    // 実装時はYouTube Player APIから getCurrentTime() で取得する
-    setTimestamp(127); // モック値: 2:07
+    const t = getCurrentTime();
+    if (t !== null) setTimestamp(t);
   };
 
-  const handleSave = () => {
-    if (!memo.trim()) return;
-    const newMemo: Memo = {
-      id: String(Date.now()),
-      lesson_id: lessonId,
-      user_id: "student-1",
-      content: {
-        type: "doc",
-        content: [
-          { type: "paragraph", content: [{ type: "text", text: memo }] },
-        ],
-      },
-      timestamp_seconds: timestamp,
-      created_at: new Date().toISOString(),
-      updated_at: new Date().toISOString(),
-    };
-    setMemos((prev) => [newMemo, ...prev]);
-    setMemo("");
-    setTimestamp(null);
-    setSaveState("saved");
-    setTimeout(() => setSaveState("idle"), 2000);
+  const handleSave = async () => {
+    if (!editor || editor.isEmpty) return;
+    setSaveState("saving");
+    const content = editor.getJSON();
+    const res = await fetch("/api/memos", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ lessonId, content, timestampSeconds: timestamp }),
+    });
+    const json = (await res.json()) as { data: Memo | null; error: string | null };
+    if (json.data) {
+      setMemos((prev) => [json.data!, ...prev]);
+      editor.commands.clearContent();
+      setTimestamp(null);
+      setSaveState("saved");
+      setTimeout(() => setSaveState("idle"), 2000);
+    } else {
+      setSaveState("idle");
+    }
+  };
+
+  const handleDelete = async (memoId: string) => {
+    const res = await fetch(`/api/memos/${memoId}`, { method: "DELETE" });
+    if (res.ok) {
+      setMemos((prev) => prev.filter((m) => m.id !== memoId));
+    }
   };
 
   const handlePost = (memoId: string) => {
@@ -94,7 +124,7 @@ export default function MemoSection({
         )}
       </div>
 
-      {/* 新規メモ入力 */}
+      {/* タイムスタンプ記録 */}
       <button
         onClick={handleTimestamp}
         className="flex items-center gap-1.5 text-sm px-3 py-1.5 rounded-md border hover:bg-muted transition-colors w-full justify-center"
@@ -108,19 +138,21 @@ export default function MemoSection({
         </p>
       )}
 
-      <textarea
-        className="w-full min-h-[120px] p-3 text-sm rounded-md border bg-background resize-none focus:outline-none focus:ring-2 focus:ring-ring"
-        placeholder="動画を見て気づいたことや疑問をメモしよう..."
-        value={memo}
-        onChange={(e) => setMemo(e.target.value)}
-      />
+      {/* tiptap エディタ */}
+      <div className="rounded-md border bg-background focus-within:ring-2 focus-within:ring-ring">
+        <EditorContent editor={editor} />
+      </div>
 
       <button
         onClick={handleSave}
-        disabled={!memo.trim()}
+        disabled={saveState === "saving" || !editor || editorEmpty}
         className="w-full py-2 text-sm rounded-md bg-primary text-primary-foreground hover:opacity-90 transition-opacity disabled:opacity-40 disabled:cursor-not-allowed"
       >
-        {saveState === "saved" ? "✅ 保存しました！" : "保存する"}
+        {saveState === "saved"
+          ? "✅ 保存しました！"
+          : saveState === "saving"
+          ? "保存中..."
+          : "保存する"}
       </button>
 
       {/* 過去のメモ タイムライン */}
@@ -135,14 +167,33 @@ export default function MemoSection({
                 key={m.id}
                 className="p-3 rounded-md border bg-background space-y-1.5"
               >
-                <p className="text-xs text-muted-foreground">
-                  {m.timestamp_seconds !== null
-                    ? `📍 ${formatTimestamp(m.timestamp_seconds)} ・ `
-                    : ""}
-                  {formatDate(m.created_at)}
-                </p>
-                <p className="text-sm leading-relaxed">
-                  {extractText(m.content)}
+                <div className="flex items-start justify-between gap-2">
+                  <p className="text-xs text-muted-foreground">
+                    {m.timestamp_seconds !== null ? (
+                      <button
+                        onClick={() => seekTo(m.timestamp_seconds!)}
+                        className="text-primary hover:underline"
+                      >
+                        📍 {formatTimestamp(m.timestamp_seconds)}
+                      </button>
+                    ) : null}
+                    {m.timestamp_seconds !== null ? " ・ " : ""}
+                    {formatDate(m.created_at)}
+                  </p>
+                  <button
+                    onClick={() => handleDelete(m.id)}
+                    className="text-xs text-muted-foreground hover:text-destructive transition-colors shrink-0"
+                    aria-label="メモを削除"
+                  >
+                    🗑️
+                  </button>
+                </div>
+                <p className="text-sm leading-relaxed whitespace-pre-wrap">
+                  {m.content.content
+                    .flatMap((node) => node.content ?? [])
+                    .filter((node) => node.type === "text")
+                    .map((node) => node.text)
+                    .join("")}
                 </p>
                 {postedIds.has(m.id) ? (
                   <p className="text-xs text-muted-foreground">投稿済み ✅</p>

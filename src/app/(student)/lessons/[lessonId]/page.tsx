@@ -1,6 +1,7 @@
 import { notFound } from "next/navigation";
 import Link from "next/link";
 import { getLessonWithQuestions } from "@/lib/db/contents";
+import { getMemosByLessonId } from "@/lib/db/memos";
 import LessonContent from "@/components/lesson/lesson-content";
 
 type Props = {
@@ -10,7 +11,10 @@ type Props = {
 export default async function LessonPage({ params }: Props) {
   const { lessonId } = await params;
 
-  const lesson = await getLessonWithQuestions(lessonId);
+  const [lesson, memos] = await Promise.all([
+    getLessonWithQuestions(lessonId),
+    getMemosByLessonId(lessonId),
+  ]);
   if (!lesson) return notFound();
 
   const { unit, questions } = lesson;
@@ -38,7 +42,7 @@ export default async function LessonPage({ params }: Props) {
         youtubeUrl={lesson.youtube_url}
         questions={questions}
         posts={[]}
-        memos={[]}
+        memos={memos}
         postedMemoIds={[]}
       />
     </div>

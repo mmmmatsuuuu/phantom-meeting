@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import type { YouTubePlayer } from "react-youtube";
 import VideoPlayer from "@/components/lesson/video-player";
 import QuestionSection from "@/components/lesson/question-section";
 import type { Question } from "@/lib/db/contents";
@@ -10,9 +11,10 @@ type Tab = "video" | "quiz";
 type Props = {
   youtubeUrl: string;
   questions: Question[];
+  onPlayerReady: (player: YouTubePlayer) => void;
 };
 
-export default function LessonTabs({ youtubeUrl, questions }: Props) {
+export default function LessonTabs({ youtubeUrl, questions, onPlayerReady }: Props) {
   const [activeTab, setActiveTab] = useState<Tab>("video");
 
   return (
@@ -44,7 +46,7 @@ export default function LessonTabs({ youtubeUrl, questions }: Props) {
       {/* 動画タブ */}
       {activeTab === "video" && (
         <div className="space-y-5">
-          <VideoPlayer youtubeUrl={youtubeUrl} />
+          <VideoPlayer youtubeUrl={youtubeUrl} onPlayerReady={onPlayerReady} />
           <QuestionSection questions={questions} />
         </div>
       )}

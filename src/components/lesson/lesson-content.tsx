@@ -1,6 +1,7 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useRef } from "react";
+import type { YouTubePlayer } from "react-youtube";
 import type { Question } from "@/lib/db/contents";
 import type { Memo } from "@/lib/db/memos";
 import type { Post } from "@/lib/db/posts";
@@ -26,6 +27,16 @@ export default function LessonContent({
   postedMemoIds,
 }: Props) {
   const [memoVisible, setMemoVisible] = useState(true);
+  const playerRef = useRef<YouTubePlayer | null>(null);
+
+  const getCurrentTime = (): number | null => {
+    if (!playerRef.current) return null;
+    return Math.floor(playerRef.current.getCurrentTime());
+  };
+
+  const seekTo = (seconds: number) => {
+    playerRef.current?.seekTo(seconds, true);
+  };
 
   return (
     <div>
@@ -42,7 +53,11 @@ export default function LessonContent({
 
       <div className="grid grid-cols-3 gap-6">
         <div className={`${memoVisible ? "col-span-2" : "col-span-3"} space-y-8`}>
-          <LessonTabs youtubeUrl={youtubeUrl} questions={questions} />
+          <LessonTabs
+            youtubeUrl={youtubeUrl}
+            questions={questions}
+            onPlayerReady={(player) => { playerRef.current = player; }}
+          />
           <div className="border-t pt-6">
             <PostList posts={posts} />
           </div>
@@ -55,6 +70,8 @@ export default function LessonContent({
               initialMemos={memos}
               initialPostedMemoIds={postedMemoIds}
               onClose={() => setMemoVisible(false)}
+              getCurrentTime={getCurrentTime}
+              seekTo={seekTo}
             />
           </div>
         )}

@@ -1,12 +1,14 @@
 "use client";
 
+import YouTube, { type YouTubePlayer, type YouTubeProps } from "react-youtube";
 import { extractYouTubeVideoId } from "@/lib/utils";
 
 type Props = {
   youtubeUrl: string;
+  onPlayerReady: (player: YouTubePlayer) => void;
 };
 
-export default function VideoPlayer({ youtubeUrl }: Props) {
+export default function VideoPlayer({ youtubeUrl, onPlayerReady }: Props) {
   const videoId = extractYouTubeVideoId(youtubeUrl);
 
   if (!videoId) {
@@ -17,14 +19,24 @@ export default function VideoPlayer({ youtubeUrl }: Props) {
     );
   }
 
+  const opts: YouTubeProps["opts"] = {
+    width: "100%",
+    height: "100%",
+    playerVars: { rel: 0 },
+  };
+
+  const handleReady: YouTubeProps["onReady"] = (event) => {
+    onPlayerReady(event.target);
+  };
+
   return (
     <div className="w-full aspect-video rounded-lg overflow-hidden bg-black">
-      <iframe
-        src={`https://www.youtube.com/embed/${videoId}?enablejsapi=1`}
+      <YouTube
+        videoId={videoId}
+        opts={opts}
+        onReady={handleReady}
         className="w-full h-full"
-        allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-        allowFullScreen
-        title="授業動画"
+        iframeClassName="w-full h-full"
       />
     </div>
   );
