@@ -53,6 +53,55 @@ export async function getContents(): Promise<SubjectWithUnits[]> {
 }
 
 /**
+ * レッスンと発問を一括作成する（teacher/admin のみ）
+ */
+export async function createLesson(params: {
+  unitId: string;
+  title: string;
+  youtubeUrl: string;
+  questions: string[];
+}): Promise<Lesson | null> {
+  const supabase = await createClient();
+
+  // 同一 unit 内のレッスン数を order として使用
+  const { count } = await supabase
+    .from("lessons")
+    .select("*", { count: "exact", head: true })
+    .eq("unit_id", params.unitId);
+
+  const { data: lesson, error: lessonError } = await supabase
+    .from("lessons")
+    .insert({
+      unit_id: params.unitId,
+      title: params.title,
+      youtube_url: params.youtubeUrl,
+      order: count ?? 0,
+    })
+    .select()
+    .single();
+
+  if (lessonError || !lesson) return null;
+
+  const questionRows = params.questions
+    .filter((q) => q.trim() !== "")
+    .map((content, i) => ({
+      lesson_id: lesson.id,
+      content,
+      order: i,
+    }));
+
+  if (questionRows.length > 0) {
+    const { error: questionsError } = await supabase
+      .from("questions")
+      .insert(questionRows);
+
+    if (questionsError) return null;
+  }
+
+  return lesson;
+}
+
+/**
  * レッスン詳細と発問を取得する
  */
 export async function getLessonWithQuestions(
