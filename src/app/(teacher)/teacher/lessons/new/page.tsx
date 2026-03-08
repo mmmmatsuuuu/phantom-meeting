@@ -1,8 +1,12 @@
 import { getContents } from "@/lib/db/contents";
 import LessonNewForm from "@/components/teacher/lesson-new-form";
 
-export default async function LessonNewPage() {
-  const subjects = await getContents();
+type Props = {
+  searchParams: Promise<{ unitId?: string }>;
+};
 
-  return <LessonNewForm subjects={subjects} />;
+export default async function LessonNewPage({ searchParams }: Props) {
+  const [subjects, { unitId }] = await Promise.all([getContents(), searchParams]);
+
+  return <LessonNewForm subjects={subjects} defaultUnitId={unitId} />;
 }

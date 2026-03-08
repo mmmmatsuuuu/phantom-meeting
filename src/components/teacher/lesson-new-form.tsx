@@ -1,6 +1,8 @@
 "use client";
 
 import { useState } from "react";
+import { useRouter } from "next/navigation";
+import { toast } from "sonner";
 import type { SubjectWithUnits } from "@/lib/db/contents";
 
 type QuestionInput = {
@@ -15,18 +17,25 @@ function extractVideoId(url: string): string | null {
 
 type Props = {
   subjects: SubjectWithUnits[];
+  defaultUnitId?: string;
 };
 
-export default function LessonNewForm({ subjects }: Props) {
-  const [subjectId, setSubjectId] = useState("");
-  const [unitId, setUnitId] = useState("");
+export default function LessonNewForm({ subjects, defaultUnitId }: Props) {
+  const defaultSubjectId =
+    defaultUnitId
+      ? (subjects.find((s) => s.units.some((u) => u.id === defaultUnitId))?.id ?? "")
+      : "";
+
+  const [subjectId, setSubjectId] = useState(defaultSubjectId);
+  const [unitId, setUnitId] = useState(defaultUnitId ?? "");
   const [title, setTitle] = useState("");
   const [youtubeUrl, setYoutubeUrl] = useState("");
   const [showPreview, setShowPreview] = useState(false);
   const [questions, setQuestions] = useState<QuestionInput[]>([
     { id: "1", content: "" },
   ]);
-  const [savedState, setSavedState] = useState<"idle" | "saved">("idle");
+  const [isSaving, setIsSaving] = useState(false);
+  const router = useRouter();
 
   const selectedSubject = subjects.find((s) => s.id === subjectId);
   const units = selectedSubject?.units ?? [];
@@ -49,9 +58,33 @@ export default function LessonNewForm({ subjects }: Props) {
     );
   };
 
-  const handleSave = () => {
-    setSavedState("saved");
-    setTimeout(() => setSavedState("idle"), 2000);
+  const handleSave = async () => {
+    if (!unitId || !title.trim() || !youtubeUrl.trim()) {
+      toast.error("科目・単元・タイトル・YouTube URL は必須です");
+      return;
+    }
+    if (!videoId) {
+      toast.error("有効な YouTube URL を入力してください");
+      return;
+    }
+    setIsSaving(true);
+    const res = await fetch("/api/contents/lessons", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        unitId,
+        title: title.trim(),
+        youtubeUrl: youtubeUrl.trim(),
+        questions: questions.map((q) => q.content).filter((c) => c.trim() !== ""),
+      }),
+    });
+    setIsSaving(false);
+    if (res.status === 201) {
+      toast.success("レッスンを登録しました");
+      router.push("/");
+    } else {
+      toast.error("登録に失敗しました");
+    }
   };
 
   return (
@@ -208,9 +241,10 @@ export default function LessonNewForm({ subjects }: Props) {
         {/* 保存ボタン */}
         <button
           onClick={handleSave}
-          className="w-full py-2.5 rounded-md bg-primary text-primary-foreground font-medium hover:opacity-90 transition-opacity"
+          disabled={isSaving}
+          className="w-full py-2.5 rounded-md bg-primary text-primary-foreground font-medium hover:opacity-90 transition-opacity disabled:opacity-40 disabled:cursor-not-allowed"
         >
-          {savedState === "saved" ? "✅ 保存しました！" : "保存する"}
+          {isSaving ? "登録中..." : "保存する"}
         </button>
       </div>
     </div>
