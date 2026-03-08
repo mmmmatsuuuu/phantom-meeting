@@ -4,12 +4,11 @@ import { useState, useEffect } from "react";
 import { useEditor, EditorContent } from "@tiptap/react";
 import StarterKit from "@tiptap/starter-kit";
 import Placeholder from "@tiptap/extension-placeholder";
+import { toast } from "sonner";
 import type { Memo } from "@/lib/db/memos";
 
 type Props = {
   lessonId: string;
-  initialMemos: Memo[];
-  initialPostedMemoIds: string[];
   getCurrentTime: () => number | null;
   seekTo: (seconds: number) => void;
   onClose?: () => void;
@@ -30,19 +29,9 @@ function formatDate(dateString: string): string {
   });
 }
 
-export default function MemoSection({
-  lessonId,
-  initialMemos,
-  initialPostedMemoIds,
-  getCurrentTime,
-  seekTo,
-  onClose,
-}: Props) {
+export default function MemoSection({ lessonId, getCurrentTime, seekTo, onClose }: Props) {
   const [timestamp, setTimestamp] = useState<number | null>(null);
-  const [memos, setMemos] = useState<Memo[]>(initialMemos);
-  const [postedIds, setPostedIds] = useState<Set<string>>(
-    new Set(initialPostedMemoIds)
-  );
+  const [memos, setMemos] = useState<Memo[]>([]);
   const [saveState, setSaveState] = useState<"idle" | "saving" | "saved">("idle");
   const [editorEmpty, setEditorEmpty] = useState(true);
 
@@ -57,8 +46,7 @@ export default function MemoSection({
     ],
     editorProps: {
       attributes: {
-        class:
-          "min-h-[120px] p-3 text-sm focus:outline-none",
+        class: "min-h-[120px] p-3 text-sm focus:outline-none",
       },
     },
   });
@@ -66,7 +54,7 @@ export default function MemoSection({
   useEffect(() => {
     fetch(`/api/memos?lessonId=${lessonId}`)
       .then((res) => res.json())
-      .then((json: { data: Memo[] | null; error: string | null }) => {
+      .then((json: { data: Memo[] | null }) => {
         if (json.data) setMemos(json.data);
       })
       .catch(() => {});
@@ -105,8 +93,21 @@ export default function MemoSection({
     }
   };
 
-  const handlePost = (memoId: string) => {
-    setPostedIds((prev) => new Set([...prev, memoId]));
+  const handlePost = async (memo: Memo) => {
+    const res = await fetch("/api/posts", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ memoId: memo.id, lessonId, content: memo.content }),
+    });
+    if (res.status === 409) {
+      toast.warning("このメモはすでに投稿済みです");
+      return;
+    }
+    if (res.ok) {
+      toast.success("クラスに投稿しました");
+    } else {
+      toast.error("投稿に失敗しました");
+    }
   };
 
   return (
@@ -163,10 +164,7 @@ export default function MemoSection({
           </p>
           <div className="space-y-2">
             {memos.map((m) => (
-              <div
-                key={m.id}
-                className="p-3 rounded-md border bg-background space-y-1.5"
-              >
+              <div key={m.id} className="p-3 rounded-md border bg-background space-y-1.5">
                 <div className="flex items-start justify-between gap-2">
                   <p className="text-xs text-muted-foreground">
                     {m.timestamp_seconds !== null ? (
@@ -195,16 +193,12 @@ export default function MemoSection({
                     .map((node) => node.text)
                     .join("")}
                 </p>
-                {postedIds.has(m.id) ? (
-                  <p className="text-xs text-muted-foreground">投稿済み ✅</p>
-                ) : (
-                  <button
-                    onClick={() => handlePost(m.id)}
-                    className="text-xs px-2 py-1 rounded-md border hover:bg-muted transition-colors"
-                  >
-                    クラスに投稿
-                  </button>
-                )}
+                <button
+                  onClick={() => handlePost(m)}
+                  className="text-xs px-2 py-1 rounded-md border hover:bg-muted transition-colors"
+                >
+                  クラスに投稿
+                </button>
               </div>
             ))}
           </div>

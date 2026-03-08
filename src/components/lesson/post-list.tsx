@@ -1,8 +1,13 @@
+"use client";
+
+import { useState, useEffect } from "react";
+import { createClient } from "@/lib/supabase/client";
 import type { Post } from "@/lib/db/posts";
 import type { TiptapContent } from "@/lib/db/memos";
 
 type Props = {
-  posts: Post[];
+  lessonId: string;
+  currentUserId: string;
 };
 
 function extractText(content: TiptapContent): string {
@@ -22,7 +27,58 @@ function formatDate(dateString: string): string {
   });
 }
 
-export default function PostList({ posts }: Props) {
+export default function PostList({ lessonId, currentUserId }: Props) {
+  const [posts, setPosts] = useState<Post[]>([]);
+
+  useEffect(() => {
+    fetch(`/api/posts?lessonId=${lessonId}`)
+      .then((res) => res.json())
+      .then((json: { data: Post[] | null; error: string | null }) => {
+        if (json.data) setPosts(json.data);
+      })
+      .catch(() => {});
+
+    const supabase = createClient();
+    const channel = supabase
+      .channel(`posts:${lessonId}`)
+      .on(
+        "postgres_changes",
+        {
+          event: "INSERT",
+          schema: "public",
+          table: "posts",
+          filter: `lesson_id=eq.${lessonId}`,
+        },
+        (payload) => {
+          setPosts((prev) => [payload.new as Post, ...prev]);
+        }
+      )
+      .on(
+        "postgres_changes",
+        {
+          event: "DELETE",
+          schema: "public",
+          table: "posts",
+          filter: `lesson_id=eq.${lessonId}`,
+        },
+        (payload) => {
+          setPosts((prev) => prev.filter((p) => p.id !== payload.old.id));
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [lessonId]);
+
+  const handleDelete = async (postId: string) => {
+    const res = await fetch(`/api/posts/${postId}`, { method: "DELETE" });
+    if (res.ok) {
+      setPosts((prev) => prev.filter((p) => p.id !== postId));
+    }
+  };
+
   return (
     <section>
       <h2 className="text-base font-semibold mb-4">
@@ -38,14 +94,32 @@ export default function PostList({ posts }: Props) {
         <p className="text-sm text-muted-foreground">📭 まだ投稿はありません。</p>
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-          {posts.map((post) => (
-            <div key={post.id} className="p-4 rounded-lg border bg-card">
-              <p className="text-sm leading-relaxed">{extractText(post.content)}</p>
-              <p className="text-xs text-muted-foreground mt-3">
-                {formatDate(post.created_at)}
-              </p>
-            </div>
-          ))}
+          {posts.map((post) => {
+            const isMyPost = post.user_id === currentUserId;
+            return (
+              <div
+                key={post.id}
+                className={`p-4 rounded-lg border bg-card ${isMyPost ? "border-primary/40" : ""}`}
+              >
+                <div className="flex items-start justify-between gap-2">
+                  {isMyPost && (
+                    <p className="text-xs text-primary font-medium">自分の投稿</p>
+                  )}
+                  {isMyPost && (
+                    <button
+                      onClick={() => handleDelete(post.id)}
+                      className="text-xs text-muted-foreground hover:text-destructive transition-colors shrink-0"
+                      aria-label="投稿を削除"
+                    >
+                      🗑️
+                    </button>
+                  )}
+                </div>
+                <p className="text-sm leading-relaxed">{extractText(post.content)}</p>
+                <p className="text-xs text-muted-foreground mt-3">{formatDate(post.created_at)}</p>
+              </div>
+            );
+          })}
         </div>
       )}
     </section>
