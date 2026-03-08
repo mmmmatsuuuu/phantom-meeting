@@ -4,8 +4,8 @@ import { useState, useEffect } from "react";
 import { useEditor, EditorContent } from "@tiptap/react";
 import StarterKit from "@tiptap/starter-kit";
 import Placeholder from "@tiptap/extension-placeholder";
+import { toast } from "sonner";
 import type { Memo } from "@/lib/db/memos";
-import type { Post } from "@/lib/db/posts";
 
 type Props = {
   lessonId: string;
@@ -32,7 +32,6 @@ function formatDate(dateString: string): string {
 export default function MemoSection({ lessonId, getCurrentTime, seekTo, onClose }: Props) {
   const [timestamp, setTimestamp] = useState<number | null>(null);
   const [memos, setMemos] = useState<Memo[]>([]);
-  const [postedIds, setPostedIds] = useState<Set<string>>(new Set());
   const [saveState, setSaveState] = useState<"idle" | "saving" | "saved">("idle");
   const [editorEmpty, setEditorEmpty] = useState(true);
 
@@ -53,21 +52,12 @@ export default function MemoSection({ lessonId, getCurrentTime, seekTo, onClose 
   });
 
   useEffect(() => {
-    const fetchData = async () => {
-      const [memosRes, postsRes] = await Promise.all([
-        fetch(`/api/memos?lessonId=${lessonId}`),
-        fetch(`/api/posts?lessonId=${lessonId}`),
-      ]);
-      const memosJson = (await memosRes.json()) as { data: Memo[] | null };
-      const postsJson = (await postsRes.json()) as { data: Post[] | null };
-
-      if (memosJson.data) setMemos(memosJson.data);
-      if (postsJson.data) {
-        const ids = new Set(postsJson.data.map((p) => p.memo_id));
-        setPostedIds(ids);
-      }
-    };
-    fetchData().catch(() => {});
+    fetch(`/api/memos?lessonId=${lessonId}`)
+      .then((res) => res.json())
+      .then((json: { data: Memo[] | null }) => {
+        if (json.data) setMemos(json.data);
+      })
+      .catch(() => {});
   }, [lessonId]);
 
   const handleTimestamp = () => {
@@ -109,8 +99,14 @@ export default function MemoSection({ lessonId, getCurrentTime, seekTo, onClose 
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ memoId: memo.id, lessonId, content: memo.content }),
     });
+    if (res.status === 409) {
+      toast.warning("このメモはすでに投稿済みです");
+      return;
+    }
     if (res.ok) {
-      setPostedIds((prev) => new Set([...prev, memo.id]));
+      toast.success("クラスに投稿しました");
+    } else {
+      toast.error("投稿に失敗しました");
     }
   };
 
@@ -197,16 +193,12 @@ export default function MemoSection({ lessonId, getCurrentTime, seekTo, onClose 
                     .map((node) => node.text)
                     .join("")}
                 </p>
-                {postedIds.has(m.id) ? (
-                  <p className="text-xs text-muted-foreground">投稿済み ✅</p>
-                ) : (
-                  <button
-                    onClick={() => handlePost(m)}
-                    className="text-xs px-2 py-1 rounded-md border hover:bg-muted transition-colors"
-                  >
-                    クラスに投稿
-                  </button>
-                )}
+                <button
+                  onClick={() => handlePost(m)}
+                  className="text-xs px-2 py-1 rounded-md border hover:bg-muted transition-colors"
+                >
+                  クラスに投稿
+                </button>
               </div>
             ))}
           </div>

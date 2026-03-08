@@ -1,5 +1,5 @@
 import { NextResponse, type NextRequest } from "next/server";
-import { getPostsByLessonId, createPost } from "@/lib/db/posts";
+import { getPostsByLessonId, createPost, existsPostByMemoId } from "@/lib/db/posts";
 import type { TiptapContent } from "@/lib/db/memos";
 
 export async function GET(request: NextRequest) {
@@ -24,6 +24,11 @@ export async function POST(request: NextRequest) {
       { data: null, error: "memoId, lessonId and content are required" },
       { status: 400 }
     );
+  }
+
+  const alreadyExists = await existsPostByMemoId(body.memoId);
+  if (alreadyExists) {
+    return NextResponse.json({ data: null, error: "already_posted" }, { status: 409 });
   }
 
   const data = await createPost({

@@ -23,6 +23,21 @@ export async function getPostsByLessonId(lessonId: string): Promise<Post[]> {
 }
 
 /**
+ * 指定メモの投稿が既に存在するか確認する
+ */
+export async function existsPostByMemoId(memoId: string): Promise<boolean> {
+  const supabase = await createClient();
+
+  const { data } = await supabase
+    .from("posts")
+    .select("id")
+    .eq("memo_id", memoId)
+    .maybeSingle();
+
+  return data !== null;
+}
+
+/**
  * メモからクラスに投稿する
  */
 export async function createPost(params: {
