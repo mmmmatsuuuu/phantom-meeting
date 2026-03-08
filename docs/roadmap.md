@@ -132,13 +132,16 @@
 
 ### タスク
 
-- [ ] `src/lib/db/posts.ts` を実装（投稿クエリを集約）
-- [ ] `api/posts/` Route Handler を実装（Client Component から `lib/db/posts.ts` を呼ぶ）
+- [x] `src/lib/db/posts.ts` を実装（投稿クエリを集約）
+- [x] `api/posts/` Route Handler を実装（重複チェック付き）
   - `GET /api/posts?lessonId=xxx` — 投稿一覧（全員閲覧可）
-  - `POST /api/posts` — メモから投稿（スナップショット保存）
-- [ ] `PostList` を実データ対応（Server Component から `lib/db/posts.ts` を直接呼ぶ）
-- [ ] 自分の投稿 / 他者の投稿を明示的に区別して表示
-- [ ] 投稿は匿名表示（`display_name` を出さない）
+  - `POST /api/posts` — メモから投稿（重複時 409）
+  - `DELETE /api/posts/[postId]` — 自分の投稿を削除
+- [x] `PostList` を Client Component に書き換え、Supabase Realtime でリアルタイム更新
+- [x] 自分の投稿 / 他者の投稿を明示的に区別して表示（自分の投稿はハイライト・削除ボタン）
+- [x] 投稿は匿名表示（`display_name` を出さない）
+- [x] 投稿フィードバックを toast に統一（成功・重複・失敗）
+- [x] memos/posts ともにクライアントフェッチに統一し page.tsx を簡素化
 
 ### マージ判断
 
@@ -188,9 +191,9 @@ teacher ロール以外が登録・編集できないことを確認してから
 [✅] Phase 2: ルートグループ再構成
 [✅] Phase 3: レッスン一覧・視聴（実データ）
 [✅] Phase 4: メモ機能
-[ ] Phase 5: 共有投稿機能
+[✅] Phase 5: 共有投稿機能
 [ ] Phase 6: 教師機能
 [ ] Phase 7: 小テスト
 ```
 
-次の着手は **Phase 5: 共有投稿機能**。
+次の着手は **Phase 6: 教師機能**。
