@@ -44,9 +44,13 @@ export default function MemoSection({
     new Set(initialPostedMemoIds)
   );
   const [saveState, setSaveState] = useState<"idle" | "saving" | "saved">("idle");
+  const [editorEmpty, setEditorEmpty] = useState(true);
 
   const editor = useEditor({
     immediatelyRender: false,
+    onUpdate: ({ editor }) => {
+      setEditorEmpty(editor.isEmpty);
+    },
     extensions: [
       StarterKit,
       Placeholder.configure({ placeholder: "動画を見て気づいたことや疑問をメモしよう..." }),
@@ -141,7 +145,7 @@ export default function MemoSection({
 
       <button
         onClick={handleSave}
-        disabled={saveState === "saving" || !editor || editor.isEmpty}
+        disabled={saveState === "saving" || !editor || editorEmpty}
         className="w-full py-2 text-sm rounded-md bg-primary text-primary-foreground hover:opacity-90 transition-opacity disabled:opacity-40 disabled:cursor-not-allowed"
       >
         {saveState === "saved"
