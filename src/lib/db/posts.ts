@@ -50,3 +50,14 @@ export async function createPost(params: {
   if (error || !data) return null;
   return data as Post;
 }
+
+/**
+ * 自分の投稿を削除する
+ */
+export async function deletePost(postId: string): Promise<boolean> {
+  const supabase = await createClient();
+
+  const { error } = await supabase.from("posts").delete().eq("id", postId);
+
+  return !error;
+}
