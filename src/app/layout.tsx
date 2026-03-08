@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
-import Link from "next/link";
+import NavBar from "@/components/shared/nav-bar";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -28,30 +28,7 @@ export default function RootLayout({
       <body
         className={`${geistSans.variable} ${geistMono.variable} antialiased min-h-screen bg-background`}
       >
-        <header className="border-b bg-card sticky top-0 z-10">
-          <div className="max-w-7xl mx-auto px-4 h-14 flex items-center justify-between">
-            <Link
-              href="/"
-              className="font-bold text-lg text-foreground hover:opacity-80 transition-opacity"
-            >
-              情報Ⅰ 授業プラットフォーム
-            </Link>
-            <nav className="flex items-center gap-4 text-sm">
-              <Link
-                href="/"
-                className="text-muted-foreground hover:text-foreground transition-colors"
-              >
-                📺 レッスン一覧
-              </Link>
-              <Link
-                href="/teacher/lessons/new"
-                className="px-3 py-1.5 rounded-md bg-primary text-primary-foreground hover:opacity-90 transition-opacity"
-              >
-                + レッスンを登録
-              </Link>
-            </nav>
-          </div>
-        </header>
+        <NavBar />
         <main>{children}</main>
       </body>
     </html>
