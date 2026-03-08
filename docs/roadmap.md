@@ -15,18 +15,18 @@
 
 ### タスク
 
-- [ ] Supabase の本番プロジェクトを作成（ダッシュボード上で作業）
-- [ ] `supabase/migrations/` にマイグレーションファイルを作成
+- [x] Supabase の本番プロジェクトを作成（ダッシュボード上で作業）
+- [x] `supabase/migrations/` にマイグレーションファイルを作成
   - `profiles`, `subjects`, `units`, `lessons`, `questions`, `memos`, `posts`, `quizzes`, `quiz_questions`
-- [ ] RLS（Row Level Security）ポリシーを設定
+- [x] RLS（Row Level Security）ポリシーを設定
   - `memos`：本人のみ読み書き可
   - `posts`：全員読み可、本人のみ書き可
   - `lessons`/`questions`：全員読み可、teacher/adminのみ書き可
-- [ ] Vercel の環境変数に本番 Supabase の接続情報を設定
+- [x] Vercel の環境変数に本番 Supabase の接続情報を設定
   - `NEXT_PUBLIC_SUPABASE_URL`
   - `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY`
   - `SUPABASE_SECRET_KEY`
-- [ ] Google OAuth の本番用リダイレクト URI を Supabase に登録
+- [x] Google OAuth の本番用リダイレクト URI を Supabase に登録
 
 ### マージ判断
 
@@ -175,7 +175,7 @@ teacher ロール以外が登録・編集できないことを確認してから
 ## 現在地
 
 ```
-[✅] Phase 0 準備中（Supabase本番プロジェクト未作成）
+[✅] Phase 0 完了
 [ ] Phase 1: 認証基盤
 [ ] Phase 2: ルートグループ再構成
 [ ] Phase 3: レッスン一覧・視聴（実データ）
