@@ -40,15 +40,15 @@
 
 ### タスク
 
-- [ ] `supabase/migrations/` に `profiles` テーブルの auth trigger を追加
+- [x] `supabase/migrations/` に `profiles` テーブルの auth trigger を追加
   - `auth.users` に登録されたら `profiles` に自動挿入
-- [ ] `(auth)` route group を作成
+- [x] `(auth)` route group を作成
   - `/login` ページ（Google ログインボタン）
   - `/auth/callback` ルート（Supabase OAuth コールバック処理）
-- [ ] `middleware.ts` を実装
+- [x] `middleware.ts` を実装
   - 未認証 → `/login` にリダイレクト
-  - `teacher` ロールでない者が teacher ページにアクセス → リダイレクト
-- [ ] ナビバーにログインユーザー名・ログアウトボタンを追加
+  - `teacher` ロールでない者が teacher ページにアクセス → リダイレクト（Phase 2 で route group と合わせて対応）
+- [x] ナビバーにログインユーザー名・ログアウトボタンを追加
 
 ### マージ判断
 
@@ -176,7 +176,7 @@ teacher ロール以外が登録・編集できないことを確認してから
 
 ```
 [✅] Phase 0 完了
-[ ] Phase 1: 認証基盤
+[✅] Phase 1: 認証基盤
 [ ] Phase 2: ルートグループ再構成
 [ ] Phase 3: レッスン一覧・視聴（実データ）
 [ ] Phase 4: メモ機能
@@ -185,4 +185,4 @@ teacher ロール以外が登録・編集できないことを確認してから
 [ ] Phase 7: 小テスト
 ```
 
-モックアップ（3画面）は完成済み。次の着手は **Phase 0 の Supabase 本番プロジェクト作成** から。
+次の着手は **Phase 2: ルートグループ再構成**。
