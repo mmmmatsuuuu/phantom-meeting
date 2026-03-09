@@ -92,6 +92,35 @@
   }
 }
 
+/* tiptap エディタ内スタイル */
+.ProseMirror h2 {
+  @apply text-base font-semibold mt-2 mb-1;
+}
+
+.ProseMirror ul {
+  @apply list-disc pl-5 space-y-0.5;
+}
+
+.ProseMirror ol {
+  @apply list-decimal pl-5 space-y-0.5;
+}
+
+.ProseMirror li {
+  @apply text-sm;
+}
+
+.ProseMirror a {
+  @apply text-primary underline underline-offset-2;
+}
+
+.ProseMirror p.is-editor-empty:first-child::before {
+  @apply text-muted-foreground;
+  content: attr(data-placeholder);
+  float: left;
+  pointer-events: none;
+  height: 0;
+}
+
 /* tiptap リッチテキスト表示用スタイル */
 .rich-content h2 {
   @apply text-base font-semibold mt-3 mb-1;
