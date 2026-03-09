@@ -55,7 +55,7 @@ export default function LessonContent({
             }}
           />
           <div className="border-t pt-6">
-            <PostList lessonId={lessonId} currentUserId={currentUserId} />
+            <PostList lessonId={lessonId} currentUserId={currentUserId} seekTo={seekTo} />
           </div>
         </div>
 

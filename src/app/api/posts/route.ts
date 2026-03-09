@@ -17,6 +17,7 @@ export async function POST(request: NextRequest) {
     memoId: string;
     lessonId: string;
     content: TiptapContent;
+    timestampSeconds: number | null;
   };
 
   if (!body.memoId || !body.lessonId || !body.content) {
@@ -35,6 +36,7 @@ export async function POST(request: NextRequest) {
     memoId: body.memoId,
     lessonId: body.lessonId,
     content: body.content,
+    timestampSeconds: body.timestampSeconds ?? null,
   });
 
   if (!data) {
