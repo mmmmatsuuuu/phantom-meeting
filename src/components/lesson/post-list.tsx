@@ -1,6 +1,9 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import { generateHTML } from "@tiptap/react";
+import StarterKit from "@tiptap/starter-kit";
+import Link from "@tiptap/extension-link";
 import { createClient } from "@/lib/supabase/client";
 import type { Post } from "@/lib/db/posts";
 
@@ -121,13 +124,12 @@ export default function PostList({ lessonId, currentUserId, seekTo }: Props) {
                     📍 {formatTimestamp(post.timestamp_seconds)}
                   </button>
                 )}
-                <p className="text-sm leading-relaxed whitespace-pre-wrap">
-                  {post.content.content
-                    .flatMap((node) => node.content ?? [])
-                    .filter((node) => node.type === "text")
-                    .map((node) => node.text)
-                    .join("")}
-                </p>
+                <div
+                  className="rich-content"
+                  dangerouslySetInnerHTML={{
+                    __html: generateHTML(post.content, [StarterKit, Link]),
+                  }}
+                />
                 <p className="text-xs text-muted-foreground mt-3">{formatDate(post.created_at)}</p>
               </div>
             );

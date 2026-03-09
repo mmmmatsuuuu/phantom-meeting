@@ -191,7 +191,7 @@ export default function MemoSection({ lessonId, getCurrentTime, seekTo, onClose 
                   </button>
                 </div>
                 <div
-                  className="text-sm leading-relaxed prose prose-sm max-w-none"
+                  className="rich-content"
                   dangerouslySetInnerHTML={{
                     __html: generateHTML(m.content, [StarterKit, Link]),
                   }}
