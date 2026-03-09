@@ -2,8 +2,9 @@ import { createClient } from "@/lib/supabase/server";
 import type { Database } from "@/lib/supabase/types";
 import type { TiptapContent } from "@/lib/db/memos";
 
-export type Post = Database["public"]["Tables"]["posts"]["Row"] & {
+export type Post = Omit<Database["public"]["Tables"]["posts"]["Row"], "content"> & {
   content: TiptapContent;
+  timestamp_seconds: number | null;
 };
 
 /**
@@ -44,6 +45,7 @@ export async function createPost(params: {
   memoId: string;
   lessonId: string;
   content: TiptapContent;
+  timestampSeconds: number | null;
 }): Promise<Post | null> {
   const supabase = await createClient();
   const {
@@ -58,6 +60,7 @@ export async function createPost(params: {
       lesson_id: params.lessonId,
       content: params.content,
       user_id: user.id,
+      timestamp_seconds: params.timestampSeconds,
     })
     .select()
     .single();

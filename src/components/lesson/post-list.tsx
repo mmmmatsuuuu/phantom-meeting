@@ -3,19 +3,17 @@
 import { useState, useEffect } from "react";
 import { createClient } from "@/lib/supabase/client";
 import type { Post } from "@/lib/db/posts";
-import type { TiptapContent } from "@/lib/db/memos";
 
 type Props = {
   lessonId: string;
   currentUserId: string;
+  seekTo: (seconds: number) => void;
 };
 
-function extractText(content: TiptapContent): string {
-  return content.content
-    .flatMap((node) => node.content ?? [])
-    .filter((node) => node.type === "text")
-    .map((node) => node.text)
-    .join("");
+function formatTimestamp(seconds: number): string {
+  const m = Math.floor(seconds / 60);
+  const s = seconds % 60;
+  return `${m}:${String(s).padStart(2, "0")}`;
 }
 
 function formatDate(dateString: string): string {
@@ -27,7 +25,7 @@ function formatDate(dateString: string): string {
   });
 }
 
-export default function PostList({ lessonId, currentUserId }: Props) {
+export default function PostList({ lessonId, currentUserId, seekTo }: Props) {
   const [posts, setPosts] = useState<Post[]>([]);
 
   useEffect(() => {
@@ -115,7 +113,21 @@ export default function PostList({ lessonId, currentUserId }: Props) {
                     </button>
                   )}
                 </div>
-                <p className="text-sm leading-relaxed">{extractText(post.content)}</p>
+                {post.timestamp_seconds !== null && (
+                  <button
+                    onClick={() => seekTo(post.timestamp_seconds!)}
+                    className="text-xs text-primary hover:underline mb-1 block"
+                  >
+                    📍 {formatTimestamp(post.timestamp_seconds)}
+                  </button>
+                )}
+                <p className="text-sm leading-relaxed whitespace-pre-wrap">
+                  {post.content.content
+                    .flatMap((node) => node.content ?? [])
+                    .filter((node) => node.type === "text")
+                    .map((node) => node.text)
+                    .join("")}
+                </p>
                 <p className="text-xs text-muted-foreground mt-3">{formatDate(post.created_at)}</p>
               </div>
             );

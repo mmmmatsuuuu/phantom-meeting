@@ -100,7 +100,7 @@ export default function MemoSection({ lessonId, getCurrentTime, seekTo, onClose 
     const res = await fetch("/api/posts", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ memoId: memo.id, lessonId, content: memo.content }),
+      body: JSON.stringify({ memoId: memo.id, lessonId, content: memo.content, timestampSeconds: memo.timestamp_seconds }),
     });
     if (res.status === 409) {
       toast.warning("このメモはすでに投稿済みです");
