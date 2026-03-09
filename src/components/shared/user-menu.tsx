@@ -14,9 +14,10 @@ import { createClient } from "@/lib/supabase/client";
 
 type Props = {
   displayName: string;
+  role: "admin" | "teacher" | "student";
 };
 
-export default function UserMenu({ displayName }: Props) {
+export default function UserMenu({ displayName, role }: Props) {
   const router = useRouter();
 
   const handleLogout = async () => {
@@ -51,12 +52,21 @@ export default function UserMenu({ displayName }: Props) {
         <DropdownMenuItem asChild>
           <Link href="/">📺 レッスン一覧</Link>
         </DropdownMenuItem>
-        <DropdownMenuItem asChild>
-          <Link href="/teacher/contents">📚 コンテンツ管理</Link>
-        </DropdownMenuItem>
-        <DropdownMenuItem asChild>
-          <Link href="/teacher/lessons/new">+ レッスンを登録</Link>
-        </DropdownMenuItem>
+        {(role === "teacher" || role === "admin") && (
+          <>
+            <DropdownMenuItem asChild>
+              <Link href="/teacher/contents">📚 コンテンツ管理</Link>
+            </DropdownMenuItem>
+            <DropdownMenuItem asChild>
+              <Link href="/teacher/lessons/new">+ レッスンを登録</Link>
+            </DropdownMenuItem>
+          </>
+        )}
+        {role === "admin" && (
+          <DropdownMenuItem asChild>
+            <Link href="/admin/users">👤 ユーザー管理</Link>
+          </DropdownMenuItem>
+        )}
         <DropdownMenuSeparator />
         <DropdownMenuItem
           onClick={handleLogout}

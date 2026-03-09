@@ -9,13 +9,15 @@ export default async function NavBar() {
   } = await supabase.auth.getUser();
 
   let displayName = "";
+  let role: "admin" | "teacher" | "student" = "student";
   if (user) {
     const { data: profile } = await supabase
       .from("profiles")
-      .select("display_name")
+      .select("display_name, role")
       .eq("id", user.id)
       .single();
     displayName = profile?.display_name ?? user.email ?? "";
+    role = profile?.role ?? "student";
   }
 
   return (
@@ -28,7 +30,7 @@ export default async function NavBar() {
           情報Ⅰ 授業プラットフォーム
         </Link>
         <nav className="flex items-center text-sm">
-          {user && <UserMenu displayName={displayName} />}
+          {user && <UserMenu displayName={displayName} role={role} />}
         </nav>
       </div>
     </header>
