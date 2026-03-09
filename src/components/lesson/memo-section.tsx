@@ -1,11 +1,13 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { useEditor, EditorContent } from "@tiptap/react";
+import { useEditor, EditorContent, generateHTML } from "@tiptap/react";
 import StarterKit from "@tiptap/starter-kit";
+import Link from "@tiptap/extension-link";
 import Placeholder from "@tiptap/extension-placeholder";
 import { toast } from "sonner";
 import type { Memo } from "@/lib/db/memos";
+import MemoToolbar from "@/components/lesson/memo-toolbar";
 
 type Props = {
   lessonId: string;
@@ -42,6 +44,7 @@ export default function MemoSection({ lessonId, getCurrentTime, seekTo, onClose 
     },
     extensions: [
       StarterKit,
+      Link.configure({ openOnClick: false }),
       Placeholder.configure({ placeholder: "動画を見て気づいたことや疑問をメモしよう..." }),
     ],
     editorProps: {
@@ -141,6 +144,7 @@ export default function MemoSection({ lessonId, getCurrentTime, seekTo, onClose 
 
       {/* tiptap エディタ */}
       <div className="rounded-md border bg-background focus-within:ring-2 focus-within:ring-ring">
+        {editor && <MemoToolbar editor={editor} />}
         <EditorContent editor={editor} />
       </div>
 
@@ -186,13 +190,12 @@ export default function MemoSection({ lessonId, getCurrentTime, seekTo, onClose 
                     🗑️
                   </button>
                 </div>
-                <p className="text-sm leading-relaxed whitespace-pre-wrap">
-                  {m.content.content
-                    .flatMap((node) => node.content ?? [])
-                    .filter((node) => node.type === "text")
-                    .map((node) => node.text)
-                    .join("")}
-                </p>
+                <div
+                  className="text-sm leading-relaxed prose prose-sm max-w-none"
+                  dangerouslySetInnerHTML={{
+                    __html: generateHTML(m.content, [StarterKit, Link]),
+                  }}
+                />
                 <button
                   onClick={() => handlePost(m)}
                   className="text-xs px-2 py-1 rounded-md border hover:bg-muted transition-colors"
