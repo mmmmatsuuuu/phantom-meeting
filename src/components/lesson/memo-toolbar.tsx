@@ -5,6 +5,7 @@ import { useState } from "react";
 
 type Props = {
   editor: Editor;
+  codeBlockLang: string;
 };
 
 type ToolbarButtonProps = {
@@ -34,7 +35,7 @@ function ToolbarButton({ onClick, isActive, title, children }: ToolbarButtonProp
   );
 }
 
-export default function MemoToolbar({ editor }: Props) {
+export default function MemoToolbar({ editor, codeBlockLang }: Props) {
   const [showLinkInput, setShowLinkInput] = useState(false);
   const [linkUrl, setLinkUrl] = useState("");
 
@@ -108,11 +109,10 @@ export default function MemoToolbar({ editor }: Props) {
 
       {editor.isActive("codeBlock") && (
         <select
-          value={editor.getAttributes("codeBlock").language ?? ""}
+          value={codeBlockLang}
           onChange={(e) =>
-            editor.chain().focus().setCodeBlock({ language: e.target.value || "" }).run()
+            editor.chain().focus().updateAttributes("codeBlock", { language: e.target.value || null }).run()
           }
-          onMouseDown={(e) => e.preventDefault()}
           className="text-xs border rounded px-1.5 py-0.5 bg-background text-foreground focus:outline-none focus:ring-1 focus:ring-ring"
         >
           <option value="">自動検出</option>
