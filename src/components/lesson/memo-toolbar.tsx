@@ -106,6 +106,24 @@ export default function MemoToolbar({ editor }: Props) {
         {"{ }"}
       </ToolbarButton>
 
+      {editor.isActive("codeBlock") && (
+        <select
+          value={editor.getAttributes("codeBlock").language ?? ""}
+          onChange={(e) =>
+            editor.chain().focus().setCodeBlock({ language: e.target.value || "" }).run()
+          }
+          onMouseDown={(e) => e.preventDefault()}
+          className="text-xs border rounded px-1.5 py-0.5 bg-background text-foreground focus:outline-none focus:ring-1 focus:ring-ring"
+        >
+          <option value="">自動検出</option>
+          <option value="javascript">JavaScript</option>
+          <option value="python">Python</option>
+          <option value="c">C言語</option>
+          <option value="xml">HTML</option>
+          <option value="css">CSS</option>
+        </select>
+      )}
+
       <ToolbarButton
         onClick={() => editor.chain().focus().toggleBlockquote().run()}
         isActive={editor.isActive("blockquote")}
