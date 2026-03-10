@@ -45,8 +45,8 @@ export default function LessonContent({
         </div>
       )}
 
-      <div className="grid grid-cols-3 gap-6">
-        <div className={`${memoVisible ? "col-span-2" : "col-span-3"} space-y-8`}>
+      <div className="grid grid-cols-5 gap-6">
+        <div className={`${memoVisible ? "col-span-3" : "col-span-5"} space-y-8`}>
           <LessonTabs
             youtubeUrl={youtubeUrl}
             questions={questions}
@@ -60,7 +60,7 @@ export default function LessonContent({
         </div>
 
         {memoVisible && (
-          <div className="col-span-1">
+          <div className="col-span-2">
             <MemoSection
               lessonId={lessonId}
               getCurrentTime={getCurrentTime}

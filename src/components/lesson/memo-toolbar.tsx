@@ -5,6 +5,7 @@ import { useState } from "react";
 
 type Props = {
   editor: Editor;
+  codeBlockLang: string;
 };
 
 type ToolbarButtonProps = {
@@ -34,7 +35,7 @@ function ToolbarButton({ onClick, isActive, title, children }: ToolbarButtonProp
   );
 }
 
-export default function MemoToolbar({ editor }: Props) {
+export default function MemoToolbar({ editor, codeBlockLang }: Props) {
   const [showLinkInput, setShowLinkInput] = useState(false);
   const [linkUrl, setLinkUrl] = useState("");
 
@@ -80,6 +81,55 @@ export default function MemoToolbar({ editor }: Props) {
         title="箇条書き"
       >
         ≡
+      </ToolbarButton>
+
+      <ToolbarButton
+        onClick={() => editor.chain().focus().toggleOrderedList().run()}
+        isActive={editor.isActive("orderedList")}
+        title="番号付きリスト"
+      >
+        1.
+      </ToolbarButton>
+
+      <ToolbarButton
+        onClick={() => editor.chain().focus().toggleCode().run()}
+        isActive={editor.isActive("code")}
+        title="インラインコード"
+      >
+        {"<>"}
+      </ToolbarButton>
+
+      <ToolbarButton
+        onClick={() => editor.chain().focus().toggleCodeBlock().run()}
+        isActive={editor.isActive("codeBlock")}
+        title="コードブロック"
+      >
+        {"{ }"}
+      </ToolbarButton>
+
+      {editor.isActive("codeBlock") && (
+        <select
+          value={codeBlockLang}
+          onChange={(e) =>
+            editor.chain().focus().updateAttributes("codeBlock", { language: e.target.value || null }).run()
+          }
+          className="text-xs border rounded px-1.5 py-0.5 bg-background text-foreground focus:outline-none focus:ring-1 focus:ring-ring"
+        >
+          <option value="">自動検出</option>
+          <option value="javascript">JavaScript</option>
+          <option value="python">Python</option>
+          <option value="c">C言語</option>
+          <option value="xml">HTML</option>
+          <option value="css">CSS</option>
+        </select>
+      )}
+
+      <ToolbarButton
+        onClick={() => editor.chain().focus().toggleBlockquote().run()}
+        isActive={editor.isActive("blockquote")}
+        title="コールアウト"
+      >
+        ▌
       </ToolbarButton>
 
       <ToolbarButton

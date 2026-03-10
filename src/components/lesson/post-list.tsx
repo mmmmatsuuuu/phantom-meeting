@@ -1,11 +1,9 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { generateHTML } from "@tiptap/react";
-import StarterKit from "@tiptap/starter-kit";
-import Link from "@tiptap/extension-link";
 import { createClient } from "@/lib/supabase/client";
 import type { Post } from "@/lib/db/posts";
+import RichContent from "@/components/shared/rich-content";
 
 type Props = {
   lessonId: string;
@@ -124,12 +122,7 @@ export default function PostList({ lessonId, currentUserId, seekTo }: Props) {
                     📍 {formatTimestamp(post.timestamp_seconds)}
                   </button>
                 )}
-                <div
-                  className="rich-content"
-                  dangerouslySetInnerHTML={{
-                    __html: generateHTML(post.content, [StarterKit, Link]),
-                  }}
-                />
+                <RichContent content={post.content as Record<string, unknown>} />
                 <p className="text-xs text-muted-foreground mt-3">{formatDate(post.created_at)}</p>
               </div>
             );
