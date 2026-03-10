@@ -113,6 +113,22 @@
   @apply text-primary underline underline-offset-2;
 }
 
+.ProseMirror code {
+  @apply bg-muted text-foreground font-mono text-xs px-1 py-0.5 rounded;
+}
+
+.ProseMirror pre {
+  @apply bg-muted rounded-md p-3 my-2 overflow-x-auto;
+}
+
+.ProseMirror pre code {
+  @apply bg-transparent p-0 text-xs font-mono;
+}
+
+.ProseMirror blockquote {
+  @apply border-l-4 border-primary/40 bg-primary/5 pl-3 py-1 my-2 rounded-r-md text-sm;
+}
+
 .ProseMirror p.is-editor-empty:first-child::before {
   @apply text-muted-foreground;
   content: attr(data-placeholder);
@@ -156,4 +172,20 @@
 
 .rich-content p + p {
   @apply mt-1;
+}
+
+.rich-content code {
+  @apply bg-muted text-foreground font-mono text-xs px-1 py-0.5 rounded;
+}
+
+.rich-content pre {
+  @apply bg-muted rounded-md p-3 my-2 overflow-x-auto;
+}
+
+.rich-content pre code {
+  @apply bg-transparent p-0 text-xs font-mono;
+}
+
+.rich-content blockquote {
+  @apply border-l-4 border-primary/40 bg-primary/5 pl-3 py-1 my-2 rounded-r-md text-sm;
 }

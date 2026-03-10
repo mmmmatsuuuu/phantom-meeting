@@ -83,6 +83,38 @@ export default function MemoToolbar({ editor }: Props) {
       </ToolbarButton>
 
       <ToolbarButton
+        onClick={() => editor.chain().focus().toggleOrderedList().run()}
+        isActive={editor.isActive("orderedList")}
+        title="番号付きリスト"
+      >
+        1.
+      </ToolbarButton>
+
+      <ToolbarButton
+        onClick={() => editor.chain().focus().toggleCode().run()}
+        isActive={editor.isActive("code")}
+        title="インラインコード"
+      >
+        {"<>"}
+      </ToolbarButton>
+
+      <ToolbarButton
+        onClick={() => editor.chain().focus().toggleCodeBlock().run()}
+        isActive={editor.isActive("codeBlock")}
+        title="コードブロック"
+      >
+        {"{ }"}
+      </ToolbarButton>
+
+      <ToolbarButton
+        onClick={() => editor.chain().focus().toggleBlockquote().run()}
+        isActive={editor.isActive("blockquote")}
+        title="コールアウト"
+      >
+        ▌
+      </ToolbarButton>
+
+      <ToolbarButton
         onClick={() => setShowLinkInput((v) => !v)}
         isActive={editor.isActive("link") || showLinkInput}
         title="リンク"
