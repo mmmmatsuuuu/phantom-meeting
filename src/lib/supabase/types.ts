@@ -216,6 +216,7 @@ export type Database = {
         Row: {
           content: Json
           correct_answer: Json
+          explanation: Json | null
           id: string
           options: Json | null
           order: number
@@ -225,6 +226,7 @@ export type Database = {
         Insert: {
           content?: Json
           correct_answer?: Json
+          explanation?: Json | null
           id?: string
           options?: Json | null
           order?: number
@@ -234,6 +236,7 @@ export type Database = {
         Update: {
           content?: Json
           correct_answer?: Json
+          explanation?: Json | null
           id?: string
           options?: Json | null
           order?: number
