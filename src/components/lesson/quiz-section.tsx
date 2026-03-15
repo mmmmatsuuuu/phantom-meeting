@@ -241,6 +241,14 @@ function QuestionCard({ question, index, answer, onAnswerChange, state }: Questi
           )}
         </div>
       )}
+
+      {/* 解説（提出後に正解・不正解関係なく表示） */}
+      {isSubmitted && question.explanation && (
+        <div className="pl-5 pt-2 border-t">
+          <p className="text-xs font-medium text-muted-foreground mb-1">解説</p>
+          <RichContent content={question.explanation as Record<string, unknown>} />
+        </div>
+      )}
     </div>
   );
 }
