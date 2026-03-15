@@ -12,7 +12,7 @@ export default async function ProfilePage() {
 
   const { data: profile } = await supabase
     .from("profiles")
-    .select("display_name, student_number, note")
+    .select("student_number, note")
     .eq("id", user.id)
     .single();
 
@@ -29,7 +29,6 @@ export default async function ProfilePage() {
 
       <div className="bg-card border rounded-xl p-6">
         <ProfileEditForm
-          initialDisplayName={profile.display_name}
           initialStudentNumber={profile.student_number}
           initialNote={profile.note}
         />
