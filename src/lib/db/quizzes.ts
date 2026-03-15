@@ -9,14 +9,17 @@ export type QuizWithQuestions = Quiz & { questions: QuizQuestion[] };
 
 export type CreateQuizQuestionInput = {
   type: QuizQuestionType;
-  content: Record<string, unknown>; // tiptap JSON
+  content: Record<string, unknown>; // tiptap JSON（問題文）
+  explanation: Record<string, unknown> | null; // tiptap JSON（解説）
   options: string[] | null;
   correctAnswer:
-    | { index: number }       // multiple_choice
-    | { text: string }        // short_answer
-    | string[];               // ordering（正解順）
+    | { index: number }  // multiple_choice
+    | { text: string }   // short_answer
+    | string[];          // ordering（正解順）
   order: number;
 };
+
+type InsertRow = Database["public"]["Tables"]["quiz_questions"]["Insert"];
 
 /**
  * レッスンに紐づくクイズと問題一覧を取得する
@@ -67,9 +70,10 @@ export async function createQuiz(params: {
     const rows = params.questions.map((q) => ({
       quiz_id: quiz.id,
       type: q.type,
-      content: q.content,
-      options: q.options as Database["public"]["Tables"]["quiz_questions"]["Insert"]["options"],
-      correct_answer: q.correctAnswer as Database["public"]["Tables"]["quiz_questions"]["Insert"]["correct_answer"],
+      content: q.content as InsertRow["content"],
+      explanation: q.explanation as InsertRow["explanation"],
+      options: q.options as InsertRow["options"],
+      correct_answer: q.correctAnswer as InsertRow["correct_answer"],
       order: q.order,
     }));
 
@@ -81,6 +85,53 @@ export async function createQuiz(params: {
   }
 
   return quiz;
+}
+
+/**
+ * 既存クイズに問題を1件追加する（teacher/admin のみ）
+ */
+export async function addQuizQuestion(
+  quizId: string,
+  input: Omit<CreateQuizQuestionInput, "order">
+): Promise<QuizQuestion | null> {
+  const supabase = await createClient();
+
+  // 現在の問題数を order として使用
+  const { count } = await supabase
+    .from("quiz_questions")
+    .select("*", { count: "exact", head: true })
+    .eq("quiz_id", quizId);
+
+  const row = {
+    quiz_id: quizId,
+    type: input.type,
+    content: input.content as InsertRow["content"],
+    explanation: input.explanation as InsertRow["explanation"],
+    options: input.options as InsertRow["options"],
+    correct_answer: input.correctAnswer as InsertRow["correct_answer"],
+    order: count ?? 0,
+  };
+
+  const { data, error } = await supabase
+    .from("quiz_questions")
+    .insert(row)
+    .select()
+    .single();
+
+  if (error || !data) return null;
+  return data;
+}
+
+/**
+ * 問題を1件削除する（teacher/admin のみ）
+ */
+export async function deleteQuizQuestion(questionId: string): Promise<boolean> {
+  const supabase = await createClient();
+  const { error } = await supabase
+    .from("quiz_questions")
+    .delete()
+    .eq("id", questionId);
+  return !error;
 }
 
 /**

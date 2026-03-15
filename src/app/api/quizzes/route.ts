@@ -6,6 +6,7 @@ import type { CreateQuizQuestionInput, QuizQuestionType } from "@/lib/db/quizzes
 type QuestionPayload = {
   type: QuizQuestionType;
   content: Record<string, unknown>;
+  explanation: Record<string, unknown> | null;
   options: string[] | null;
   correctAnswer:
     | { index: number }
@@ -46,6 +47,7 @@ export async function POST(req: NextRequest) {
   const inputs: CreateQuizQuestionInput[] = questions.map((q, i) => ({
     type: q.type,
     content: q.content,
+    explanation: q.explanation,
     options: q.options,
     correctAnswer: q.correctAnswer,
     order: i,

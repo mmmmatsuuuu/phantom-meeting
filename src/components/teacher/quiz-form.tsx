@@ -12,10 +12,13 @@ const QUESTION_TYPE_LABELS: Record<QuizQuestionType, string> = {
   ordering: "並び替え",
 };
 
+const EMPTY_DOC = { type: "doc", content: [{ type: "paragraph" }] };
+
 type QuestionFormData = {
   uid: string;
   type: QuizQuestionType;
   content: Record<string, unknown>;
+  explanation: Record<string, unknown>;
   options: string[];
   correctAnswerIndex: number;
   correctAnswerText: string;
@@ -25,8 +28,9 @@ function createEmptyQuestion(type: QuizQuestionType): QuestionFormData {
   return {
     uid: crypto.randomUUID(),
     type,
-    content: { type: "doc", content: [{ type: "paragraph" }] },
-    options: type === "multiple_choice" ? ["", "", "", ""] : ["", ""],
+    content: EMPTY_DOC,
+    explanation: EMPTY_DOC,
+    options: type === "multiple_choice" ? ["", ""] : ["", ""],
     correctAnswerIndex: 0,
     correctAnswerText: "",
   };
@@ -48,6 +52,15 @@ export default function QuizForm({ lessonId }: Props) {
     (uid: string, content: Record<string, unknown>) => {
       setQuestions((prev) =>
         prev.map((q) => (q.uid === uid ? { ...q, content } : q))
+      );
+    },
+    []
+  );
+
+  const handleExplanationChange = useCallback(
+    (uid: string, explanation: Record<string, unknown>) => {
+      setQuestions((prev) =>
+        prev.map((q) => (q.uid === uid ? { ...q, explanation } : q))
       );
     },
     []
@@ -106,10 +119,16 @@ export default function QuizForm({ lessonId }: Props) {
       lessonId,
       title: title.trim(),
       questions: questions.map((q) => {
+        const explanation =
+          JSON.stringify(q.explanation) !== JSON.stringify(EMPTY_DOC)
+            ? q.explanation
+            : null;
+
         if (q.type === "multiple_choice") {
           return {
             type: q.type,
             content: q.content,
+            explanation,
             options: q.options,
             correctAnswer: { index: q.correctAnswerIndex },
           };
@@ -118,14 +137,16 @@ export default function QuizForm({ lessonId }: Props) {
           return {
             type: q.type,
             content: q.content,
+            explanation,
             options: null,
             correctAnswer: { text: q.correctAnswerText },
           };
         }
-        // ordering: 入力順が正解順
+        // ordering
         return {
           type: q.type,
           content: q.content,
+          explanation,
           options: q.options,
           correctAnswer: [...q.options],
         };
@@ -173,8 +194,7 @@ export default function QuizForm({ lessonId }: Props) {
                     const type = e.target.value as QuizQuestionType;
                     updateQuestion(q.uid, {
                       type,
-                      options:
-                        type === "multiple_choice" ? ["", "", "", ""] : ["", ""],
+                      options: ["", ""],
                       correctAnswerIndex: 0,
                       correctAnswerText: "",
                     });
@@ -201,19 +221,22 @@ export default function QuizForm({ lessonId }: Props) {
               </div>
             </div>
 
+            {/* 問題文 */}
             <div>
               <p className="text-xs text-muted-foreground mb-1">問題文</p>
               <QuizQuestionEditor
                 uid={q.uid}
                 initialContent={q.content}
                 onChange={handleContentChange}
+                placeholder="問題文を入力..."
               />
             </div>
 
+            {/* 選択式 */}
             {q.type === "multiple_choice" && (
               <div className="space-y-2">
                 <p className="text-xs text-muted-foreground">
-                  選択肢（正解をラジオボタンで選択）
+                  選択肢（正解をラジオボタンで選択、最低2つ）
                 </p>
                 {q.options.map((opt, i) => (
                   <div key={i} className="flex items-center gap-2">
@@ -235,11 +258,28 @@ export default function QuizForm({ lessonId }: Props) {
                       placeholder={`選択肢 ${String.fromCharCode(65 + i)}`}
                       className="flex-1 border rounded px-2 py-1 text-sm bg-background focus:outline-none focus:ring-1 focus:ring-ring"
                     />
+                    {q.options.length > 2 && (
+                      <button
+                        type="button"
+                        onClick={() => removeOption(q.uid, i)}
+                        className="text-xs text-destructive hover:underline shrink-0"
+                      >
+                        削除
+                      </button>
+                    )}
                   </div>
                 ))}
+                <button
+                  type="button"
+                  onClick={() => addOption(q.uid)}
+                  className="text-xs text-primary hover:underline"
+                >
+                  + 選択肢を追加
+                </button>
               </div>
             )}
 
+            {/* 記述式 */}
             {q.type === "short_answer" && (
               <div className="space-y-1">
                 <p className="text-xs text-muted-foreground">模範解答</p>
@@ -255,16 +295,15 @@ export default function QuizForm({ lessonId }: Props) {
               </div>
             )}
 
+            {/* 並び替え */}
             {q.type === "ordering" && (
               <div className="space-y-2">
                 <p className="text-xs text-muted-foreground">
-                  並び替え要素（正しい順番で入力）
+                  並び替え要素（正しい順番で入力、最低2つ）
                 </p>
                 {q.options.map((item, i) => (
                   <div key={i} className="flex items-center gap-2">
-                    <span className="text-xs text-muted-foreground w-4">
-                      {i + 1}.
-                    </span>
+                    <span className="text-xs text-muted-foreground w-4">{i + 1}.</span>
                     <input
                       type="text"
                       value={item}
@@ -296,6 +335,17 @@ export default function QuizForm({ lessonId }: Props) {
                 </button>
               </div>
             )}
+
+            {/* 解説 */}
+            <div>
+              <p className="text-xs text-muted-foreground mb-1">解説（任意）</p>
+              <QuizQuestionEditor
+                uid={`${q.uid}-explanation`}
+                initialContent={q.explanation}
+                onChange={handleExplanationChange}
+                placeholder="解説を入力（省略可）..."
+              />
+            </div>
           </div>
         ))}
       </div>

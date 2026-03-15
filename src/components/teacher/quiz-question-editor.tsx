@@ -25,9 +25,10 @@ type Props = {
   uid: string;
   initialContent: Record<string, unknown>;
   onChange: (uid: string, content: Record<string, unknown>) => void;
+  placeholder?: string;
 };
 
-export default function QuizQuestionEditor({ uid, initialContent, onChange }: Props) {
+export default function QuizQuestionEditor({ uid, initialContent, onChange, placeholder }: Props) {
   const [codeBlockLang, setCodeBlockLang] = useState("");
   const [isCodeBlockActive, setIsCodeBlockActive] = useState(false);
 
@@ -55,7 +56,7 @@ export default function QuizQuestionEditor({ uid, initialContent, onChange }: Pr
       StarterKit.configure({ codeBlock: false }),
       Link.configure({ openOnClick: false }),
       CodeBlockLowlight.configure({ lowlight }),
-      Placeholder.configure({ placeholder: "問題文を入力..." }),
+      Placeholder.configure({ placeholder: placeholder ?? "問題文を入力..." }),
     ],
     editorProps: {
       attributes: {
