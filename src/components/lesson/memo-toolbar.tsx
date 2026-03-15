@@ -6,6 +6,7 @@ import { useState } from "react";
 type Props = {
   editor: Editor;
   codeBlockLang: string;
+  isCodeBlockActive: boolean;
 };
 
 type ToolbarButtonProps = {
@@ -35,7 +36,7 @@ function ToolbarButton({ onClick, isActive, title, children }: ToolbarButtonProp
   );
 }
 
-export default function MemoToolbar({ editor, codeBlockLang }: Props) {
+export default function MemoToolbar({ editor, codeBlockLang, isCodeBlockActive }: Props) {
   const [showLinkInput, setShowLinkInput] = useState(false);
   const [linkUrl, setLinkUrl] = useState("");
 
@@ -107,7 +108,7 @@ export default function MemoToolbar({ editor, codeBlockLang }: Props) {
         {"{ }"}
       </ToolbarButton>
 
-      {editor.isActive("codeBlock") && (
+      {isCodeBlockActive && (
         <select
           value={codeBlockLang}
           onChange={(e) =>

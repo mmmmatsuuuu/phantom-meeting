@@ -52,12 +52,13 @@ export default function MemoSection({ lessonId, getCurrentTime, seekTo, onClose 
   const [saveState, setSaveState] = useState<"idle" | "saving" | "saved">("idle");
   const [editorEmpty, setEditorEmpty] = useState(true);
   const [codeBlockLang, setCodeBlockLang] = useState<string>("");
+  const [isCodeBlockActive, setIsCodeBlockActive] = useState(false);
 
   const syncEditorState = (editor: Parameters<NonNullable<Parameters<typeof useEditor>[0]["onUpdate"]>>[0]["editor"]) => {
+    const active = editor.isActive("codeBlock");
     setEditorEmpty(editor.isEmpty);
-    setCodeBlockLang(
-      editor.isActive("codeBlock") ? (editor.getAttributes("codeBlock").language ?? "") : ""
-    );
+    setIsCodeBlockActive(active);
+    setCodeBlockLang(active ? (editor.getAttributes("codeBlock").language ?? "") : "");
   };
 
   const editor = useEditor({
@@ -171,7 +172,7 @@ export default function MemoSection({ lessonId, getCurrentTime, seekTo, onClose 
 
       {/* tiptap エディタ */}
       <div className="rounded-md border bg-background focus-within:ring-2 focus-within:ring-ring">
-        {editor && <MemoToolbar editor={editor} codeBlockLang={codeBlockLang} />}
+        {editor && <MemoToolbar editor={editor} codeBlockLang={codeBlockLang} isCodeBlockActive={isCodeBlockActive} />}
         <EditorContent editor={editor} />
       </div>
 
