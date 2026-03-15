@@ -189,13 +189,20 @@ export default function MemoSection({ lessonId, getCurrentTime, seekTo, onClose 
       </button>
 
       {/* 過去のメモ タイムライン */}
-      {memos.length > 0 && (
-        <div className="pt-1 space-y-2">
-          <p className="text-xs font-semibold text-muted-foreground uppercase tracking-widest">
-            過去のメモ
-          </p>
-          <div className="space-y-2">
-            {memos.map((m) => (
+      <div className="pt-1 space-y-2">
+        <p className="text-xs font-semibold text-muted-foreground uppercase tracking-widest">
+          過去のメモ
+        </p>
+        {memos.length === 0 ? (
+          <div className="flex flex-col items-center py-6 text-center text-muted-foreground">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.5} className="w-8 h-8 mb-2 opacity-40">
+              <path strokeLinecap="round" strokeLinejoin="round" d="M16.862 4.487l1.687-1.688a1.875 1.875 0 112.652 2.652L10.582 16.07a4.5 4.5 0 01-1.897 1.13L6 18l.8-2.685a4.5 4.5 0 011.13-1.897l8.932-8.931zm0 0L19.5 7.125M18 14v4.75A2.25 2.25 0 0115.75 21H5.25A2.25 2.25 0 013 18.75V8.25A2.25 2.25 0 015.25 6H10" />
+            </svg>
+            <p className="text-xs">メモを保存するとここに表示されます</p>
+          </div>
+        ) : (
+        <div className="space-y-2">
+          {memos.map((m) => (
               <div key={m.id} className="p-3 rounded-md border bg-background space-y-1.5">
                 <div className="flex items-start justify-between gap-2">
                   <p className="text-xs text-muted-foreground">
@@ -228,8 +235,8 @@ export default function MemoSection({ lessonId, getCurrentTime, seekTo, onClose 
               </div>
             ))}
           </div>
-        </div>
-      )}
+        )}
+      </div>
     </div>
   );
 }
