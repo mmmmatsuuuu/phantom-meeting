@@ -219,10 +219,9 @@ export default function MemoSection({ lessonId, getCurrentTime, seekTo, onClose 
                   </p>
                   <button
                     onClick={() => handleDelete(m.id)}
-                    className="text-xs text-muted-foreground hover:text-destructive transition-colors shrink-0"
-                    aria-label="メモを削除"
+                    className="text-xs px-2 py-0.5 rounded border border-destructive/30 text-destructive hover:bg-destructive/10 transition-colors shrink-0"
                   >
-                    🗑️
+                    削除
                   </button>
                 </div>
                 <RichContent content={m.content as Record<string, unknown>} />

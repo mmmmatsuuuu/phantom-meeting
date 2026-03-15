@@ -180,17 +180,15 @@ export default function ContentsManager({ initialSubjects }: Props) {
                     onClick={() =>
                       setEditing({ type: "subject", id: subject.id, name: subject.name })
                     }
-                    className="text-xs text-muted-foreground hover:text-foreground transition-colors px-1"
-                    aria-label="科目名を編集"
+                    className="text-xs px-2 py-1 rounded border hover:bg-muted transition-colors"
                   >
-                    ✏️
+                    編集
                   </button>
                   <button
                     onClick={() => handleDeleteSubject(subject.id)}
-                    className="text-xs text-muted-foreground hover:text-destructive transition-colors px-1"
-                    aria-label="科目を削除"
+                    className="text-xs px-2 py-1 rounded border border-destructive/30 text-destructive hover:bg-destructive/10 transition-colors"
                   >
-                    🗑️
+                    削除
                   </button>
                 </>
               )}
@@ -245,17 +243,15 @@ export default function ContentsManager({ initialSubjects }: Props) {
                           onClick={() =>
                             setEditing({ type: "unit", id: unit.id, name: unit.name })
                           }
-                          className="text-xs text-muted-foreground hover:text-foreground transition-colors px-1"
-                          aria-label="単元名を編集"
+                          className="text-xs px-2 py-1 rounded border hover:bg-muted transition-colors"
                         >
-                          ✏️
+                          編集
                         </button>
                         <button
                           onClick={() => handleDeleteUnit(unit.id, subject.id)}
-                          className="text-xs text-muted-foreground hover:text-destructive transition-colors px-1"
-                          aria-label="単元を削除"
+                          className="text-xs px-2 py-1 rounded border border-destructive/30 text-destructive hover:bg-destructive/10 transition-colors"
                         >
-                          🗑️
+                          削除
                         </button>
                       </>
                     )}

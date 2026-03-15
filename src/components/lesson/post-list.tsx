@@ -113,10 +113,9 @@ export default function PostList({ lessonId, currentUserId, seekTo }: Props) {
                   {isMyPost && (
                     <button
                       onClick={() => handleDelete(post.id)}
-                      className="text-xs text-muted-foreground hover:text-destructive transition-colors shrink-0"
-                      aria-label="投稿を削除"
+                      className="text-xs px-2 py-0.5 rounded border border-destructive/30 text-destructive hover:bg-destructive/10 transition-colors shrink-0"
                     >
-                      🗑️
+                      削除
                     </button>
                   )}
                 </div>
