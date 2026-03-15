@@ -20,6 +20,21 @@ export async function getPendingTeachers(): Promise<Profile[]> {
 }
 
 /**
+ * 全ユーザーのプロフィール一覧を取得する（teacher/admin 用）
+ */
+export async function getAllProfiles(): Promise<Profile[]> {
+  const supabase = await createClient();
+  const { data, error } = await supabase
+    .from("profiles")
+    .select("*")
+    .eq("role", "student")
+    .order("student_number", { ascending: true, nullsFirst: false });
+
+  if (error || !data) return [];
+  return data;
+}
+
+/**
  * ユーザーを teacher として承認する（role='teacher' に昇格）
  */
 export async function approveUser(userId: string): Promise<boolean> {
