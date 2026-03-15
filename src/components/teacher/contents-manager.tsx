@@ -3,7 +3,7 @@
 import { useState } from "react";
 import Link from "next/link";
 import { toast } from "sonner";
-import type { SubjectWithUnits, Subject, Unit } from "@/lib/db/contents";
+import type { SubjectWithUnits, Subject, Unit, Lesson } from "@/lib/db/contents";
 
 type Props = {
   initialSubjects: SubjectWithUnits[];
@@ -199,64 +199,85 @@ export default function ContentsManager({ initialSubjects }: Props) {
             {/* 単元リスト */}
             <div className="divide-y">
               {subject.units.map((unit) => (
-                <div key={unit.id} className="flex items-center gap-2 px-6 py-2.5">
-                  {editing?.type === "unit" && editing.id === unit.id ? (
-                    <form
-                      className="flex flex-1 gap-2"
-                      onSubmit={(e) => {
-                        e.preventDefault();
-                        if (editing.type === "unit") handleUpdateUnit(unit.id, editing.name);
-                      }}
+                <div key={unit.id}>
+                  {/* 単元行 */}
+                  <div className="flex items-center gap-2 px-6 py-2.5">
+                    {editing?.type === "unit" && editing.id === unit.id ? (
+                      <form
+                        className="flex flex-1 gap-2"
+                        onSubmit={(e) => {
+                          e.preventDefault();
+                          if (editing.type === "unit") handleUpdateUnit(unit.id, editing.name);
+                        }}
+                      >
+                        <input
+                          autoFocus
+                          className="flex-1 px-2 py-1 rounded border bg-background text-sm focus:outline-none focus:ring-2 focus:ring-ring"
+                          value={editing.name}
+                          onChange={(e) =>
+                            setEditing({ type: "unit", id: unit.id, name: e.target.value })
+                          }
+                        />
+                        <button
+                          type="submit"
+                          className="px-3 py-1 text-xs rounded bg-primary text-primary-foreground"
+                        >
+                          保存
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => setEditing(null)}
+                          className="px-3 py-1 text-xs rounded border hover:bg-muted"
+                        >
+                          キャンセル
+                        </button>
+                      </form>
+                    ) : (
+                      <>
+                        <span className="flex-1 text-sm font-medium">{unit.name}</span>
+                        <Link
+                          href={`/teacher/lessons/new?unitId=${unit.id}`}
+                          className="text-xs px-2 py-1 rounded border hover:bg-muted transition-colors"
+                        >
+                          📺 レッスン追加
+                        </Link>
+                        <button
+                          onClick={() =>
+                            setEditing({ type: "unit", id: unit.id, name: unit.name })
+                          }
+                          className="text-xs text-muted-foreground hover:text-foreground transition-colors px-1"
+                          aria-label="単元名を編集"
+                        >
+                          ✏️
+                        </button>
+                        <button
+                          onClick={() => handleDeleteUnit(unit.id, subject.id)}
+                          className="text-xs text-muted-foreground hover:text-destructive transition-colors px-1"
+                          aria-label="単元を削除"
+                        >
+                          🗑️
+                        </button>
+                      </>
+                    )}
+                  </div>
+
+                  {/* レッスン行 */}
+                  {unit.lessons.map((lesson: Lesson) => (
+                    <div
+                      key={lesson.id}
+                      className="flex items-center gap-2 px-10 py-2 border-t bg-muted/20"
                     >
-                      <input
-                        autoFocus
-                        className="flex-1 px-2 py-1 rounded border bg-background text-sm focus:outline-none focus:ring-2 focus:ring-ring"
-                        value={editing.name}
-                        onChange={(e) =>
-                          setEditing({ type: "unit", id: unit.id, name: e.target.value })
-                        }
-                      />
-                      <button
-                        type="submit"
-                        className="px-3 py-1 text-xs rounded bg-primary text-primary-foreground"
-                      >
-                        保存
-                      </button>
-                      <button
-                        type="button"
-                        onClick={() => setEditing(null)}
-                        className="px-3 py-1 text-xs rounded border hover:bg-muted"
-                      >
-                        キャンセル
-                      </button>
-                    </form>
-                  ) : (
-                    <>
-                      <span className="flex-1 text-sm">{unit.name}</span>
+                      <span className="flex-1 text-sm text-muted-foreground">
+                        📺 {lesson.title}
+                      </span>
                       <Link
-                        href={`/teacher/lessons/new?unitId=${unit.id}`}
+                        href={`/teacher/lessons/${lesson.id}/quiz/new`}
                         className="text-xs px-2 py-1 rounded border hover:bg-muted transition-colors"
                       >
-                        📺 レッスン追加
+                        📝 小テスト
                       </Link>
-                      <button
-                        onClick={() =>
-                          setEditing({ type: "unit", id: unit.id, name: unit.name })
-                        }
-                        className="text-xs text-muted-foreground hover:text-foreground transition-colors px-1"
-                        aria-label="単元名を編集"
-                      >
-                        ✏️
-                      </button>
-                      <button
-                        onClick={() => handleDeleteUnit(unit.id, subject.id)}
-                        className="text-xs text-muted-foreground hover:text-destructive transition-colors px-1"
-                        aria-label="単元を削除"
-                      >
-                        🗑️
-                      </button>
-                    </>
-                  )}
+                    </div>
+                  ))}
                 </div>
               ))}
 

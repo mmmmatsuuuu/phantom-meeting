@@ -1,6 +1,7 @@
 import { notFound } from "next/navigation";
 import Link from "next/link";
 import { getLessonWithQuestions } from "@/lib/db/contents";
+import { getQuizWithQuestions } from "@/lib/db/quizzes";
 import { createClient } from "@/lib/supabase/server";
 import LessonContent from "@/components/lesson/lesson-content";
 
@@ -12,8 +13,9 @@ export default async function LessonPage({ params }: Props) {
   const { lessonId } = await params;
 
   const supabase = await createClient();
-  const [lesson, { data: { user } }] = await Promise.all([
+  const [lesson, quiz, { data: { user } }] = await Promise.all([
     getLessonWithQuestions(lessonId),
+    getQuizWithQuestions(lessonId),
     supabase.auth.getUser(),
   ]);
 
@@ -44,6 +46,7 @@ export default async function LessonPage({ params }: Props) {
         lessonId={lessonId}
         youtubeUrl={lesson.youtube_url}
         questions={questions}
+        quiz={quiz}
         currentUserId={user.id}
       />
     </div>

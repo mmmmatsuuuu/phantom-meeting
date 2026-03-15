@@ -4,17 +4,20 @@ import { useState } from "react";
 import type { YouTubePlayer } from "react-youtube";
 import VideoPlayer from "@/components/lesson/video-player";
 import QuestionSection from "@/components/lesson/question-section";
+import QuizSection from "@/components/lesson/quiz-section";
 import type { Question } from "@/lib/db/contents";
+import type { QuizWithQuestions } from "@/lib/db/quizzes";
 
 type Tab = "video" | "quiz";
 
 type Props = {
   youtubeUrl: string;
   questions: Question[];
+  quiz: QuizWithQuestions | null;
   onPlayerReady: (player: YouTubePlayer) => void;
 };
 
-export default function LessonTabs({ youtubeUrl, questions, onPlayerReady }: Props) {
+export default function LessonTabs({ youtubeUrl, questions, quiz, onPlayerReady }: Props) {
   const [activeTab, setActiveTab] = useState<Tab>("video");
 
   return (
@@ -51,12 +54,16 @@ export default function LessonTabs({ youtubeUrl, questions, onPlayerReady }: Pro
         </div>
       )}
 
-      {/* 小テストタブ（準備中） */}
+      {/* 小テストタブ */}
       {activeTab === "quiz" && (
-        <div className="aspect-video rounded-md border bg-card flex flex-col items-center justify-center gap-2 text-center">
-          <span className="text-4xl">🚧</span>
-          <p className="text-sm text-muted-foreground">小テストは準備中です</p>
-        </div>
+        quiz ? (
+          <QuizSection quiz={quiz} />
+        ) : (
+          <div className="aspect-video rounded-md border bg-card flex flex-col items-center justify-center gap-2 text-center">
+            <span className="text-4xl">📝</span>
+            <p className="text-sm text-muted-foreground">このレッスンにはまだ小テストがありません</p>
+          </div>
+        )
       )}
     </div>
   );

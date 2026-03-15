@@ -3,6 +3,7 @@
 import { useState, useRef } from "react";
 import type { YouTubePlayer } from "react-youtube";
 import type { Question } from "@/lib/db/contents";
+import type { QuizWithQuestions } from "@/lib/db/quizzes";
 import LessonTabs from "@/components/lesson/lesson-tabs";
 import MemoSection from "@/components/lesson/memo-section";
 import PostList from "@/components/lesson/post-list";
@@ -11,6 +12,7 @@ type Props = {
   lessonId: string;
   youtubeUrl: string;
   questions: Question[];
+  quiz: QuizWithQuestions | null;
   currentUserId: string;
 };
 
@@ -18,6 +20,7 @@ export default function LessonContent({
   lessonId,
   youtubeUrl,
   questions,
+  quiz,
   currentUserId,
 }: Props) {
   const [memoVisible, setMemoVisible] = useState(true);
@@ -50,6 +53,7 @@ export default function LessonContent({
           <LessonTabs
             youtubeUrl={youtubeUrl}
             questions={questions}
+            quiz={quiz}
             onPlayerReady={(player) => {
               playerRef.current = player;
             }}
