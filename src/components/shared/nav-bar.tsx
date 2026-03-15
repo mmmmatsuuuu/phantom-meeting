@@ -25,9 +25,20 @@ export default async function NavBar() {
       <div className="max-w-7xl mx-auto px-4 h-14 flex items-center justify-between">
         <Link
           href="/"
-          className="font-bold text-lg text-foreground hover:opacity-80 transition-opacity"
+          className="flex items-center gap-2 hover:opacity-80 transition-opacity"
         >
-          情報Ⅰ 授業プラットフォーム
+          <span className="flex items-center justify-center w-7 h-7 rounded-full bg-indigo-600">
+            <svg
+              viewBox="0 0 24 24"
+              fill="white"
+              className="w-3.5 h-3.5 ml-0.5"
+            >
+              <path d="M8 5v14l11-7z" />
+            </svg>
+          </span>
+          <span className="font-bold text-lg text-foreground">
+            情報Ⅰ 授業プラットフォーム
+          </span>
         </Link>
         <nav className="flex items-center text-sm">
           {user && <UserMenu displayName={displayName} role={role} />}

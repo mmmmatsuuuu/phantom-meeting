@@ -90,7 +90,13 @@ export default function PostList({ lessonId, currentUserId, seekTo }: Props) {
       </h2>
 
       {posts.length === 0 ? (
-        <p className="text-sm text-muted-foreground">📭 まだ投稿はありません。</p>
+        <div className="flex flex-col items-center py-10 text-center text-muted-foreground">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.5} className="w-10 h-10 mb-3 opacity-40">
+            <path strokeLinecap="round" strokeLinejoin="round" d="M8.625 9.75a.375.375 0 11-.75 0 .375.375 0 01.75 0zm0 0H8.25m4.125 0a.375.375 0 11-.75 0 .375.375 0 01.75 0zm0 0H12m4.125 0a.375.375 0 11-.75 0 .375.375 0 01.75 0zm0 0h-.375m-13.5 3.01c0 1.6 1.123 2.994 2.707 3.227 1.087.16 2.185.283 3.293.369V21l4.184-4.183a1.14 1.14 0 01.778-.332 48.294 48.294 0 005.83-.498c1.585-.233 2.708-1.626 2.708-3.228V6.741c0-1.602-1.123-2.995-2.707-3.228A48.394 48.394 0 0012 3c-2.392 0-4.744.175-7.043.513C3.373 3.746 2.25 5.14 2.25 6.741v6.018z" />
+          </svg>
+          <p className="text-sm font-medium">まだ投稿はありません</p>
+          <p className="text-xs mt-1">メモをクラスに共有してみましょう</p>
+        </div>
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
           {posts.map((post) => {
@@ -107,10 +113,9 @@ export default function PostList({ lessonId, currentUserId, seekTo }: Props) {
                   {isMyPost && (
                     <button
                       onClick={() => handleDelete(post.id)}
-                      className="text-xs text-muted-foreground hover:text-destructive transition-colors shrink-0"
-                      aria-label="投稿を削除"
+                      className="text-xs px-2 py-0.5 rounded border border-destructive/30 text-destructive hover:bg-destructive/10 transition-colors shrink-0"
                     >
-                      🗑️
+                      削除
                     </button>
                   )}
                 </div>

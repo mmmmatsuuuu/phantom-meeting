@@ -28,8 +28,11 @@ export default function UserMenu({ displayName, role }: Props) {
 
   return (
     <DropdownMenu>
-      <DropdownMenuTrigger className="flex items-center gap-1.5 text-sm text-muted-foreground hover:text-foreground transition-colors outline-none">
-        <span className="max-w-[160px] truncate">{displayName}</span>
+      <DropdownMenuTrigger className="flex items-center gap-2 rounded-full pl-1 pr-2.5 py-1 text-sm hover:bg-muted transition-colors outline-none border">
+        <span className="flex items-center justify-center w-7 h-7 rounded-full bg-indigo-600 text-white text-xs font-bold shrink-0">
+          {displayName.charAt(0) || "?"}
+        </span>
+        <span className="max-w-[120px] truncate text-foreground">{displayName}</span>
         <svg
           xmlns="http://www.w3.org/2000/svg"
           width="14"
@@ -40,6 +43,7 @@ export default function UserMenu({ displayName, role }: Props) {
           strokeWidth="2"
           strokeLinecap="round"
           strokeLinejoin="round"
+          className="text-muted-foreground"
         >
           <path d="m6 9 6 6 6-6" />
         </svg>
