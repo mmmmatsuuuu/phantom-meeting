@@ -162,21 +162,27 @@ export type Database = {
           display_name: string
           id: string
           is_approved: boolean
+          note: string | null
           role: Database["public"]["Enums"]["role"]
+          student_number: number | null
         }
         Insert: {
           created_at?: string
           display_name?: string
           id: string
           is_approved?: boolean
+          note?: string | null
           role?: Database["public"]["Enums"]["role"]
+          student_number?: number | null
         }
         Update: {
           created_at?: string
           display_name?: string
           id?: string
           is_approved?: boolean
+          note?: string | null
           role?: Database["public"]["Enums"]["role"]
+          student_number?: number | null
         }
         Relationships: []
       }
