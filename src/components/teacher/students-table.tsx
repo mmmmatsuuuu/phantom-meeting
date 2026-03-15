@@ -13,11 +13,6 @@ type EditingState = {
   note: string;
 };
 
-const ROLE_LABELS: Record<Profile["role"], string> = {
-  student: "生徒",
-  teacher: "教師",
-  admin: "管理者",
-};
 
 type Props = {
   initialProfiles: Profile[];
@@ -157,7 +152,6 @@ export default function StudentsTable({ initialProfiles }: Props) {
                 表示名
                 {sortIcon("display_name")}
               </th>
-              <th className="px-4 py-2.5 text-left font-medium">ロール</th>
               <th className="px-4 py-2.5 text-left font-medium">備考</th>
               <th className="px-4 py-2.5 text-left font-medium w-20" />
             </tr>
@@ -166,7 +160,7 @@ export default function StudentsTable({ initialProfiles }: Props) {
             {sorted.length === 0 && (
               <tr>
                 <td
-                  colSpan={5}
+                  colSpan={4}
                   className="px-4 py-8 text-center text-muted-foreground text-sm"
                 >
                   該当するユーザーが見つかりません
@@ -198,19 +192,6 @@ export default function StudentsTable({ initialProfiles }: Props) {
 
                   {/* 表示名 */}
                   <td className="px-4 py-2.5 font-medium">{profile.display_name}</td>
-
-                  {/* ロール */}
-                  <td className="px-4 py-2.5">
-                    <span
-                      className={`text-xs px-2 py-0.5 rounded-full font-medium ${
-                        profile.role === "teacher" || profile.role === "admin"
-                          ? "bg-indigo-100 dark:bg-indigo-900/40 text-indigo-700 dark:text-indigo-300"
-                          : "bg-muted text-muted-foreground"
-                      }`}
-                    >
-                      {ROLE_LABELS[profile.role]}
-                    </span>
-                  </td>
 
                   {/* 備考 */}
                   <td className="px-4 py-2.5 max-w-xs">

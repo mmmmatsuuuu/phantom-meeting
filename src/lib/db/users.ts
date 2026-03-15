@@ -27,6 +27,7 @@ export async function getAllProfiles(): Promise<Profile[]> {
   const { data, error } = await supabase
     .from("profiles")
     .select("*")
+    .eq("role", "student")
     .order("student_number", { ascending: true, nullsFirst: false });
 
   if (error || !data) return [];
