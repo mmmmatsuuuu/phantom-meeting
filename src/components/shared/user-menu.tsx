@@ -72,6 +72,10 @@ export default function UserMenu({ displayName, role }: Props) {
           </DropdownMenuItem>
         )}
         <DropdownMenuSeparator />
+        <DropdownMenuItem asChild>
+          <Link href="/profile">プロフィール編集</Link>
+        </DropdownMenuItem>
+        <DropdownMenuSeparator />
         <DropdownMenuItem
           onClick={handleLogout}
           className="text-destructive focus:text-destructive"
