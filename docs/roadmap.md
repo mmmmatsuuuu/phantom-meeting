@@ -175,10 +175,10 @@ teacher ロール以外が登録・編集できないことを確認してから
 
 ### タスク
 
-- [ ] DropdownMenu の表示項目をロールによって切り替え
+- [x] DropdownMenu の表示項目をロールによって切り替え
   - student には「コンテンツ管理」「レッスン登録」を非表示
   - NavBar で role を取得して UserMenu に渡す
-- [ ] admin 用 生徒→教師昇格ページ（`/admin/users`）
+- [x] admin 用 生徒→教師昇格ページ（`/admin/users`）
   - 未承認 teacher 一覧の表示と承認ボタン
   - `profiles.role` / `is_approved` を変更する `PUT /api/admin/users/[userId]` を追加
 
@@ -194,9 +194,13 @@ student ロールで teacher 専用メニューが非表示になっているこ
 
 ### タスク
 
-- [ ] Tiptap エディタのリッチ化
+- [x] Tiptap エディタのリッチ化
   - ツールバーを追加（Bold / Italic / Heading / BulletList / Link）
   - `@tiptap/extension-link` を追加
+- [x] 番号付きリスト・インラインコード・コードブロック・コールアウト追加
+- [x] シンタックスハイライト（`lowlight` + `@tiptap/extension-code-block-lowlight`）
+- [x] `RichContent` コンポーネントで投稿・過去メモのリッチ表示に統一
+- [x] メモエリア幅拡大（`grid-cols-5` レイアウト）
 
 ### マージ判断
 
@@ -317,8 +321,8 @@ teacher ロール以外が他者のデータを取得できないことを確認
 [✅] Phase 4: メモ機能
 [✅] Phase 5: 共有投稿機能
 [✅] Phase 6: 教師機能
-[ ] Phase 7: 運用基盤整備
-[ ] Phase 8: エディタ強化
+[✅] Phase 7: 運用基盤整備
+[✅] Phase 8: エディタ強化
 [ ] Phase 9: 小テスト
 [ ] Phase 10: デザイン魅力化
 [ ] Phase 11: データ出力（生徒向け）
@@ -326,4 +330,4 @@ teacher ロール以外が他者のデータを取得できないことを確認
 [ ] Phase 13: いいね機能（要設計）
 ```
 
-次の着手は **Phase 7: 運用基盤整備**。
+次の着手は **Phase 9: 小テスト**。
