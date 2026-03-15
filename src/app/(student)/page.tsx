@@ -1,18 +1,13 @@
-import Link from "next/link";
+import { cookies } from "next/headers";
 import { getContents } from "@/lib/db/contents";
 import { createClient } from "@/lib/supabase/server";
-
-const SUBJECT_COLORS = [
-  "from-indigo-500 to-indigo-600",
-  "from-violet-500 to-violet-600",
-  "from-sky-500 to-sky-600",
-  "from-teal-500 to-teal-600",
-];
+import SubjectList from "@/components/lesson/subject-list";
 
 export default async function HomePage() {
-  const [subjects, supabase] = await Promise.all([
+  const [subjects, supabase, cookieStore] = await Promise.all([
     getContents(),
     createClient(),
+    cookies(),
   ]);
 
   const {
@@ -26,6 +21,18 @@ export default async function HomePage() {
       .eq("id", user.id)
       .single();
     displayName = profile?.display_name ?? "";
+  }
+
+  // cookie から折りたたまれている科目IDを取得
+  let initialCollapsedIds: string[] = [];
+  try {
+    const raw = cookieStore.get("lesson_subjects_collapsed")?.value;
+    if (raw) {
+      const parsed = JSON.parse(decodeURIComponent(raw)) as string[];
+      if (Array.isArray(parsed)) initialCollapsedIds = parsed;
+    }
+  } catch {
+    // ignore parse errors
   }
 
   return (
@@ -66,78 +73,10 @@ export default async function HomePage() {
             </p>
           </div>
         ) : (
-          <div className="space-y-8">
-            {subjects.map((subject, subjectIndex) => {
-              const colorClass =
-                SUBJECT_COLORS[subjectIndex % SUBJECT_COLORS.length];
-              return (
-                <div
-                  key={subject.id}
-                  className="rounded-xl border overflow-hidden shadow-sm"
-                >
-                  {/* Subject color header */}
-                  <div
-                    className={`bg-gradient-to-r ${colorClass} px-5 py-4 text-white`}
-                  >
-                    <h2 className="text-lg font-bold">{subject.name}</h2>
-                  </div>
-
-                  {/* Units + lessons */}
-                  <div className="bg-card divide-y">
-                    {subject.units.map((unit) => (
-                      <div key={unit.id} className="px-5 py-4">
-                        <h3 className="text-xs font-semibold tracking-widest text-muted-foreground uppercase mb-3">
-                          {unit.name}
-                        </h3>
-                        <div className="grid gap-2">
-                          {unit.lessons.map((lesson, index) => (
-                            <Link
-                              key={lesson.id}
-                              href={`/lessons/${lesson.id}`}
-                              className="flex items-center justify-between p-3 rounded-lg border bg-background hover:border-indigo-400 hover:bg-indigo-50/40 dark:hover:bg-indigo-950/40 hover:shadow-sm transition-all group"
-                            >
-                              <div className="flex items-center gap-3">
-                                <span className="flex items-center justify-center w-7 h-7 rounded-full bg-indigo-50 dark:bg-indigo-950 text-indigo-600 shrink-0">
-                                  <svg
-                                    viewBox="0 0 24 24"
-                                    fill="currentColor"
-                                    className="w-3.5 h-3.5 ml-0.5"
-                                  >
-                                    <path d="M8 5v14l11-7z" />
-                                  </svg>
-                                </span>
-                                <div>
-                                  <span className="text-xs text-muted-foreground mr-2">
-                                    #{index + 1}
-                                  </span>
-                                  <span className="text-sm font-medium">
-                                    {lesson.title}
-                                  </span>
-                                </div>
-                              </div>
-                              <svg
-                                viewBox="0 0 24 24"
-                                fill="none"
-                                stroke="currentColor"
-                                strokeWidth={2}
-                                className="w-4 h-4 text-muted-foreground group-hover:text-indigo-500 transition-colors shrink-0"
-                              >
-                                <path
-                                  strokeLinecap="round"
-                                  strokeLinejoin="round"
-                                  d="M9 5l7 7-7 7"
-                                />
-                              </svg>
-                            </Link>
-                          ))}
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              );
-            })}
-          </div>
+          <SubjectList
+            subjects={subjects}
+            initialCollapsedIds={initialCollapsedIds}
+          />
         )}
       </div>
     </div>
