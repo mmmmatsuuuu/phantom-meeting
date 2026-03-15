@@ -1,3 +1,4 @@
+import Image from "next/image";
 import { cookies } from "next/headers";
 import { getContents } from "@/lib/db/contents";
 import { createClient } from "@/lib/supabase/server";
@@ -38,15 +39,26 @@ export default async function HomePage() {
   return (
     <div>
       {/* Hero banner */}
-      <div className="bg-gradient-to-r from-indigo-600 to-indigo-500 text-white">
-        <div className="max-w-4xl mx-auto px-4 py-8">
-          <p className="text-indigo-200 text-sm mb-1">
-            {displayName ? `こんにちは、${displayName} さん` : "ようこそ"}
-          </p>
-          <h1 className="text-2xl font-bold mb-2">今日も学習を進めましょう</h1>
-          <p className="text-indigo-100 text-sm">
-            動画を視聴して、発問に答え、気づきをメモしましょう。
-          </p>
+      <div className="bg-gradient-to-r from-indigo-600 to-indigo-500 text-white overflow-hidden">
+        <div className="max-w-4xl mx-auto px-4 py-8 flex items-center justify-between gap-4">
+          <div className="shrink-0">
+            <p className="text-indigo-200 text-sm mb-1">
+              {displayName ? `こんにちは、${displayName} さん` : "ようこそ"}
+            </p>
+            <h1 className="text-2xl font-bold mb-2">今日も学習を進めましょう</h1>
+            <p className="text-indigo-100 text-sm">
+              動画を視聴して、発問に答え、気づきをメモしましょう。
+            </p>
+          </div>
+          <div className="hidden sm:block shrink-0 opacity-90">
+            <Image
+              src="/undraw_writing-online.svg"
+              alt=""
+              width={200}
+              height={168}
+              priority
+            />
+          </div>
         </div>
       </div>
 
