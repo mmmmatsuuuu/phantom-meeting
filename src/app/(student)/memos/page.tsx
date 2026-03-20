@@ -85,6 +85,7 @@ export default async function MemosPage() {
               const subjectSections = subject.units.flatMap((unit) =>
                 unit.lessons.map((lesson) => ({
                   lessonTitle: lesson.title,
+                  youtubeUrl: lesson.youtube_url,
                   memos: lesson.memos,
                 }))
               );
@@ -101,6 +102,7 @@ export default async function MemosPage() {
                     {subject.units.map((unit) => {
                       const unitSections = unit.lessons.map((lesson) => ({
                         lessonTitle: lesson.title,
+                        youtubeUrl: lesson.youtube_url,
                         memos: lesson.memos,
                       }));
                       return (
@@ -122,11 +124,22 @@ export default async function MemosPage() {
                                     sections={[
                                       {
                                         lessonTitle: lesson.title,
+                                        youtubeUrl: lesson.youtube_url,
                                         memos: lesson.memos,
                                       },
                                     ]}
                                   />
                                 </div>
+                                {lesson.youtube_url && (
+                                  <a
+                                    href={lesson.youtube_url}
+                                    target="_blank"
+                                    rel="noopener noreferrer"
+                                    className="text-xs text-indigo-600 hover:underline block mb-3 break-all"
+                                  >
+                                    {lesson.youtube_url}
+                                  </a>
+                                )}
                                 <div className="space-y-3 pl-4 border-l-2 border-indigo-100">
                                   {lesson.memos.map((memo) => (
                                     <div
