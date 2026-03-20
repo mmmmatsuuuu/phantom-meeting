@@ -135,9 +135,9 @@ export default async function MemosPage() {
                                     href={lesson.youtube_url}
                                     target="_blank"
                                     rel="noopener noreferrer"
-                                    className="text-xs text-indigo-600 hover:underline block mb-3 break-all"
+                                    className="text-xs text-indigo-600 hover:underline block mb-3"
                                   >
-                                    {lesson.youtube_url}
+                                    動画
                                   </a>
                                 )}
                                 <div className="space-y-3 pl-4 border-l-2 border-indigo-100">

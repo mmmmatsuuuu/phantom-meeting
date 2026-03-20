@@ -49,7 +49,7 @@ export default function MemoDownloadButton({ filename, sections }: Props) {
     for (const section of sections) {
       parts.push(`## ${section.lessonTitle}\n`);
       if (section.youtubeUrl) {
-        parts.push(`${section.youtubeUrl}\n`);
+        parts.push(`[動画](${section.youtubeUrl})\n`);
       }
       for (const memo of section.memos) {
         if (memo.timestamp_seconds !== null) {
