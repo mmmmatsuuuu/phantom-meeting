@@ -71,6 +71,26 @@ export async function createMemo(params: {
 }
 
 /**
+ * ログインユーザーの全レッスンのメモ一覧を取得する
+ */
+export async function getAllMemos(): Promise<Memo[]> {
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) return [];
+
+  const { data, error } = await supabase
+    .from("memos")
+    .select("*")
+    .eq("user_id", user.id)
+    .order("created_at", { ascending: true });
+
+  if (error || !data) return [];
+  return data as Memo[];
+}
+
+/**
  * メモを削除する
  */
 export async function deleteMemo(memoId: string): Promise<boolean> {

@@ -56,6 +56,11 @@ export default function UserMenu({ displayName, role }: Props) {
         <DropdownMenuItem asChild>
           <Link href="/">📺 レッスン一覧</Link>
         </DropdownMenuItem>
+        {role === "student" && (
+          <DropdownMenuItem asChild>
+            <Link href="/memos">📝 メモ一覧</Link>
+          </DropdownMenuItem>
+        )}
         {(role === "teacher" || role === "admin") && (
           <>
             <DropdownMenuItem asChild>
