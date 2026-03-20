@@ -31,6 +31,7 @@ type MemoData = {
 
 export type MemoSection = {
   lessonTitle: string;
+  youtubeUrl: string | null;
   memos: MemoData[];
 };
 
@@ -47,6 +48,9 @@ export default function MemoDownloadButton({ filename, sections }: Props) {
     const parts: string[] = [];
     for (const section of sections) {
       parts.push(`## ${section.lessonTitle}\n`);
+      if (section.youtubeUrl) {
+        parts.push(`[動画](${section.youtubeUrl})\n`);
+      }
       for (const memo of section.memos) {
         if (memo.timestamp_seconds !== null) {
           parts.push(`> ⏱ ${formatTime(memo.timestamp_seconds)}\n`);
