@@ -134,6 +134,15 @@ export async function deleteUnit(id: string): Promise<boolean> {
 }
 
 /**
+ * レッスンを削除する（関連する memos / posts / quizzes も CASCADE で削除される）
+ */
+export async function deleteLesson(id: string): Promise<boolean> {
+  const supabase = await createClient();
+  const { error } = await supabase.from("lessons").delete().eq("id", id);
+  return !error;
+}
+
+/**
  * レッスンと発問を一括作成する（teacher/admin のみ）
  */
 export async function createLesson(params: {
