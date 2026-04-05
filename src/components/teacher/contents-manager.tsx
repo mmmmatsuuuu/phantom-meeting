@@ -67,6 +67,36 @@ export default function ContentsManager({ initialSubjects }: Props) {
     }
   };
 
+  // ---- レッスン ----
+
+  const handleDeleteLesson = async (lessonId: string, unitId: string, subjectId: string) => {
+    if (
+      !confirm(
+        "このレッスンを削除しますか？\n\nこのレッスンに紐づくメモ・投稿・小テスト回答もすべて削除されます。この操作は取り消せません。"
+      )
+    )
+      return;
+    const res = await fetch(`/api/contents/lessons/${lessonId}`, { method: "DELETE" });
+    if (res.ok) {
+      setSubjects((prev) =>
+        prev.map((s) =>
+          s.id === subjectId
+            ? {
+                ...s,
+                units: s.units.map((u) =>
+                  u.id === unitId
+                    ? { ...u, lessons: u.lessons.filter((l) => l.id !== lessonId) }
+                    : u
+                ),
+              }
+            : s
+        )
+      );
+    } else {
+      toast.error("レッスンの削除に失敗しました");
+    }
+  };
+
   // ---- 単元 ----
 
   const handleAddUnit = async (subjectId: string) => {
@@ -272,6 +302,14 @@ export default function ContentsManager({ initialSubjects }: Props) {
                       >
                         📝 小テスト
                       </Link>
+                      <button
+                        onClick={() =>
+                          handleDeleteLesson(lesson.id, unit.id, subject.id)
+                        }
+                        className="text-xs px-2 py-1 rounded border border-destructive/30 text-destructive hover:bg-destructive/10 transition-colors"
+                      >
+                        削除
+                      </button>
                     </div>
                   ))}
                 </div>
