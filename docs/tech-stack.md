@@ -12,6 +12,7 @@
 | 動画 | YouTube埋め込み |
 | UIコンポーネント | shadcn/ui + Tailwind CSS |
 | リッチテキスト | tiptap |
+| 画面遷移フィードバック | nextjs-toploader（画面遷移中のトップローディングバー） |
 | AI | Claude API（Anthropic、動画登録時の発問自動生成のみ使用） |
 
 ## 選定理由
