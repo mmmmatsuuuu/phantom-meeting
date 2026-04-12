@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 import QuizQuestionEditor from "@/components/teacher/quiz-question-editor";
 import type { QuizQuestionType } from "@/lib/db/quizzes";
+import { textToTiptapDoc } from "@/lib/tiptap-utils";
 
 const QUESTION_TYPE_LABELS: Record<QuizQuestionType, string> = {
   multiple_choice: "選択式",
@@ -47,6 +48,70 @@ export default function QuizForm({ lessonId }: Props) {
     createEmptyQuestion("multiple_choice"),
   ]);
   const [saving, setSaving] = useState(false);
+  const [importOpen, setImportOpen] = useState(false);
+  const [importJson, setImportJson] = useState("");
+
+  const handleImport = () => {
+    let parsed: unknown;
+    try {
+      parsed = JSON.parse(importJson);
+    } catch {
+      toast.error("JSONの形式が正しくありません");
+      return;
+    }
+
+    if (
+      typeof parsed !== "object" ||
+      parsed === null ||
+      !Array.isArray((parsed as Record<string, unknown>).questions)
+    ) {
+      toast.error("questions 配列が見つかりません");
+      return;
+    }
+
+    const raw = parsed as {
+      title?: string;
+      questions: Record<string, unknown>[];
+    };
+
+    const imported: QuestionFormData[] = [];
+    for (const q of raw.questions) {
+      const type = q.type as QuizQuestionType;
+      if (!["multiple_choice", "short_answer", "ordering"].includes(type)) {
+        toast.error(`未対応の問題形式です: ${String(q.type)}`);
+        return;
+      }
+
+      const content = textToTiptapDoc(q.content as string | undefined);
+      const explanation = textToTiptapDoc(q.explanation as string | undefined);
+      const options = Array.isArray(q.options)
+        ? (q.options as string[])
+        : ["", ""];
+
+      imported.push({
+        uid: crypto.randomUUID(),
+        type,
+        content,
+        explanation,
+        options,
+        correctAnswerIndex:
+          typeof q.correctAnswerIndex === "number" ? q.correctAnswerIndex : 0,
+        correctAnswerText:
+          typeof q.correctAnswerText === "string" ? q.correctAnswerText : "",
+      });
+    }
+
+    if (imported.length === 0) {
+      toast.error("インポートできる問題がありません");
+      return;
+    }
+
+    if (raw.title) setTitle(raw.title);
+    setQuestions(imported);
+    setImportJson("");
+    setImportOpen(false);
+    toast.success(`${imported.length}問をインポートしました`);
+  };
 
   const handleContentChange = useCallback(
     (uid: string, content: Record<string, unknown>) => {
@@ -171,6 +236,47 @@ export default function QuizForm({ lessonId }: Props) {
 
   return (
     <div className="space-y-6">
+      {/* JSON インポートパネル */}
+      <div className="rounded-md border border-dashed">
+        <button
+          type="button"
+          onClick={() => setImportOpen((prev) => !prev)}
+          className="w-full flex items-center justify-between px-4 py-3 text-sm font-medium hover:bg-muted/50 transition-colors"
+        >
+          <span>JSON で一括インポート</span>
+          <span className="text-muted-foreground text-xs">{importOpen ? "▲ 閉じる" : "▼ 開く"}</span>
+        </button>
+        {importOpen && (
+          <div className="px-4 pb-4 space-y-2 border-t">
+            <p className="text-xs text-muted-foreground pt-3">
+              AI が生成した JSON を貼り付けて「インポート」を押すと、フォームに反映されます。
+            </p>
+            <textarea
+              className="w-full h-48 border rounded-md px-3 py-2 text-xs font-mono bg-background focus:outline-none focus:ring-2 focus:ring-ring resize-y"
+              placeholder={'{\n  "title": "クイズタイトル",\n  "questions": [...]\n}'}
+              value={importJson}
+              onChange={(e) => setImportJson(e.target.value)}
+            />
+            <div className="flex gap-2 justify-end">
+              <button
+                type="button"
+                onClick={() => { setImportOpen(false); setImportJson(""); }}
+                className="px-3 py-1.5 text-xs rounded border hover:bg-muted transition-colors"
+              >
+                キャンセル
+              </button>
+              <button
+                type="button"
+                onClick={handleImport}
+                className="px-3 py-1.5 text-xs rounded bg-primary text-primary-foreground hover:opacity-90 transition-opacity"
+              >
+                インポート
+              </button>
+            </div>
+          </div>
+        )}
+      </div>
+
       <div className="space-y-1">
         <label className="text-sm font-medium">クイズタイトル</label>
         <input
