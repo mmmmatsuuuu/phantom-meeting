@@ -27,7 +27,12 @@ type MultipleChoiceAnswer = { index: number };
 type ShortAnswerCorrect = { text: string };
 
 type Answer =
-  | { type: "multiple_choice"; selectedIndex: number | null }
+  | {
+      type: "multiple_choice";
+      selectedIndex: number | null;
+      // DBのインデックスではなくシャッフル済み配列を保持し、採点は文字列比較で行う
+      shuffledOptions: string[];
+    }
   | { type: "short_answer"; text: string }
   | { type: "ordering"; items: string[] };
 
@@ -86,8 +91,10 @@ function QuestionCard({ question, index, answer, onAnswerChange, state }: Questi
   const isCorrect = useMemo(() => {
     if (!isSubmitted) return null;
     if (answer.type === "multiple_choice" && question.type === "multiple_choice") {
+      if (answer.selectedIndex === null) return false;
       const correct = question.correct_answer as MultipleChoiceAnswer;
-      return answer.selectedIndex === correct.index;
+      const correctText = (question.options as string[])[correct.index];
+      return answer.shuffledOptions[answer.selectedIndex] === correctText;
     }
     if (answer.type === "ordering" && question.type === "ordering") {
       const correct = question.correct_answer as string[];
@@ -131,11 +138,11 @@ function QuestionCard({ question, index, answer, onAnswerChange, state }: Questi
       {/* 選択式 */}
       {question.type === "multiple_choice" && answer.type === "multiple_choice" && (
         <div className="space-y-1.5 pl-5">
-          {(question.options as string[]).map((opt, i) => {
-            const correct = (question.correct_answer as MultipleChoiceAnswer).index;
+          {answer.shuffledOptions.map((opt, i) => {
+            const correctText = (question.options as string[])[(question.correct_answer as MultipleChoiceAnswer).index];
             const isSelected = answer.selectedIndex === i;
-            const isCorrectChoice = isSubmitted && i === correct;
-            const isWrong = isSubmitted && isSelected && i !== correct;
+            const isCorrectChoice = isSubmitted && opt === correctText;
+            const isWrong = isSubmitted && isSelected && opt !== correctText;
 
             return (
               <label
@@ -156,7 +163,7 @@ function QuestionCard({ question, index, answer, onAnswerChange, state }: Questi
                   checked={isSelected}
                   onChange={() =>
                     !isSubmitted &&
-                    onAnswerChange({ type: "multiple_choice", selectedIndex: i })
+                    onAnswerChange({ type: "multiple_choice", selectedIndex: i, shuffledOptions: answer.shuffledOptions })
                   }
                   disabled={isSubmitted}
                   className="shrink-0"
@@ -266,7 +273,8 @@ function shuffleArray<T>(arr: T[]): T[] {
 
 function initAnswer(question: QuizQuestion): Answer {
   if (question.type === "multiple_choice") {
-    return { type: "multiple_choice", selectedIndex: null };
+    const shuffledOptions = shuffleArray(question.options as string[]);
+    return { type: "multiple_choice", selectedIndex: null, shuffledOptions };
   }
   if (question.type === "short_answer") {
     return { type: "short_answer", text: "" };
@@ -292,7 +300,10 @@ export default function QuizSection({ quiz }: Props) {
     quiz.questions.forEach((q, i) => {
       const ans = answers[i];
       if (q.type === "multiple_choice" && ans.type === "multiple_choice") {
-        if (ans.selectedIndex === (q.correct_answer as MultipleChoiceAnswer).index) correct++;
+        if (ans.selectedIndex !== null) {
+          const correctText = (q.options as string[])[(q.correct_answer as MultipleChoiceAnswer).index];
+          if (ans.shuffledOptions[ans.selectedIndex] === correctText) correct++;
+        }
       } else if (q.type === "ordering" && ans.type === "ordering") {
         if (JSON.stringify(ans.items) === JSON.stringify(q.correct_answer as string[])) correct++;
       }
