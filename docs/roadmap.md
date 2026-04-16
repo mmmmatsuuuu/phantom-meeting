@@ -478,27 +478,47 @@ teacher ロール以外が他者のデータを取得できないことを確認
 
 ---
 
-## Phase 15: 視聴完了ゲート
+## Phase 15: 小テスト完了ゲート
 
-> 動画を見終わるまで他の生徒の投稿を非表示にし、動画への集中と自分なりの思考形成を保護する。
+> 小テストを1回でも完了するまで他の生徒の投稿を非表示にし、自分なりの思考形成を保護する。
 
 ### 設計方針
 
-- 動画を最後まで再生するまで、投稿一覧はロック状態で表示しない
-- 視聴完了後にアンロックされ「他の人の視点を見てみよう」という自然な流れを作る
-- 飛ばし見は許容する（生徒を信頼する）。完了判定は YouTube Player の `onEnd` イベントを使用
-- 視聴完了状態はセッション内で保持（ページを一度離れても再視聴不要にするか要検討）
+- 小テストを1回でも提出するまで、投稿一覧はロック状態で表示しない
+- 小テスト完了後にアンロックされ「他の人の視点を見てみよう」という自然な流れを作る
+- 小テストが設定されていないレッスンは最初から投稿一覧を表示する
+- 完了フラグは DB（`quiz_attempts`）で永続管理する（ページを離れても再提出不要）
+
+### DBスキーマ（このフェーズで追加）
+
+```sql
+create table public.quiz_attempts (
+  id           uuid primary key default gen_random_uuid(),
+  quiz_id      uuid not null references public.quizzes(id) on delete cascade,
+  user_id      uuid not null references public.profiles(id) on delete cascade,
+  score        int not null,   -- 正解数（short_answer 除く）
+  max_score    int not null,   -- 採点対象の問題数
+  submitted_at timestamptz not null default now()
+);
+-- RLS: 自分のレコードのみ読み書き可、teacher/admin は全件読み取り可
+```
+
+> **スケーラビリティ方針**：将来 `quiz_attempt_answers`（各問の回答詳細）テーブルを追加することで、正誤・回答推移の詳細分析に対応できる設計にしている。今フェーズは `quiz_attempts` のみ実装し、完了フラグとして使用する。
 
 ### タスク
 
-- [ ] `VideoPlayer` で `onEnd` イベントを検知し、親コンポーネントに完了状態を通知する
-- [ ] 視聴完了前は `PostList` をロック表示（「動画を最後まで見ると、みんなの投稿が見られます」などのメッセージ）
-- [ ] 視聴完了時に投稿一覧がアンロックされるUIを実装
-- [ ] 視聴完了フラグをコンポーネントのstateで管理（セッション内保持）
+- [ ] マイグレーション：`quiz_attempts` テーブルを追加（RLS含む）
+- [ ] `POST /api/quizzes/[quizId]/attempts` を実装（小テスト提出時に呼び出す）
+  - スコアはサーバーサイドで採点して保存（既存のクライアント採点と並行）
+- [ ] `GET /api/quizzes/[quizId]/attempts/me` を実装（完了済みか確認）
+- [ ] レッスンページで完了状態を取得し、`PostList` のロック/アンロックを制御
+  - 小テストなし → 最初から表示
+  - 小テストあり・未完了 → ロック表示（「小テストを完了すると、みんなの投稿が見られます」）
+  - 小テストあり・完了済み → 表示
 
 ### マージ判断
 
-動画を最後まで再生しないと投稿一覧が見えないことを確認してからマージ
+小テスト未完了では投稿一覧が見えず、提出後にアンロックされることを確認してからマージ
 
 ---
 
@@ -537,6 +557,36 @@ teacher ロール以外が他者のデータを取得できないことを確認
 ### マージ判断
 
 本人以外にトロフィーが見えないこと、各トロフィーが正しい条件で付与されることを確認してからマージ
+
+---
+
+## Phase 15.5: 小テスト回答詳細の保存（Phase 15 の拡張）
+
+> Phase 15 で作成した `quiz_attempts` を拡張し、各問の回答内容・正誤を保存する。生徒が自分の苦手を把握したり、教師が理解度を分析したりするための基盤を整える。
+
+### DBスキーマ（このフェーズで追加）
+
+```sql
+create table public.quiz_attempt_answers (
+  id          uuid primary key default gen_random_uuid(),
+  attempt_id  uuid not null references public.quiz_attempts(id) on delete cascade,
+  question_id uuid not null references public.quiz_questions(id) on delete cascade,
+  answer      jsonb not null,  -- 回答内容（選択肢テキスト / 記述テキスト / 順序配列）
+  is_correct  boolean          -- null = short_answer（自己採点のため）
+);
+-- RLS: 自分のレコードのみ読み書き可、teacher/admin は全件読み取り可
+```
+
+### タスク
+
+- [ ] マイグレーション：`quiz_attempt_answers` テーブルを追加（RLS含む）
+- [ ] `POST /api/quizzes/[quizId]/attempts` のレスポンスを拡張し、各問の回答詳細も保存
+- [ ] 生徒が自分の回答履歴・正誤を確認できるUIを追加（任意）
+- [ ] 教師向け分析ページへの組み込み（Phase 13 と連携）
+
+### マージ判断
+
+回答詳細が正しく保存され、本人以外が参照できないことを確認してからマージ
 
 ---
 
