@@ -14,6 +14,7 @@ type Props = {
   questions: Question[];
   quiz: QuizWithQuestions | null;
   currentUserId: string;
+  currentUserRole: string;
   initialIsCompleted: boolean;
 };
 
@@ -23,6 +24,7 @@ export default function LessonContent({
   questions,
   quiz,
   currentUserId,
+  currentUserRole,
   initialIsCompleted,
 }: Props) {
   const [memoVisible, setMemoVisible] = useState(true);
@@ -67,7 +69,7 @@ export default function LessonContent({
           />
           <div className="border-t pt-6">
             {isPostUnlocked ? (
-              <PostList lessonId={lessonId} currentUserId={currentUserId} seekTo={seekTo} />
+              <PostList lessonId={lessonId} currentUserId={currentUserId} currentUserRole={currentUserRole} seekTo={seekTo} />
             ) : (
               <div className="flex flex-col items-center justify-center py-12 gap-3 text-center">
                 <span className="text-4xl">🔒</span>

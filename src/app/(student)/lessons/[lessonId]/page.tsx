@@ -22,7 +22,11 @@ export default async function LessonPage({ params }: Props) {
   if (!lesson) return notFound();
   if (!user) return notFound();
 
-  const initialIsCompleted = quiz ? await hasCompletedQuiz(quiz.id, user.id) : false;
+  const [initialIsCompleted, profileResult] = await Promise.all([
+    quiz ? hasCompletedQuiz(quiz.id, user.id) : Promise.resolve(false),
+    supabase.from("profiles").select("role").eq("id", user.id).single(),
+  ]);
+  const currentUserRole = profileResult.data?.role ?? "student";
 
   const { unit, questions } = lesson;
   const subject = unit.subject;
@@ -50,6 +54,7 @@ export default async function LessonPage({ params }: Props) {
         questions={questions}
         quiz={quiz}
         currentUserId={user.id}
+        currentUserRole={currentUserRole}
         initialIsCompleted={initialIsCompleted}
       />
     </div>

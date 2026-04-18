@@ -8,6 +8,7 @@ import RichContent from "@/components/shared/rich-content";
 type Props = {
   lessonId: string;
   currentUserId: string;
+  currentUserRole: string;
   seekTo: (seconds: number) => void;
 };
 
@@ -26,7 +27,8 @@ function formatDate(dateString: string): string {
   });
 }
 
-export default function PostList({ lessonId, currentUserId, seekTo }: Props) {
+export default function PostList({ lessonId, currentUserId, currentUserRole, seekTo }: Props) {
+  const isTeacherOrAdmin = currentUserRole === "teacher" || currentUserRole === "admin";
   const [posts, setPosts] = useState<Post[]>([]);
 
   useEffect(() => {
@@ -101,6 +103,7 @@ export default function PostList({ lessonId, currentUserId, seekTo }: Props) {
         <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
           {posts.map((post) => {
             const isMyPost = post.user_id === currentUserId;
+            const canDelete = isMyPost || isTeacherOrAdmin;
             return (
               <div
                 key={post.id}
@@ -110,10 +113,10 @@ export default function PostList({ lessonId, currentUserId, seekTo }: Props) {
                   {isMyPost && (
                     <p className="text-xs text-primary font-medium">自分の投稿</p>
                   )}
-                  {isMyPost && (
+                  {canDelete && (
                     <button
                       onClick={() => handleDelete(post.id)}
-                      className="text-xs px-2 py-0.5 rounded border border-destructive/30 text-destructive hover:bg-destructive/10 transition-colors shrink-0"
+                      className="text-xs px-2 py-0.5 rounded border border-destructive/30 text-destructive hover:bg-destructive/10 transition-colors shrink-0 ml-auto"
                     >
                       削除
                     </button>
