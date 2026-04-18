@@ -4,6 +4,7 @@ import { useState, useEffect } from "react";
 import { createClient } from "@/lib/supabase/client";
 import type { Post, AuthorProfile } from "@/lib/db/posts";
 import RichContent from "@/components/shared/rich-content";
+import { Tooltip, TooltipTrigger, TooltipContent } from "@/components/ui/tooltip";
 
 type PostItem = Post & { authorProfile?: AuthorProfile };
 
@@ -35,14 +36,12 @@ function AuthorTooltip({ profile }: { profile: AuthorProfile }) {
     : profile.display_name;
 
   return (
-    <div className="relative group/tooltip inline-flex items-center">
-      <span className="text-xs text-muted-foreground/60 cursor-default select-none">👤</span>
-      <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-1.5 hidden group-hover/tooltip:block z-10 pointer-events-none">
-        <div className="whitespace-nowrap rounded bg-foreground px-2 py-1 text-xs text-background shadow-md">
-          {label}
-        </div>
-      </div>
-    </div>
+    <Tooltip>
+      <TooltipTrigger asChild>
+        <span className="text-xs text-muted-foreground/60 cursor-default select-none">👤</span>
+      </TooltipTrigger>
+      <TooltipContent side="top">{label}</TooltipContent>
+    </Tooltip>
   );
 }
 
