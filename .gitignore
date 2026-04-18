@@ -39,4 +39,6 @@ yarn-error.log*
 # typescript
 *.tsbuildinfo
 next-env.d.ts
-NEXT_PUBLIC_SUPABASE_URL=
+
+# supabase studio snippets (auto-synced, not part of codebase)
+/supabase/snippets/
