@@ -286,9 +286,10 @@ function initAnswer(question: QuizQuestion): Answer {
 
 type Props = {
   quiz: QuizWithQuestions;
+  onCompleted?: () => void;
 };
 
-export default function QuizSection({ quiz }: Props) {
+export default function QuizSection({ quiz, onCompleted }: Props) {
   const [answers, setAnswers] = useState<Answer[]>(() =>
     quiz.questions.map(initAnswer)
   );
@@ -313,8 +314,36 @@ export default function QuizSection({ quiz }: Props) {
     return { correct, autoGradable };
   }, [quizState, answers, quiz.questions]);
 
-  const handleSubmit = () => {
+  const handleSubmit = async () => {
     setQuizState("submitted");
+
+    // 提出内容をAPIに送信して完了フラグを記録
+    const payload = quiz.questions.map((q, i) => {
+      const ans = answers[i];
+      if (ans.type === "multiple_choice") {
+        return {
+          questionId: q.id,
+          type: "multiple_choice" as const,
+          selectedText: ans.selectedIndex !== null
+            ? ans.shuffledOptions[ans.selectedIndex]
+            : "",
+        };
+      }
+      if (ans.type === "short_answer") {
+        return { questionId: q.id, type: "short_answer" as const, text: ans.text };
+      }
+      return { questionId: q.id, type: "ordering" as const, items: ans.items };
+    });
+
+    const res = await fetch(`/api/quizzes/${quiz.id}/attempts`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ answers: payload }),
+    });
+
+    if (res.ok) {
+      onCompleted?.();
+    }
   };
 
   const handleRetry = () => {

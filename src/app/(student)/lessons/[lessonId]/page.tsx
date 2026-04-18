@@ -1,7 +1,7 @@
 import { notFound } from "next/navigation";
 import Link from "next/link";
 import { getLessonWithQuestions } from "@/lib/db/contents";
-import { getQuizWithQuestions } from "@/lib/db/quizzes";
+import { getQuizWithQuestions, hasCompletedQuiz } from "@/lib/db/quizzes";
 import { createClient } from "@/lib/supabase/server";
 import LessonContent from "@/components/lesson/lesson-content";
 
@@ -21,6 +21,8 @@ export default async function LessonPage({ params }: Props) {
 
   if (!lesson) return notFound();
   if (!user) return notFound();
+
+  const initialIsCompleted = quiz ? await hasCompletedQuiz(quiz.id, user.id) : false;
 
   const { unit, questions } = lesson;
   const subject = unit.subject;
@@ -48,6 +50,7 @@ export default async function LessonPage({ params }: Props) {
         questions={questions}
         quiz={quiz}
         currentUserId={user.id}
+        initialIsCompleted={initialIsCompleted}
       />
     </div>
   );

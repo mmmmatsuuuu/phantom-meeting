@@ -15,9 +15,10 @@ type Props = {
   questions: Question[];
   quiz: QuizWithQuestions | null;
   onPlayerReady: (player: YouTubePlayer) => void;
+  onQuizCompleted?: () => void;
 };
 
-export default function LessonTabs({ youtubeUrl, questions, quiz, onPlayerReady }: Props) {
+export default function LessonTabs({ youtubeUrl, questions, quiz, onPlayerReady, onQuizCompleted }: Props) {
   const [activeTab, setActiveTab] = useState<Tab>("video");
 
   return (
@@ -57,7 +58,7 @@ export default function LessonTabs({ youtubeUrl, questions, quiz, onPlayerReady 
       {/* 小テストタブ */}
       {activeTab === "quiz" && (
         quiz ? (
-          <QuizSection quiz={quiz} />
+          <QuizSection quiz={quiz} onCompleted={onQuizCompleted} />
         ) : (
           <div className="aspect-video rounded-md border bg-card flex flex-col items-center justify-center gap-2 text-center">
             <span className="text-4xl">📝</span>
