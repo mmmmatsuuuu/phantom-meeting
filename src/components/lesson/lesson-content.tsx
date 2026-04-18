@@ -28,9 +28,10 @@ export default function LessonContent({
   initialIsCompleted,
 }: Props) {
   const [memoVisible, setMemoVisible] = useState(true);
-  // 小テストなし or 完了済みなら最初からアンロック
+  const isTeacherOrAdmin = currentUserRole === "teacher" || currentUserRole === "admin";
+  // 小テストなし or 完了済み or teacher/admin なら最初からアンロック
   const [isPostUnlocked, setIsPostUnlocked] = useState(
-    quiz === null || initialIsCompleted
+    quiz === null || initialIsCompleted || isTeacherOrAdmin
   );
   const playerRef = useRef<YouTubePlayer | null>(null);
 
