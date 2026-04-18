@@ -14,6 +14,7 @@ type Props = {
   questions: Question[];
   quiz: QuizWithQuestions | null;
   currentUserId: string;
+  initialIsCompleted: boolean;
 };
 
 export default function LessonContent({
@@ -22,8 +23,13 @@ export default function LessonContent({
   questions,
   quiz,
   currentUserId,
+  initialIsCompleted,
 }: Props) {
   const [memoVisible, setMemoVisible] = useState(true);
+  // 小テストなし or 完了済みなら最初からアンロック
+  const [isPostUnlocked, setIsPostUnlocked] = useState(
+    quiz === null || initialIsCompleted
+  );
   const playerRef = useRef<YouTubePlayer | null>(null);
 
   const getCurrentTime = (): number | null => {
@@ -57,9 +63,19 @@ export default function LessonContent({
             onPlayerReady={(player) => {
               playerRef.current = player;
             }}
+            onQuizCompleted={() => setIsPostUnlocked(true)}
           />
           <div className="border-t pt-6">
-            <PostList lessonId={lessonId} currentUserId={currentUserId} seekTo={seekTo} />
+            {isPostUnlocked ? (
+              <PostList lessonId={lessonId} currentUserId={currentUserId} seekTo={seekTo} />
+            ) : (
+              <div className="flex flex-col items-center justify-center py-12 gap-3 text-center">
+                <span className="text-4xl">🔒</span>
+                <p className="text-sm text-muted-foreground">
+                  小テストを完了すると、みんなの投稿が見られます
+                </p>
+              </div>
+            )}
           </div>
         </div>
 

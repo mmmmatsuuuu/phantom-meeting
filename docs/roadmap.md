@@ -507,11 +507,10 @@ create table public.quiz_attempts (
 
 ### タスク
 
-- [ ] マイグレーション：`quiz_attempts` テーブルを追加（RLS含む）
-- [ ] `POST /api/quizzes/[quizId]/attempts` を実装（小テスト提出時に呼び出す）
+- [x] マイグレーション：`quiz_attempts` テーブルを追加（RLS含む）
+- [x] `POST /api/quizzes/[quizId]/attempts` を実装（小テスト提出時に呼び出す）
   - スコアはサーバーサイドで採点して保存（既存のクライアント採点と並行）
-- [ ] `GET /api/quizzes/[quizId]/attempts/me` を実装（完了済みか確認）
-- [ ] レッスンページで完了状態を取得し、`PostList` のロック/アンロックを制御
+- [x] レッスンページで完了状態を取得し、`PostList` のロック/アンロックを制御
   - 小テストなし → 最初から表示
   - 小テストあり・未完了 → ロック表示（「小テストを完了すると、みんなの投稿が見られます」）
   - 小テストあり・完了済み → 表示
@@ -674,10 +673,10 @@ create table public.quiz_attempt_answers (
 [✅] Phase 12.9: 小テスト JSON インポート機能
 [ ] Phase 13:   データ出力（教師向け）
 [--] Phase 14:  いいね機能（見送り）
-[ ] Phase 15:   小テスト完了ゲート
+[✅] Phase 15:   小テスト完了ゲート
 [ ] Phase 15.5: 小テスト回答詳細の保存
 [ ] Phase 16:   トロフィー・実績機能
 [ ] Phase 17:   匿名プライベートコメント機能
 ```
 
-次の着手は **Phase 13: データ出力（教師向け）** または **Phase 15: 小テスト完了ゲート**。
+次の着手は **Phase 13: データ出力（教師向け）** または **Phase 15.5: 小テスト回答詳細の保存**。

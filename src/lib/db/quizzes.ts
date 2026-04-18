@@ -21,6 +21,13 @@ export type CreateQuizQuestionInput = {
 
 type InsertRow = Database["public"]["Tables"]["quiz_questions"]["Insert"];
 
+export type QuizAttemptInput = {
+  quizId: string;
+  userId: string;
+  score: number;
+  maxScore: number;
+};
+
 /**
  * レッスンに紐づくクイズと問題一覧を取得する
  */
@@ -141,4 +148,31 @@ export async function deleteQuiz(quizId: string): Promise<boolean> {
   const supabase = await createClient();
   const { error } = await supabase.from("quizzes").delete().eq("id", quizId);
   return !error;
+}
+
+/**
+ * 小テスト提出記録を保存する
+ */
+export async function createQuizAttempt(input: QuizAttemptInput): Promise<boolean> {
+  const supabase = await createClient();
+  const { error } = await supabase.from("quiz_attempts").insert({
+    quiz_id: input.quizId,
+    user_id: input.userId,
+    score: input.score,
+    max_score: input.maxScore,
+  });
+  return !error;
+}
+
+/**
+ * ユーザーが指定クイズを1回以上提出済みか確認する
+ */
+export async function hasCompletedQuiz(quizId: string, userId: string): Promise<boolean> {
+  const supabase = await createClient();
+  const { count } = await supabase
+    .from("quiz_attempts")
+    .select("*", { count: "exact", head: true })
+    .eq("quiz_id", quizId)
+    .eq("user_id", userId);
+  return (count ?? 0) > 0;
 }
