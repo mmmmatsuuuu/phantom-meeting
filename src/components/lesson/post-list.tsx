@@ -2,8 +2,10 @@
 
 import { useState, useEffect } from "react";
 import { createClient } from "@/lib/supabase/client";
-import type { Post } from "@/lib/db/posts";
+import type { Post, AuthorProfile } from "@/lib/db/posts";
 import RichContent from "@/components/shared/rich-content";
+
+type PostItem = Post & { authorProfile?: AuthorProfile };
 
 type Props = {
   lessonId: string;
@@ -27,14 +29,31 @@ function formatDate(dateString: string): string {
   });
 }
 
+function AuthorTooltip({ profile }: { profile: AuthorProfile }) {
+  const label = profile.student_number
+    ? `${profile.student_number} - ${profile.display_name}`
+    : profile.display_name;
+
+  return (
+    <div className="relative group/tooltip inline-flex items-center">
+      <span className="text-xs text-muted-foreground/60 cursor-default select-none">👤</span>
+      <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-1.5 hidden group-hover/tooltip:block z-10 pointer-events-none">
+        <div className="whitespace-nowrap rounded bg-foreground px-2 py-1 text-xs text-background shadow-md">
+          {label}
+        </div>
+      </div>
+    </div>
+  );
+}
+
 export default function PostList({ lessonId, currentUserId, currentUserRole, seekTo }: Props) {
   const isTeacherOrAdmin = currentUserRole === "teacher" || currentUserRole === "admin";
-  const [posts, setPosts] = useState<Post[]>([]);
+  const [posts, setPosts] = useState<PostItem[]>([]);
 
   useEffect(() => {
     fetch(`/api/posts?lessonId=${lessonId}`)
       .then((res) => res.json())
-      .then((json: { data: Post[] | null; error: string | null }) => {
+      .then((json: { data: PostItem[] | null; error: string | null }) => {
         if (json.data) setPosts(json.data);
       })
       .catch(() => {});
@@ -51,7 +70,7 @@ export default function PostList({ lessonId, currentUserId, currentUserRole, see
           filter: `lesson_id=eq.${lessonId}`,
         },
         (payload) => {
-          setPosts((prev) => [payload.new as Post, ...prev]);
+          setPosts((prev) => [payload.new as PostItem, ...prev]);
         }
       )
       .on(
@@ -109,14 +128,19 @@ export default function PostList({ lessonId, currentUserId, currentUserRole, see
                 key={post.id}
                 className={`p-4 rounded-lg border bg-card ${isMyPost ? "border-primary/40" : ""}`}
               >
-                <div className="flex items-start justify-between gap-2">
-                  {isMyPost && (
-                    <p className="text-xs text-primary font-medium">自分の投稿</p>
-                  )}
+                <div className="flex items-center justify-between gap-2 mb-1">
+                  <div className="flex items-center gap-1.5">
+                    {isMyPost && (
+                      <p className="text-xs text-primary font-medium">自分の投稿</p>
+                    )}
+                    {isTeacherOrAdmin && post.authorProfile && (
+                      <AuthorTooltip profile={post.authorProfile} />
+                    )}
+                  </div>
                   {canDelete && (
                     <button
                       onClick={() => handleDelete(post.id)}
-                      className="text-xs px-2 py-0.5 rounded border border-destructive/30 text-destructive hover:bg-destructive/10 transition-colors shrink-0 ml-auto"
+                      className="text-xs px-2 py-0.5 rounded border border-destructive/30 text-destructive hover:bg-destructive/10 transition-colors shrink-0"
                     >
                       削除
                     </button>

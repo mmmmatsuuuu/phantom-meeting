@@ -1,11 +1,33 @@
 import { NextResponse, type NextRequest } from "next/server";
-import { getPostsByLessonId, createPost, existsPostByMemoId } from "@/lib/db/posts";
+import { createClient } from "@/lib/supabase/server";
+import {
+  getPostsByLessonId,
+  getPostsWithAuthorsByLessonId,
+  createPost,
+  existsPostByMemoId,
+} from "@/lib/db/posts";
 import type { TiptapContent } from "@/lib/db/memos";
 
 export async function GET(request: NextRequest) {
   const lessonId = request.nextUrl.searchParams.get("lessonId");
   if (!lessonId) {
     return NextResponse.json({ data: null, error: "lessonId is required" }, { status: 400 });
+  }
+
+  const supabase = await createClient();
+  const { data: { user } } = await supabase.auth.getUser();
+
+  if (user) {
+    const { data: profile } = await supabase
+      .from("profiles")
+      .select("role")
+      .eq("id", user.id)
+      .single();
+
+    if (profile?.role === "teacher" || profile?.role === "admin") {
+      const data = await getPostsWithAuthorsByLessonId(lessonId);
+      return NextResponse.json({ data, error: null });
+    }
   }
 
   const data = await getPostsByLessonId(lessonId);

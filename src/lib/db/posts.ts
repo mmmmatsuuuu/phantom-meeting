@@ -7,6 +7,13 @@ export type Post = Omit<Database["public"]["Tables"]["posts"]["Row"], "content">
   timestamp_seconds: number | null;
 };
 
+export type AuthorProfile = {
+  student_number: number | null;
+  display_name: string;
+};
+
+export type PostWithAuthor = Post & { authorProfile: AuthorProfile };
+
 /**
  * 指定レッスンの投稿一覧を取得する（全認証ユーザーが閲覧可）
  */
@@ -21,6 +28,29 @@ export async function getPostsByLessonId(lessonId: string): Promise<Post[]> {
 
   if (error || !data) return [];
   return data as Post[];
+}
+
+/**
+ * 指定レッスンの投稿一覧を投稿者プロフィール付きで取得する（teacher/admin 用）
+ */
+export async function getPostsWithAuthorsByLessonId(lessonId: string): Promise<PostWithAuthor[]> {
+  const supabase = await createClient();
+
+  const { data, error } = await supabase
+    .from("posts")
+    .select("*, profiles(student_number, display_name)")
+    .eq("lesson_id", lessonId)
+    .order("created_at", { ascending: false });
+
+  if (error || !data) return [];
+
+  return data.map((row) => {
+    const { profiles, ...post } = row as typeof row & { profiles: AuthorProfile | null };
+    return {
+      ...(post as Post),
+      authorProfile: profiles ?? { student_number: null, display_name: "不明" },
+    };
+  });
 }
 
 /**
