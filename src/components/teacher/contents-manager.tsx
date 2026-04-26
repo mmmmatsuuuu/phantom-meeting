@@ -297,6 +297,12 @@ export default function ContentsManager({ initialSubjects }: Props) {
                         📺 {lesson.title}
                       </span>
                       <Link
+                        href={`/teacher/lessons/${lesson.id}/memos`}
+                        className="text-xs px-2 py-1 rounded border hover:bg-muted transition-colors"
+                      >
+                        📋 メモ閲覧
+                      </Link>
+                      <Link
                         href={`/teacher/lessons/${lesson.id}/quiz/new`}
                         className="text-xs px-2 py-1 rounded border hover:bg-muted transition-colors"
                       >
