@@ -90,6 +90,77 @@ export async function getAllMemos(): Promise<Memo[]> {
   return data as Memo[];
 }
 
+export type StudentWithMemoCount = {
+  id: string;
+  display_name: string;
+  student_number: number | null;
+  memo_count: number;
+};
+
+/**
+ * 指定学年・クラスの生徒一覧とメモ件数を取得する（teacher/admin 向け）
+ * student_number の桁構造: 1桁目=学年, 2桁目=クラス, 3〜4桁目=出席番号
+ */
+export async function getStudentsWithMemoCounts(
+  lessonId: string,
+  grade: number,
+  classNum: number
+): Promise<StudentWithMemoCount[]> {
+  const supabase = await createClient();
+  const min = grade * 1000 + classNum * 100;
+  const max = min + 99;
+
+  const { data: profiles, error: profilesError } = await supabase
+    .from("profiles")
+    .select("id, display_name, student_number")
+    .eq("role", "student")
+    .gte("student_number", min)
+    .lte("student_number", max)
+    .order("student_number", { ascending: true, nullsFirst: false });
+
+  if (profilesError || !profiles) return [];
+  if (profiles.length === 0) return [];
+
+  const { data: memos } = await supabase
+    .from("memos")
+    .select("user_id")
+    .eq("lesson_id", lessonId)
+    .in(
+      "user_id",
+      profiles.map((p) => p.id)
+    );
+
+  const memoCounts = new Map<string, number>();
+  for (const memo of memos ?? []) {
+    memoCounts.set(memo.user_id, (memoCounts.get(memo.user_id) ?? 0) + 1);
+  }
+
+  return profiles.map((p) => ({
+    ...p,
+    memo_count: memoCounts.get(p.id) ?? 0,
+  }));
+}
+
+/**
+ * 特定生徒の指定レッスンのメモ一覧を取得する（teacher/admin 向け）
+ */
+export async function getMemosByStudent(
+  lessonId: string,
+  userId: string
+): Promise<Memo[]> {
+  const supabase = await createClient();
+
+  const { data, error } = await supabase
+    .from("memos")
+    .select("*")
+    .eq("lesson_id", lessonId)
+    .eq("user_id", userId)
+    .order("created_at", { ascending: true });
+
+  if (error || !data) return [];
+  return data as Memo[];
+}
+
 /**
  * メモを削除する
  */
