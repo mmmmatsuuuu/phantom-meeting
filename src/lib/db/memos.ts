@@ -100,25 +100,45 @@ export type StudentWithMemoCount = {
 /**
  * 指定学年・クラスの生徒一覧とメモ件数を取得する（teacher/admin 向け）
  * student_number の桁構造: 1桁目=学年, 2桁目=クラス, 3〜4桁目=出席番号
+ * grade / classNum はどちらか一方のみ、または両方を指定できる
  */
 export async function getStudentsWithMemoCounts(
   lessonId: string,
-  grade: number,
-  classNum: number
+  grade: number | null,
+  classNum: number | null
 ): Promise<StudentWithMemoCount[]> {
   const supabase = await createClient();
-  const min = grade * 1000 + classNum * 100;
-  const max = min + 99;
 
-  const { data: profiles, error: profilesError } = await supabase
+  let query = supabase
     .from("profiles")
     .select("id, display_name, student_number")
     .eq("role", "student")
-    .gte("student_number", min)
-    .lte("student_number", max)
-    .order("student_number", { ascending: true, nullsFirst: false });
+    .not("student_number", "is", null);
 
-  if (profilesError || !profiles) return [];
+  if (grade !== null && classNum !== null) {
+    const min = grade * 1000 + classNum * 100;
+    query = query.gte("student_number", min).lte("student_number", min + 99);
+  } else if (grade !== null) {
+    query = query.gte("student_number", grade * 1000).lte("student_number", grade * 1000 + 999);
+  }
+  // classNum のみの場合は全件取得して JS でフィルタ
+
+  const { data: rawProfiles, error: profilesError } = await query.order("student_number", {
+    ascending: true,
+    nullsFirst: false,
+  });
+
+  if (profilesError || !rawProfiles) return [];
+
+  const profiles =
+    grade === null && classNum !== null
+      ? rawProfiles.filter(
+          (p) =>
+            p.student_number !== null &&
+            Math.floor((p.student_number % 1000) / 100) === classNum
+        )
+      : rawProfiles;
+
   if (profiles.length === 0) return [];
 
   const { data: memos } = await supabase
