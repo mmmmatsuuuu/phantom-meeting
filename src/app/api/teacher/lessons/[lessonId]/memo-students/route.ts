@@ -25,11 +25,22 @@ export async function GET(req: NextRequest, { params }: Params) {
   }
 
   const { searchParams } = req.nextUrl;
-  const grade = parseInt(searchParams.get("grade") ?? "", 10);
-  const classNum = parseInt(searchParams.get("class") ?? "", 10);
+  const gradeRaw = searchParams.get("grade");
+  const classRaw = searchParams.get("class");
+  const grade = gradeRaw !== null ? parseInt(gradeRaw, 10) : null;
+  const classNum = classRaw !== null ? parseInt(classRaw, 10) : null;
 
-  if (isNaN(grade) || isNaN(classNum)) {
-    return NextResponse.json({ data: null, error: "grade and class are required" }, { status: 400 });
+  if (grade === null && classNum === null) {
+    return NextResponse.json(
+      { data: null, error: "grade または class のどちらかは必須です" },
+      { status: 400 }
+    );
+  }
+  if (grade !== null && isNaN(grade)) {
+    return NextResponse.json({ data: null, error: "grade is invalid" }, { status: 400 });
+  }
+  if (classNum !== null && isNaN(classNum)) {
+    return NextResponse.json({ data: null, error: "class is invalid" }, { status: 400 });
   }
 
   const students = await getStudentsWithMemoCounts(lessonId, grade, classNum);

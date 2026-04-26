@@ -18,27 +18,23 @@ export default function StudentMemoViewer({ lessonId }: Props) {
   const [memosByUser, setMemosByUser] = useState<Record<string, Memo[]>>({});
   const [loadingMemoUserId, setLoadingMemoUserId] = useState<string | null>(null);
 
-  const handleSearch = async (g: number, c: number) => {
+  const canLoad = grade !== null || classNum !== null;
+
+  const handleLoad = async () => {
+    if (!canLoad) return;
     setStudents(null);
     setExpandedUserId(null);
     setMemosByUser({});
     setLoadingStudents(true);
+    const params = new URLSearchParams();
+    if (grade !== null) params.set("grade", String(grade));
+    if (classNum !== null) params.set("class", String(classNum));
     const res = await fetch(
-      `/api/teacher/lessons/${lessonId}/memo-students?grade=${g}&class=${c}`
+      `/api/teacher/lessons/${lessonId}/memo-students?${params.toString()}`
     );
     const json = (await res.json()) as { data: StudentWithMemoCount[] | null; error: string | null };
     setStudents(json.data ?? []);
     setLoadingStudents(false);
-  };
-
-  const handleGradeChange = (value: number) => {
-    setGrade(value);
-    if (classNum !== null) handleSearch(value, classNum);
-  };
-
-  const handleClassChange = (value: number) => {
-    setClassNum(value);
-    if (grade !== null) handleSearch(grade, value);
   };
 
   const handleToggleStudent = async (userId: string, memoCount: number) => {
@@ -61,15 +57,15 @@ export default function StudentMemoViewer({ lessonId }: Props) {
   return (
     <div className="space-y-6">
       {/* 学年・クラス選択 */}
-      <div className="flex items-center gap-4 p-4 rounded-md border bg-muted/30">
+      <div className="flex flex-wrap items-center gap-4 p-4 rounded-md border bg-muted/30">
         <div className="flex items-center gap-2">
           <label className="text-sm font-medium">学年</label>
           <select
             className="px-3 py-1.5 rounded-md border bg-background text-sm focus:outline-none focus:ring-2 focus:ring-ring"
             value={grade ?? ""}
-            onChange={(e) => handleGradeChange(Number(e.target.value))}
+            onChange={(e) => setGrade(e.target.value === "" ? null : Number(e.target.value))}
           >
-            <option value="" disabled>選択</option>
+            <option value="">指定なし</option>
             {GRADES.map((g) => (
               <option key={g} value={g}>{g}年</option>
             ))}
@@ -80,19 +76,21 @@ export default function StudentMemoViewer({ lessonId }: Props) {
           <select
             className="px-3 py-1.5 rounded-md border bg-background text-sm focus:outline-none focus:ring-2 focus:ring-ring"
             value={classNum ?? ""}
-            onChange={(e) => handleClassChange(Number(e.target.value))}
+            onChange={(e) => setClassNum(e.target.value === "" ? null : Number(e.target.value))}
           >
-            <option value="" disabled>選択</option>
+            <option value="">指定なし</option>
             {CLASSES.map((c) => (
               <option key={c} value={c}>{c}組</option>
             ))}
           </select>
         </div>
-        {grade !== null && classNum !== null && (
-          <span className="text-sm text-muted-foreground">
-            {grade}年{classNum}組
-          </span>
-        )}
+        <button
+          onClick={handleLoad}
+          disabled={!canLoad || loadingStudents}
+          className="px-4 py-1.5 text-sm rounded-md bg-primary text-primary-foreground hover:opacity-90 disabled:opacity-40 disabled:cursor-not-allowed transition-opacity"
+        >
+          読み込む
+        </button>
       </div>
 
       {/* 生徒一覧 */}
@@ -159,7 +157,9 @@ export default function StudentMemoViewer({ lessonId }: Props) {
       )}
 
       {students === null && !loadingStudents && (
-        <p className="text-sm text-muted-foreground">学年とクラスを選択してください。</p>
+        <p className="text-sm text-muted-foreground">
+          学年またはクラスを指定して「読み込む」を押してください。
+        </p>
       )}
     </div>
   );
