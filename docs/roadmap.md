@@ -458,17 +458,17 @@ AI に渡すプロンプト・インポート両方でこの形式を使う：
 
 ### タスク
 
-- [ ] `lib/db/memos.ts` に以下を追加（teacher/admin 向け）
+- [x] `lib/db/memos.ts` に以下を追加（teacher/admin 向け）
   - `getStudentsWithMemoCounts(lessonId, grade, classNum)` — クラス絞り込み済みの生徒一覧＋メモ件数
   - `getMemosByStudent(lessonId, userId)` — 特定生徒のメモ一覧
-- [ ] Route Handler を実装（teacher/admin のみアクセス可）
+- [x] Route Handler を実装（teacher/admin のみアクセス可）
   - `GET /api/teacher/lessons/[lessonId]/memo-students?grade=x&class=x` — 第1段階：生徒メタデータ一覧
   - `GET /api/teacher/lessons/[lessonId]/memo-students/[userId]` — 第2段階：個別生徒のメモ
-- [ ] 生徒メモ閲覧ページを追加（`/teacher/lessons/[lessonId]/memos`）
+- [x] 生徒メモ閲覧ページを追加（`/teacher/lessons/[lessonId]/memos`）
   - 学年・クラスの選択 UI（`student_number LIKE '12%'` 形式でフィルタ）
   - 生徒リスト表示（表示名・学籍番号・メモ件数）
   - 生徒行クリックでメモをアコーディオン展開し `RichContent` でリッチ表示
-- [ ] `/teacher/contents` のレッスン行から上記ページへのリンクを追加
+- [x] `/teacher/contents` のレッスン行から上記ページへのリンクを追加
 
 ### 備考
 
@@ -686,7 +686,7 @@ create table public.quiz_attempt_answers (
 [✅] Phase 12.5: 画面遷移フィードバック
 [✅] Phase 12.7: レッスン削除機能
 [✅] Phase 12.9: 小テスト JSON インポート機能
-[ ] Phase 13:   生徒メモ閲覧機能（教師向け）
+[✅] Phase 13:   生徒メモ閲覧機能（教師向け）
 [--] Phase 14:  いいね機能（見送り）
 [✅] Phase 15:   小テスト完了ゲート
 [ ] Phase 15.5: 小テスト回答詳細の保存
@@ -694,4 +694,4 @@ create table public.quiz_attempt_answers (
 [ ] Phase 17:   匿名プライベートコメント機能
 ```
 
-次の着手は **Phase 13: データ出力（教師向け）** または **Phase 15.5: 小テスト回答詳細の保存**。
+次の着手は **Phase 15.5: 小テスト回答詳細の保存**。
