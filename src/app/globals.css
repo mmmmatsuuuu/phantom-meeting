@@ -129,6 +129,27 @@
   @apply border-l-4 border-primary/40 bg-primary/5 pl-3 py-1 my-2 rounded-r-md text-sm;
 }
 
+.ProseMirror table {
+  @apply border-collapse w-full my-2 text-sm;
+}
+
+.ProseMirror table td,
+.ProseMirror table th {
+  @apply border border-border px-2 py-1 align-top min-w-[40px];
+}
+
+.ProseMirror table th {
+  @apply bg-muted font-semibold;
+}
+
+.ProseMirror table .selectedCell {
+  @apply bg-primary/10;
+}
+
+.ProseMirror img {
+  @apply max-w-full rounded-md my-2;
+}
+
 .ProseMirror p.is-editor-empty:first-child::before {
   @apply text-muted-foreground;
   content: attr(data-placeholder);
@@ -188,6 +209,23 @@
 
 .rich-content blockquote {
   @apply border-l-4 border-primary/40 bg-primary/5 pl-3 py-1 my-2 rounded-r-md text-sm;
+}
+
+.rich-content table {
+  @apply border-collapse w-full my-2 text-sm;
+}
+
+.rich-content table td,
+.rich-content table th {
+  @apply border border-border px-2 py-1 align-top min-w-[40px];
+}
+
+.rich-content table th {
+  @apply bg-muted font-semibold;
+}
+
+.rich-content img {
+  @apply max-w-full rounded-md my-2;
 }
 
 /* highlight.js シンタックスハイライト */
