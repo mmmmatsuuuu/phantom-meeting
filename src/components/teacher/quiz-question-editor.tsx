@@ -33,9 +33,12 @@ type Props = {
   placeholder?: string;
 };
 
+type UploadResponse = { data: { url: string } | null; error: string | null };
+
 export default function QuizQuestionEditor({ uid, initialContent, onChange, placeholder }: Props) {
   const [codeBlockLang, setCodeBlockLang] = useState("");
   const [isCodeBlockActive, setIsCodeBlockActive] = useState(false);
+  const [isUploading, setIsUploading] = useState(false);
 
   const syncState = (
     editor: Parameters<
@@ -72,6 +75,37 @@ export default function QuizQuestionEditor({ uid, initialContent, onChange, plac
       attributes: {
         class: "min-h-[80px] p-3 text-sm focus:outline-none",
       },
+      handlePaste(view, event) {
+        const items = Array.from(event.clipboardData?.items ?? []);
+        const imageItem = items.find((item) => item.type.startsWith("image/"));
+        if (!imageItem) return false;
+
+        const file = imageItem.getAsFile();
+        if (!file) return false;
+
+        setIsUploading(true);
+
+        const formData = new FormData();
+        formData.append("file", file);
+
+        fetch("/api/images/upload", { method: "POST", body: formData })
+          .then((res) => res.json() as Promise<UploadResponse>)
+          .then((json) => {
+            if (json.data?.url) {
+              const { state } = view;
+              const imageType = state.schema.nodes["image"];
+              if (imageType) {
+                const node = imageType.create({ src: json.data.url });
+                view.dispatch(state.tr.replaceSelectionWith(node));
+              }
+            }
+          })
+          .finally(() => {
+            setIsUploading(false);
+          });
+
+        return true;
+      },
     },
   });
 
@@ -85,6 +119,11 @@ export default function QuizQuestionEditor({ uid, initialContent, onChange, plac
         isCodeBlockActive={isCodeBlockActive}
       />
       <EditorContent editor={editor} />
+      {isUploading && (
+        <p className="px-3 py-1 text-xs text-muted-foreground border-t">
+          画像をアップロード中...
+        </p>
+      )}
     </div>
   );
 }
