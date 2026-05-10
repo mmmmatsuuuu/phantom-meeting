@@ -10,7 +10,6 @@ import { Table } from "@tiptap/extension-table";
 import TableRow from "@tiptap/extension-table-row";
 import TableCell from "@tiptap/extension-table-cell";
 import TableHeader from "@tiptap/extension-table-header";
-import Image from "@tiptap/extension-image";
 import { createLowlight } from "lowlight";
 import javascript from "highlight.js/lib/languages/javascript";
 import python from "highlight.js/lib/languages/python";
@@ -18,6 +17,7 @@ import c from "highlight.js/lib/languages/c";
 import xml from "highlight.js/lib/languages/xml";
 import css from "highlight.js/lib/languages/css";
 import MemoToolbar from "@/components/lesson/memo-toolbar";
+import { ResizableImage } from "@/lib/tiptap/resizable-image-extension";
 
 const lowlight = createLowlight();
 lowlight.register("javascript", javascript);
@@ -33,7 +33,17 @@ type Props = {
   placeholder?: string;
 };
 
-type UploadResponse = { data: { url: string } | null; error: string | null };
+type UploadResponse = { data: { url: string; fileId: string } | null; error: string | null };
+
+function collectImageFileIds(doc: { descendants: (fn: (node: { type: { name: string }; attrs: Record<string, unknown> }) => void) => void }): Set<string> {
+  const ids = new Set<string>();
+  doc.descendants((node) => {
+    if (node.type.name === "image" && typeof node.attrs.fileId === "string") {
+      ids.add(node.attrs.fileId);
+    }
+  });
+  return ids;
+}
 
 export default function QuizQuestionEditor({ uid, initialContent, onChange, placeholder }: Props) {
   const [codeBlockLang, setCodeBlockLang] = useState("");
@@ -53,9 +63,18 @@ export default function QuizQuestionEditor({ uid, initialContent, onChange, plac
   const editor = useEditor({
     immediatelyRender: false,
     content: initialContent,
-    onUpdate: ({ editor: e }) => {
+    onUpdate: ({ editor: e, transaction }) => {
       syncState(e);
       onChange(uid, e.getJSON() as Record<string, unknown>);
+
+      // エディタから削除された画像を ImageKit からも削除
+      const prevIds = collectImageFileIds(transaction.before);
+      const currIds = collectImageFileIds(transaction.doc);
+      prevIds.forEach((fileId) => {
+        if (!currIds.has(fileId)) {
+          fetch(`/api/images/${fileId}`, { method: "DELETE" }).catch(() => {});
+        }
+      });
     },
     onSelectionUpdate: ({ editor: e }) => {
       syncState(e);
@@ -69,7 +88,7 @@ export default function QuizQuestionEditor({ uid, initialContent, onChange, plac
       TableRow,
       TableCell,
       TableHeader,
-      Image,
+      ResizableImage,
     ],
     editorProps: {
       attributes: {
@@ -95,7 +114,10 @@ export default function QuizQuestionEditor({ uid, initialContent, onChange, plac
               const { state } = view;
               const imageType = state.schema.nodes["image"];
               if (imageType) {
-                const node = imageType.create({ src: json.data.url });
+                const node = imageType.create({
+                  src: json.data.url,
+                  fileId: json.data.fileId ?? null,
+                });
                 view.dispatch(state.tr.replaceSelectionWith(node));
               }
             }

@@ -8,7 +8,7 @@ import { Table } from "@tiptap/extension-table";
 import TableRow from "@tiptap/extension-table-row";
 import TableCell from "@tiptap/extension-table-cell";
 import TableHeader from "@tiptap/extension-table-header";
-import Image from "@tiptap/extension-image";
+import { ResizableImage } from "@/lib/tiptap/resizable-image-extension";
 import { createLowlight } from "lowlight";
 import javascript from "highlight.js/lib/languages/javascript";
 import python from "highlight.js/lib/languages/python";
@@ -40,7 +40,7 @@ export default function RichContent({ content }: Props) {
       TableRow,
       TableCell,
       TableHeader,
-      Image,
+      ResizableImage,
     ],
     editorProps: {
       attributes: {

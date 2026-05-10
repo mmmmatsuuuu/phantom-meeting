@@ -150,6 +150,11 @@
   @apply max-w-full rounded-md my-2;
 }
 
+/* NodeView内のimgはNodeViewWrapper側でmarginを管理 */
+.ProseMirror [data-node-view-wrapper] img {
+  @apply my-0;
+}
+
 .ProseMirror p.is-editor-empty:first-child::before {
   @apply text-muted-foreground;
   content: attr(data-placeholder);

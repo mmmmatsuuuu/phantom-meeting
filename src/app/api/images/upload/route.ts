@@ -52,6 +52,6 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ data: null, error: "Image upload failed" }, { status: 502 });
   }
 
-  const ikData = (await ikRes.json()) as { url: string };
-  return NextResponse.json({ data: { url: ikData.url }, error: null }, { status: 201 });
+  const ikData = (await ikRes.json()) as { url: string; fileId: string };
+  return NextResponse.json({ data: { url: ikData.url, fileId: ikData.fileId }, error: null }, { status: 201 });
 }
