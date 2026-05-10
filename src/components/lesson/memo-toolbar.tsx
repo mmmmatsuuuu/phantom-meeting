@@ -1,7 +1,7 @@
 "use client";
 
 import type { Editor } from "@tiptap/react";
-import { useState } from "react";
+import { useState, useRef } from "react";
 
 type Props = {
   editor: Editor;
@@ -36,9 +36,44 @@ function ToolbarButton({ onClick, isActive, title, children }: ToolbarButtonProp
   );
 }
 
+const TABLE_MAX = 6;
+
+function TableGrid({ onSelect }: { onSelect: (rows: number, cols: number) => void }) {
+  const [hover, setHover] = useState<{ rows: number; cols: number }>({ rows: 0, cols: 0 });
+
+  return (
+    <div className="p-2 bg-background border rounded-md shadow-md">
+      <p className="text-xs text-muted-foreground mb-1.5 text-center">
+        {hover.rows > 0 ? `${hover.rows} × ${hover.cols}` : "行 × 列を選択"}
+      </p>
+      <div className="grid gap-0.5" style={{ gridTemplateColumns: `repeat(${TABLE_MAX}, 1fr)` }}>
+        {Array.from({ length: TABLE_MAX * TABLE_MAX }, (_, i) => {
+          const row = Math.floor(i / TABLE_MAX) + 1;
+          const col = (i % TABLE_MAX) + 1;
+          const active = row <= hover.rows && col <= hover.cols;
+          return (
+            <button
+              key={i}
+              type="button"
+              className={`w-5 h-5 rounded-sm border transition-colors ${
+                active ? "bg-primary border-primary" : "bg-muted/50 border-border hover:bg-muted"
+              }`}
+              onMouseEnter={() => setHover({ rows: row, cols: col })}
+              onMouseLeave={() => setHover({ rows: 0, cols: 0 })}
+              onClick={() => onSelect(row, col)}
+            />
+          );
+        })}
+      </div>
+    </div>
+  );
+}
+
 export default function MemoToolbar({ editor, codeBlockLang, isCodeBlockActive }: Props) {
   const [showLinkInput, setShowLinkInput] = useState(false);
   const [linkUrl, setLinkUrl] = useState("");
+  const [showTableGrid, setShowTableGrid] = useState(false);
+  const tableButtonRef = useRef<HTMLButtonElement>(null);
 
   const handleSetLink = () => {
     if (!linkUrl) {
@@ -48,6 +83,11 @@ export default function MemoToolbar({ editor, codeBlockLang, isCodeBlockActive }
     }
     setLinkUrl("");
     setShowLinkInput(false);
+  };
+
+  const handleInsertTable = (rows: number, cols: number) => {
+    editor.chain().focus().insertTable({ rows, cols, withHeaderRow: true }).run();
+    setShowTableGrid(false);
   };
 
   return (
@@ -163,6 +203,66 @@ export default function MemoToolbar({ editor, codeBlockLang, isCodeBlockActive }
             設定
           </button>
         </div>
+      )}
+
+      <div className="relative">
+        <button
+          ref={tableButtonRef}
+          type="button"
+          onMouseDown={(e) => {
+            e.preventDefault();
+            setShowTableGrid((v) => !v);
+            setShowLinkInput(false);
+          }}
+          title="表を挿入"
+          className={`px-2 py-1 rounded text-sm transition-colors ${
+            editor.isActive("table")
+              ? "bg-primary text-primary-foreground"
+              : "text-muted-foreground hover:text-foreground hover:bg-muted"
+          }`}
+        >
+          ⊞
+        </button>
+        {showTableGrid && (
+          <div className="absolute top-full left-0 z-50 mt-1">
+            <TableGrid onSelect={handleInsertTable} />
+          </div>
+        )}
+      </div>
+
+      {editor.isActive("table") && (
+        <>
+          <ToolbarButton
+            onClick={() => editor.chain().focus().addRowAfter().run()}
+            title="行を追加"
+          >
+            +行
+          </ToolbarButton>
+          <ToolbarButton
+            onClick={() => editor.chain().focus().addColumnAfter().run()}
+            title="列を追加"
+          >
+            +列
+          </ToolbarButton>
+          <ToolbarButton
+            onClick={() => editor.chain().focus().deleteRow().run()}
+            title="行を削除"
+          >
+            −行
+          </ToolbarButton>
+          <ToolbarButton
+            onClick={() => editor.chain().focus().deleteColumn().run()}
+            title="列を削除"
+          >
+            −列
+          </ToolbarButton>
+          <ToolbarButton
+            onClick={() => editor.chain().focus().deleteTable().run()}
+            title="表を削除"
+          >
+            🗑
+          </ToolbarButton>
+        </>
       )}
     </div>
   );

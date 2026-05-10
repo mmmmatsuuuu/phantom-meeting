@@ -6,6 +6,11 @@ import StarterKit from "@tiptap/starter-kit";
 import Link from "@tiptap/extension-link";
 import CodeBlockLowlight from "@tiptap/extension-code-block-lowlight";
 import Placeholder from "@tiptap/extension-placeholder";
+import { Table } from "@tiptap/extension-table";
+import TableRow from "@tiptap/extension-table-row";
+import TableCell from "@tiptap/extension-table-cell";
+import TableHeader from "@tiptap/extension-table-header";
+import { ResizableImage } from "@/lib/tiptap/resizable-image-extension";
 import { createLowlight } from "lowlight";
 import javascript from "highlight.js/lib/languages/javascript";
 import python from "highlight.js/lib/languages/python";
@@ -74,10 +79,22 @@ export default function MemoSection({ lessonId, getCurrentTime, seekTo, onClose 
       Link.configure({ openOnClick: false }),
       CodeBlockLowlight.configure({ lowlight }),
       Placeholder.configure({ placeholder: "動画を見て気づいたことや疑問をメモしよう..." }),
+      Table.configure({ resizable: false }),
+      TableRow,
+      TableCell,
+      TableHeader,
+      ResizableImage,
     ],
     editorProps: {
       attributes: {
         class: "min-h-[120px] p-3 text-sm focus:outline-none",
+      },
+      handlePaste(_, event) {
+        const items = Array.from(event.clipboardData?.items ?? []);
+        if (items.some((item) => item.type.startsWith("image/"))) {
+          return true;
+        }
+        return false;
       },
     },
   });
