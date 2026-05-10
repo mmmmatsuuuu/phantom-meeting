@@ -481,6 +481,58 @@ teacher ロール以外が他者のメモを閲覧できないこと、クラス
 
 ---
 
+## Phase 13.7: エディタ機能拡張（表・画像）
+
+> TipTapエディタに表と画像の機能を追加し、メモ・問題文の表現力を向上させる。
+
+### 設計方針
+
+- **表（Table）**：行・列数を選択して挿入できるグリッドUIをツールバーに追加する
+  - 表の追加・削除・行列の追加削除も対応
+  - MemoSection、QuizQuestionEditor、RichContent（表示用）の全エディタに対応
+- **画像（Image）**：コピペした画像を自動でImageKitにアップロードし、URLで保存・表示する
+  - **画像の貼り付けは小テスト作成画面（QuizQuestionEditor）のみ有効**
+  - MemoSection では画像の貼り付けを無効化（ペーストイベントで画像を検知したら何もせず破棄）
+  - RichContent（読み取り専用）は画像の表示のみ対応（貼り付け操作そのものが不可）
+  - クライアントは貼り付けイベントを検知 → `/api/images/upload` にPOST → ImageKit APIにプロキシ → URLをエディタに挿入
+  - ImageKitの秘密キーはサーバーサイドのみで使用し、クライアントには公開しない
+  - ファイルサイズ上限：5MB、許可MIMEタイプ：`image/*`
+  - 認証済みユーザーのみアップロード可
+
+### 必要な環境変数（事前設定）
+
+| 変数名 | 説明 | 公開範囲 |
+|---|---|---|
+| `IMAGEKIT_PUBLIC_KEY` | ImageKit公開キー | サーバーサイドのみ |
+| `IMAGEKIT_PRIVATE_KEY` | ImageKit秘密キー | サーバーサイドのみ |
+| `NEXT_PUBLIC_IMAGEKIT_URL_ENDPOINT` | `https://ik.imagekit.io/YOUR_ID` | クライアント・サーバー両方 |
+
+### タスク
+
+- [x] パッケージインストール
+  - `@tiptap/extension-table`, `@tiptap/extension-table-row`, `@tiptap/extension-table-cell`, `@tiptap/extension-table-header`
+  - `@tiptap/extension-image`
+  - `@imagekit/next`（`@imagekit/nodejs` の代わりに採用）
+- [x] 表機能の追加
+  - MemoSection・QuizQuestionEditor に Table 拡張を追加
+  - RichContent に Table 拡張を追加（表示用）
+  - MemoToolbar にグリッド選択UIで表を挿入するボタンを追加（ホバーで行・列を選択）
+  - `globals.css` に `.ProseMirror table` / `.rich-content table` のスタイルを追加
+- [x] 画像アップロード API の実装
+  - `src/app/api/images/upload/route.ts` を新規作成（POST）
+  - 認証確認、ファイルサイズ（5MB）・MIMEタイプ検証
+  - ImageKit REST API を `fetch` で直接呼び出し、URLを返す
+- [x] 画像機能の追加
+  - QuizQuestionEditor に Image 拡張とペーストハンドラを追加（アップロード中はインジケーター表示）
+  - MemoSection にも Image 拡張を追加するが、ペーストハンドラで画像を検知したら破棄（添付不可）
+  - RichContent に Image 拡張を追加（表示専用・ペースト操作なし）
+
+### マージ判断
+
+表の挿入・編集が正しく動作すること、画像のコピペが自動でアップロードされて表示されること、認証なしでアップロードAPIにアクセスできないことを確認してからマージ
+
+---
+
 ## Phase 14: いいね機能（見送り）
 
 > 検討の結果、現時点では導入しない方針。
@@ -687,6 +739,7 @@ create table public.quiz_attempt_answers (
 [✅] Phase 12.7: レッスン削除機能
 [✅] Phase 12.9: 小テスト JSON インポート機能
 [✅] Phase 13:   生徒メモ閲覧機能（教師向け）
+[✅] Phase 13.7: エディタ機能拡張（表・画像）
 [--] Phase 14:  いいね機能（見送り）
 [✅] Phase 15:   小テスト完了ゲート
 [ ] Phase 15.5: 小テスト回答詳細の保存
