@@ -38,7 +38,7 @@ export async function POST(req: NextRequest) {
   const uploadForm = new FormData();
   uploadForm.append("file", file);
   uploadForm.append("fileName", fileName);
-  uploadForm.append("folder", "/quiz-images");
+  uploadForm.append("folder", "/phantom_meeting/quiz-images");
 
   const ikRes = await fetch("https://upload.imagekit.io/api/v2/files/upload", {
     method: "POST",
