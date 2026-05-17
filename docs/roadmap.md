@@ -671,13 +671,17 @@ create table public.quiz_attempt_answers (
 
 ### タスク
 
-- [ ] `lib/db/quizzes.ts` に以下を追加
+- [x] `lib/db/quizzes.ts` に以下を追加
   - `getQuizResultsByUser()` — 自分の全受験履歴を科目・単元・レッスン階層で取得
-- [ ] `/quiz-results` ページを追加（Server Component）
+- [x] `/quiz-results` ページを追加（Server Component）
   - 科目 → 単元 → レッスンの階層で受験履歴を一覧表示
-  - 各受験について：受験日時・スコア・各問の正誤を表示
+  - レッスンごとに最高・平均の正答率（直近3回）を表示
+  - 単元ごとに各レッスン最高正答率の平均を表示
+  - 各受験について：受験日時・スコア・正答率・各問の正誤（○✕－）を表示
+  - `quiz_attempt_answers` がない旧データは「詳細な回答記録なし」と表示
   - 未受験のレッスンは表示しない（受験済みのみ）
-- [ ] NavBar の UserMenu に「小テスト結果」リンクを追加（全ロール表示）
+- [x] NavBar の UserMenu に「小テスト結果」リンクを追加（全ロール表示）
+- [x] `quiz-section.tsx` のスコア表示に正答率（%）を追加（例：5/8点（63%））
 
 ### マージ判断
 
@@ -772,9 +776,9 @@ create table public.quiz_attempt_answers (
 [--] Phase 14:   いいね機能（見送り）
 [✅] Phase 15:   小テスト完了ゲート
 [✅] Phase 15.5: 小テスト回答詳細の保存
-[ ] Phase 15.8: 小テスト結果一覧（生徒向け）
+[✅] Phase 15.8: 小テスト結果一覧（生徒向け）
 [ ] Phase 16:   トロフィー・実績機能
 [ ] Phase 17:   匿名プライベートコメント機能
 ```
 
-次の着手は **Phase 15.8: 小テスト結果一覧（生徒向け）**。
+次の着手は **Phase 16: トロフィー・実績機能**。

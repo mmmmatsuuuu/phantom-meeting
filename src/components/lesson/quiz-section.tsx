@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect } from "react";
 import {
   DndContext,
   closestCenter,
@@ -284,6 +284,15 @@ function initAnswer(question: QuizQuestion): Answer {
   return { type: "ordering", items };
 }
 
+type RecentAttemptDetail = {
+  score: number;
+  max_score: number;
+  quiz_attempt_answers: {
+    is_correct: boolean | null;
+    quiz_questions: { id: string; order: number };
+  }[];
+};
+
 type Props = {
   quiz: QuizWithQuestions;
   onCompleted?: () => void;
@@ -294,6 +303,46 @@ export default function QuizSection({ quiz, onCompleted }: Props) {
     quiz.questions.map(initAnswer)
   );
   const [quizState, setQuizState] = useState<QuizState>("answering");
+  const [recentAttempts, setRecentAttempts] = useState<RecentAttemptDetail[]>([]);
+
+  useEffect(() => {
+    fetch(`/api/quizzes/${quiz.id}/attempts`)
+      .then((r) => (r.ok ? r.json() : null))
+      .then((json: { data: RecentAttemptDetail[] | null } | null) => {
+        if (json?.data) setRecentAttempts(json.data);
+      })
+      .catch(() => {});
+  }, [quiz.id]);
+
+  const recentStats = useMemo(() => {
+    const autoGraded = recentAttempts.filter((a) => a.max_score > 0);
+    if (autoGraded.length === 0) return null;
+    const recent3 = autoGraded.slice(0, 3);
+    const rates = recent3.map((a) => Math.round((a.score / a.max_score) * 100));
+    return {
+      max: Math.max(...rates),
+      avg: Math.round(rates.reduce((s, r) => s + r, 0) / rates.length),
+      count: recent3.length,
+    };
+  }, [recentAttempts]);
+
+  const frequentlyMissed = useMemo(() => {
+    const questionMap = new Map<string, { order: number; total: number; wrong: number }>();
+    for (const attempt of recentAttempts) {
+      for (const ans of attempt.quiz_attempt_answers) {
+        if (ans.is_correct === null) continue;
+        const key = ans.quiz_questions.id;
+        const entry = questionMap.get(key) ?? { order: ans.quiz_questions.order, total: 0, wrong: 0 };
+        entry.total++;
+        if (!ans.is_correct) entry.wrong++;
+        questionMap.set(key, entry);
+      }
+    }
+    return [...questionMap.values()]
+      .filter((s) => s.total >= 2 && s.wrong > s.total / 2)
+      .sort((a, b) => a.order - b.order)
+      .map((s) => `Q${s.order + 1}`);
+  }, [recentAttempts]);
 
   const score = useMemo(() => {
     if (quizState !== "submitted") return null;
@@ -343,6 +392,11 @@ export default function QuizSection({ quiz, onCompleted }: Props) {
 
     if (res.ok) {
       onCompleted?.();
+      const statsRes = await fetch(`/api/quizzes/${quiz.id}/attempts`);
+      if (statsRes.ok) {
+        const json = (await statsRes.json()) as { data: RecentAttemptDetail[] | null };
+        if (json.data) setRecentAttempts(json.data);
+      }
     }
   };
 
@@ -358,12 +412,49 @@ export default function QuizSection({ quiz, onCompleted }: Props) {
         <span className="text-sm text-muted-foreground">{quiz.questions.length} 問</span>
       </div>
 
+      {/* これまでの記録（受験前・受験後ともに表示、初回は非表示） */}
+      {(recentStats !== null || frequentlyMissed.length > 0) && (
+        <div className="rounded-lg border bg-muted/40 p-4 space-y-2.5">
+          <p className="text-xs font-medium text-muted-foreground">これまでの記録</p>
+          {recentStats && (
+            <div className="flex items-center gap-6 text-sm">
+              <div className="text-center">
+                <p className="text-xs text-muted-foreground">直近最高</p>
+                <p className="font-bold">{recentStats.max}%</p>
+              </div>
+              <div className="text-center">
+                <p className="text-xs text-muted-foreground">直近平均</p>
+                <p className="font-bold">{recentStats.avg}%</p>
+              </div>
+              <p className="text-xs text-muted-foreground self-end pb-0.5">直近{recentStats.count}回</p>
+            </div>
+          )}
+          {frequentlyMissed.length > 0 && (
+            <div className="flex items-center gap-2 flex-wrap">
+              <span className="text-xs text-muted-foreground shrink-0">間違いが多い問題:</span>
+              {frequentlyMissed.map((label) => (
+                <span
+                  key={label}
+                  className="inline-block px-2 py-0.5 rounded-full bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400 text-xs font-medium"
+                >
+                  {label}
+                </span>
+              ))}
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* 提出後のスコアカード */}
       {quizState === "submitted" && score !== null && (
         <div className="rounded-lg border bg-card p-4 text-center space-y-1">
           {score.autoGradable > 0 && (
             <p className="text-2xl font-bold">
               {score.correct} / {score.autoGradable}
               <span className="text-base font-normal text-muted-foreground ml-1">点</span>
+              <span className="text-lg font-normal text-muted-foreground ml-2">
+                （{Math.round((score.correct / score.autoGradable) * 100)}%）
+              </span>
             </p>
           )}
           {quiz.questions.some((q) => q.type === "short_answer") && (
