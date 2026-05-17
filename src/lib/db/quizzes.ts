@@ -196,6 +196,92 @@ export async function createQuizAttempt(
   return true;
 }
 
+// ─── 小テスト結果一覧用の型 ───────────────────────────────────────
+
+export type AttemptAnswerResult = {
+  id: string;
+  is_correct: boolean | null;
+  quiz_questions: {
+    id: string;
+    type: Database["public"]["Enums"]["quiz_question_type"];
+    order: number;
+  };
+};
+
+export type QuizAttemptResult = {
+  id: string;
+  score: number;
+  max_score: number;
+  submitted_at: string;
+  quizzes: {
+    id: string;
+    title: string;
+    lessons: {
+      id: string;
+      title: string;
+      units: {
+        id: string;
+        name: string;
+        subjects: {
+          id: string;
+          name: string;
+          order: number;
+        };
+      };
+    };
+  };
+  quiz_attempt_answers: AttemptAnswerResult[];
+};
+
+/**
+ * ログインユーザーの全受験履歴を階層情報と回答詳細つきで取得する
+ */
+export async function getQuizResultsByUser(): Promise<QuizAttemptResult[]> {
+  const supabase = await createClient();
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) return [];
+
+  const { data, error } = await supabase
+    .from("quiz_attempts")
+    .select(`
+      id,
+      score,
+      max_score,
+      submitted_at,
+      quizzes (
+        id,
+        title,
+        lessons (
+          id,
+          title,
+          units (
+            id,
+            name,
+            subjects (
+              id,
+              name,
+              order
+            )
+          )
+        )
+      ),
+      quiz_attempt_answers (
+        id,
+        is_correct,
+        quiz_questions (
+          id,
+          type,
+          order
+        )
+      )
+    `)
+    .eq("user_id", user.id)
+    .order("submitted_at", { ascending: false });
+
+  if (error || !data) return [];
+  return data as unknown as QuizAttemptResult[];
+}
+
 /**
  * ユーザーが指定クイズを1回以上提出済みか確認する
  */

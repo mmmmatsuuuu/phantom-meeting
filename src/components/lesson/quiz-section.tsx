@@ -364,6 +364,9 @@ export default function QuizSection({ quiz, onCompleted }: Props) {
             <p className="text-2xl font-bold">
               {score.correct} / {score.autoGradable}
               <span className="text-base font-normal text-muted-foreground ml-1">点</span>
+              <span className="text-lg font-normal text-muted-foreground ml-2">
+                （{Math.round((score.correct / score.autoGradable) * 100)}%）
+              </span>
             </p>
           )}
           {quiz.questions.some((q) => q.type === "short_answer") && (
