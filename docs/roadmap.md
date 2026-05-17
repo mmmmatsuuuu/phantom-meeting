@@ -743,6 +743,29 @@ create table public.quiz_attempt_answers (
 
 ---
 
+## Phase 18: Vercel Analytics 導入
+
+> サイトのページビューとパフォーマンス指標を可視化する。
+
+### 設計方針
+
+- Vercel 公式の `@vercel/analytics` を使用してページビューを計測する
+- `@vercel/speed-insights` も合わせて導入し、Core Web Vitals（LCP・FID・CLS）を計測する
+- `app/layout.tsx` にコンポーネントを追加するだけで全ページに適用される（変更箇所は1ファイルのみ）
+- 無料枠（Hobby プラン：月10万イベントまで）内で運用可能
+
+### タスク
+
+- [ ] `@vercel/analytics` をインストール
+- [ ] `@vercel/speed-insights` をインストール
+- [ ] `app/layout.tsx` に `<Analytics />` と `<SpeedInsights />` を追加
+
+### マージ判断
+
+Vercel ダッシュボードの Analytics タブでデータが収集されていることを確認してからマージ
+
+---
+
 ## ウェイトリスト
 
 > 実装予定はあるが、時期未定のタスク。優先度が上がった時点でフェーズに組み込む。
@@ -779,6 +802,7 @@ create table public.quiz_attempt_answers (
 [✅] Phase 15.8: 小テスト結果一覧（生徒向け）
 [ ] Phase 16:   トロフィー・実績機能
 [ ] Phase 17:   匿名プライベートコメント機能
+[ ] Phase 18:   Vercel Analytics 導入
 ```
 
 次の着手は **Phase 16: トロフィー・実績機能**。
