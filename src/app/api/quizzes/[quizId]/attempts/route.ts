@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
 import { createQuizAttempt, hasCompletedQuiz } from "@/lib/db/quizzes";
-import type { QuizQuestion } from "@/lib/db/quizzes";
+import type { QuizQuestion, QuizAttemptAnswerInput } from "@/lib/db/quizzes";
 
 type AnswerPayload =
   | { questionId: string; type: "multiple_choice"; selectedText: string }
@@ -44,24 +44,53 @@ export async function POST(req: NextRequest, { params }: Params) {
 
   let score = 0;
   let maxScore = 0;
+  const answerDetails: QuizAttemptAnswerInput[] = [];
 
   for (const q of questions as QuizQuestion[]) {
-    if (q.type === "short_answer") continue;
+    const answer = body.answers.find((a) => a.questionId === q.id);
+
+    if (q.type === "short_answer") {
+      answerDetails.push({
+        questionId: q.id,
+        answer: { type: "short_answer", text: answer?.type === "short_answer" ? answer.text : "" },
+        isCorrect: null,
+      });
+      continue;
+    }
+
     maxScore++;
 
-    const answer = body.answers.find((a) => a.questionId === q.id);
-    if (!answer) continue;
+    if (!answer) {
+      answerDetails.push({ questionId: q.id, answer: { type: q.type }, isCorrect: false });
+      continue;
+    }
 
+    let isCorrect = false;
     if (q.type === "multiple_choice" && answer.type === "multiple_choice") {
       const correctIndex = (q.correct_answer as { index: number }).index;
       const correctText = (q.options as string[])[correctIndex];
-      if (answer.selectedText === correctText) score++;
+      isCorrect = answer.selectedText === correctText;
+      if (isCorrect) score++;
+      answerDetails.push({
+        questionId: q.id,
+        answer: { type: "multiple_choice", selectedText: answer.selectedText },
+        isCorrect,
+      });
     } else if (q.type === "ordering" && answer.type === "ordering") {
-      if (JSON.stringify(answer.items) === JSON.stringify(q.correct_answer as string[])) score++;
+      isCorrect = JSON.stringify(answer.items) === JSON.stringify(q.correct_answer as string[]);
+      if (isCorrect) score++;
+      answerDetails.push({
+        questionId: q.id,
+        answer: { type: "ordering", items: answer.items },
+        isCorrect,
+      });
     }
   }
 
-  const ok = await createQuizAttempt({ quizId, userId: user.id, score, maxScore });
+  const ok = await createQuizAttempt(
+    { quizId, userId: user.id, score, maxScore },
+    answerDetails
+  );
   if (!ok) {
     return NextResponse.json({ data: null, error: "Failed to save attempt" }, { status: 500 });
   }
