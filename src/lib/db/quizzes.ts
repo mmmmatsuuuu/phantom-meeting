@@ -28,6 +28,12 @@ export type QuizAttemptInput = {
   maxScore: number;
 };
 
+export type QuizAttemptAnswerInput = {
+  questionId: string;
+  answer: Record<string, unknown>;
+  isCorrect: boolean | null;
+};
+
 /**
  * レッスンに紐づくクイズと問題一覧を取得する
  */
@@ -151,17 +157,43 @@ export async function deleteQuiz(quizId: string): Promise<boolean> {
 }
 
 /**
- * 小テスト提出記録を保存する
+ * 小テスト提出記録と各問の回答詳細を保存する
  */
-export async function createQuizAttempt(input: QuizAttemptInput): Promise<boolean> {
+export async function createQuizAttempt(
+  input: QuizAttemptInput,
+  answers?: QuizAttemptAnswerInput[]
+): Promise<boolean> {
   const supabase = await createClient();
-  const { error } = await supabase.from("quiz_attempts").insert({
-    quiz_id: input.quizId,
-    user_id: input.userId,
-    score: input.score,
-    max_score: input.maxScore,
-  });
-  return !error;
+
+  const { data: attempt, error: attemptError } = await supabase
+    .from("quiz_attempts")
+    .insert({
+      quiz_id: input.quizId,
+      user_id: input.userId,
+      score: input.score,
+      max_score: input.maxScore,
+    })
+    .select("id")
+    .single();
+
+  if (attemptError || !attempt) return false;
+
+  if (answers && answers.length > 0) {
+    const rows = answers.map((a) => ({
+      attempt_id: attempt.id,
+      question_id: a.questionId,
+      answer: a.answer as Database["public"]["Tables"]["quiz_attempt_answers"]["Insert"]["answer"],
+      is_correct: a.isCorrect,
+    }));
+
+    const { error: answersError } = await supabase
+      .from("quiz_attempt_answers")
+      .insert(rows);
+
+    if (answersError) return false;
+  }
+
+  return true;
 }
 
 /**
