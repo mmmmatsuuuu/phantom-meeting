@@ -5,6 +5,8 @@ import NavBar from "@/components/shared/nav-bar";
 import { Toaster } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import NextTopLoader from "nextjs-toploader";
+import { Analytics } from "@vercel/analytics/next";
+import { SpeedInsights } from "@vercel/speed-insights/next";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -37,6 +39,8 @@ export default function RootLayout({
           <main>{children}</main>
           <Toaster />
         </TooltipProvider>
+        <Analytics />
+        <SpeedInsights />
       </body>
     </html>
   );
