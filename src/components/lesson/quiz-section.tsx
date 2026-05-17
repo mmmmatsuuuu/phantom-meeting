@@ -284,6 +284,8 @@ function initAnswer(question: QuizQuestion): Answer {
   return { type: "ordering", items };
 }
 
+type RecentAttemptSummary = { score: number; max_score: number };
+
 type Props = {
   quiz: QuizWithQuestions;
   onCompleted?: () => void;
@@ -294,6 +296,18 @@ export default function QuizSection({ quiz, onCompleted }: Props) {
     quiz.questions.map(initAnswer)
   );
   const [quizState, setQuizState] = useState<QuizState>("answering");
+  const [recentAttempts, setRecentAttempts] = useState<RecentAttemptSummary[]>([]);
+
+  const recentStats = useMemo(() => {
+    const autoGraded = recentAttempts.filter((a) => a.max_score > 0);
+    if (autoGraded.length < 2) return null;
+    const rates = autoGraded.map((a) => Math.round((a.score / a.max_score) * 100));
+    return {
+      max: Math.max(...rates),
+      avg: Math.round(rates.reduce((s, r) => s + r, 0) / rates.length),
+      count: autoGraded.length,
+    };
+  }, [recentAttempts]);
 
   const score = useMemo(() => {
     if (quizState !== "submitted") return null;
@@ -343,6 +357,11 @@ export default function QuizSection({ quiz, onCompleted }: Props) {
 
     if (res.ok) {
       onCompleted?.();
+      const statsRes = await fetch(`/api/quizzes/${quiz.id}/attempts`);
+      if (statsRes.ok) {
+        const json = (await statsRes.json()) as { data: RecentAttemptSummary[] | null };
+        if (json.data) setRecentAttempts(json.data);
+      }
     }
   };
 
@@ -359,7 +378,7 @@ export default function QuizSection({ quiz, onCompleted }: Props) {
       </div>
 
       {quizState === "submitted" && score !== null && (
-        <div className="rounded-lg border bg-card p-4 text-center space-y-1">
+        <div className="rounded-lg border bg-card p-4 text-center space-y-2">
           {score.autoGradable > 0 && (
             <p className="text-2xl font-bold">
               {score.correct} / {score.autoGradable}
@@ -368,6 +387,19 @@ export default function QuizSection({ quiz, onCompleted }: Props) {
                 （{Math.round((score.correct / score.autoGradable) * 100)}%）
               </span>
             </p>
+          )}
+          {recentStats && (
+            <div className="flex items-center justify-center gap-6 pt-2 border-t text-sm">
+              <div className="text-center">
+                <p className="text-xs text-muted-foreground">直近最高</p>
+                <p className="font-bold">{recentStats.max}%</p>
+              </div>
+              <div className="text-center">
+                <p className="text-xs text-muted-foreground">直近平均</p>
+                <p className="font-bold">{recentStats.avg}%</p>
+              </div>
+              <p className="text-xs text-muted-foreground self-end pb-0.5">直近{recentStats.count}回</p>
+            </div>
           )}
           {quiz.questions.some((q) => q.type === "short_answer") && (
             <p className="text-sm text-muted-foreground">記述式は模範解答を参考に自己採点してください</p>

@@ -1,8 +1,11 @@
 import Link from "next/link";
 import { getQuizResultsByUser } from "@/lib/db/quizzes";
 import type { QuizAttemptResult } from "@/lib/db/quizzes";
+import LessonAttemptHistory from "@/components/student/lesson-attempt-history";
 
 // ─── 型定義 ────────────────────────────────────────────────────────
+
+type FrequentlyMissed = { label: string };
 
 type LessonResult = {
   lessonId: string;
@@ -12,6 +15,7 @@ type LessonResult = {
   attempts: QuizAttemptResult[];
   recentMaxRate: number;
   recentAvgRate: number;
+  frequentlyMissed: FrequentlyMissed[];
 };
 
 type UnitResult = {
@@ -47,21 +51,33 @@ function computeLessonStats(attempts: QuizAttemptResult[]): {
   return { recentMaxRate, recentAvgRate };
 }
 
+function computeFrequentlyMissed(attempts: QuizAttemptResult[]): FrequentlyMissed[] {
+  const questionMap = new Map<string, { order: number; total: number; wrong: number }>();
+  for (const attempt of attempts) {
+    for (const ans of attempt.quiz_attempt_answers) {
+      if (ans.is_correct === null) continue;
+      const key = ans.quiz_questions.id;
+      const entry = questionMap.get(key) ?? { order: ans.quiz_questions.order, total: 0, wrong: 0 };
+      entry.total++;
+      if (!ans.is_correct) entry.wrong++;
+      questionMap.set(key, entry);
+    }
+  }
+  return [...questionMap.values()]
+    .filter((s) => s.total >= 2 && s.wrong > s.total / 2)
+    .sort((a, b) => a.order - b.order)
+    .map((s) => ({ label: `Q${s.order + 1}` }));
+}
+
 function rateColor(rate: number): string {
   if (rate >= 80) return "text-green-600";
   if (rate >= 60) return "text-amber-600";
   return "text-red-500";
 }
 
-function formatDate(dateStr: string): string {
-  const d = new Date(dateStr);
-  return `${d.getFullYear()}/${String(d.getMonth() + 1).padStart(2, "0")}/${String(d.getDate()).padStart(2, "0")} ${String(d.getHours()).padStart(2, "0")}:${String(d.getMinutes()).padStart(2, "0")}`;
-}
-
 // ─── ツリー構築 ─────────────────────────────────────────────────────
 
 function buildTree(attempts: QuizAttemptResult[]): SubjectResult[] {
-  // lessonId → attempts[]
   const lessonMap = new Map<string, QuizAttemptResult[]>();
   for (const a of attempts) {
     const id = a.quizzes.lessons.id;
@@ -70,7 +86,6 @@ function buildTree(attempts: QuizAttemptResult[]): SubjectResult[] {
     lessonMap.set(id, list);
   }
 
-  // lessonId → lesson info（重複除去）
   const lessonInfoMap = new Map<
     string,
     { lessonId: string; lessonTitle: string; quizId: string; quizTitle: string; unitId: string; unitName: string; subjectId: string; subjectName: string; subjectOrder: number }
@@ -92,12 +107,12 @@ function buildTree(attempts: QuizAttemptResult[]): SubjectResult[] {
     }
   }
 
-  // subject → unit → lesson のツリーを構築
   const subjectMap = new Map<string, SubjectResult>();
 
   for (const info of lessonInfoMap.values()) {
     const lessonAttempts = lessonMap.get(info.lessonId) ?? [];
     const { recentMaxRate, recentAvgRate } = computeLessonStats(lessonAttempts);
+    const frequentlyMissed = computeFrequentlyMissed(lessonAttempts);
 
     const lesson: LessonResult = {
       lessonId: info.lessonId,
@@ -107,6 +122,7 @@ function buildTree(attempts: QuizAttemptResult[]): SubjectResult[] {
       attempts: lessonAttempts,
       recentMaxRate,
       recentAvgRate,
+      frequentlyMissed,
     };
 
     if (!subjectMap.has(info.subjectId)) {
@@ -127,7 +143,6 @@ function buildTree(attempts: QuizAttemptResult[]): SubjectResult[] {
     unit.lessons.push(lesson);
   }
 
-  // 単元平均 = 各レッスンの最高正答率の平均
   for (const subject of subjectMap.values()) {
     for (const unit of subject.units) {
       const maxRates = unit.lessons.map((l) => l.recentMaxRate);
@@ -167,7 +182,6 @@ export default async function QuizResultsPage() {
               <div className="space-y-8">
                 {subject.units.map((unit) => (
                   <section key={unit.unitId}>
-                    {/* 単元ヘッダー */}
                     <div className="flex items-center gap-3 mb-4">
                       <h3 className="text-base font-semibold text-muted-foreground">{unit.unitName}</h3>
                       <span className="text-xs px-2 py-0.5 rounded-full bg-muted text-muted-foreground">
@@ -180,7 +194,7 @@ export default async function QuizResultsPage() {
 
                     <div className="space-y-5 pl-4 border-l-2 border-indigo-100">
                       {unit.lessons.map((lesson) => (
-                        <div key={lesson.lessonId} className="bg-card border rounded-lg p-5 space-y-4">
+                        <div key={lesson.lessonId} className="bg-card border rounded-lg p-5 space-y-3">
                           {/* レッスンヘッダー */}
                           <div className="flex items-start justify-between gap-2">
                             <div>
@@ -208,73 +222,13 @@ export default async function QuizResultsPage() {
                               </div>
                             </div>
                           </div>
-                          <p className="text-xs text-muted-foreground -mt-2">※ 統計は直近3回の受験が対象</p>
+                          <p className="text-xs text-muted-foreground">※ 統計は直近3回の受験が対象</p>
 
-                          {/* 受験履歴一覧 */}
-                          <div className="space-y-2">
-                            {lesson.attempts.map((attempt) => {
-                              const rate = toRate(attempt.score, attempt.max_score);
-                              const hasDetails = attempt.quiz_attempt_answers.length > 0;
-                              const sortedAnswers = hasDetails
-                                ? [...attempt.quiz_attempt_answers].sort(
-                                    (a, b) => a.quiz_questions.order - b.quiz_questions.order
-                                  )
-                                : [];
-
-                              return (
-                                <div
-                                  key={attempt.id}
-                                  className="rounded-md border bg-muted/30 px-4 py-3 space-y-2"
-                                >
-                                  {/* 日時 + スコア */}
-                                  <div className="flex items-center gap-3 flex-wrap">
-                                    <span className="text-xs text-muted-foreground font-mono">
-                                      {formatDate(attempt.submitted_at)}
-                                    </span>
-                                    {attempt.max_score > 0 ? (
-                                      <span className="text-sm font-medium">
-                                        {attempt.score} / {attempt.max_score} 点
-                                        <span className={`ml-1.5 font-bold ${rateColor(rate)}`}>
-                                          （{rate}%）
-                                        </span>
-                                      </span>
-                                    ) : (
-                                      <span className="text-sm text-muted-foreground">記述式のみ</span>
-                                    )}
-                                  </div>
-
-                                  {/* 問題ごとの正誤 */}
-                                  {hasDetails ? (
-                                    <div className="flex flex-wrap gap-1.5">
-                                      {sortedAnswers.map((ans, i) => (
-                                        <span
-                                          key={ans.id}
-                                          className={`inline-flex items-center gap-0.5 text-xs px-1.5 py-0.5 rounded ${
-                                            ans.is_correct === true
-                                              ? "bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400"
-                                              : ans.is_correct === false
-                                              ? "bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400"
-                                              : "bg-muted text-muted-foreground"
-                                          }`}
-                                        >
-                                          <span className="font-mono">Q{i + 1}</span>
-                                          <span>
-                                            {ans.is_correct === true
-                                              ? "○"
-                                              : ans.is_correct === false
-                                              ? "✕"
-                                              : "－"}
-                                          </span>
-                                        </span>
-                                      ))}
-                                    </div>
-                                  ) : (
-                                    <p className="text-xs text-muted-foreground">詳細な回答記録なし</p>
-                                  )}
-                                </div>
-                              );
-                            })}
-                          </div>
+                          {/* 受験履歴（クライアントコンポーネント） */}
+                          <LessonAttemptHistory
+                            attempts={lesson.attempts}
+                            frequentlyMissed={lesson.frequentlyMissed}
+                          />
                         </div>
                       ))}
                     </div>

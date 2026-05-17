@@ -282,6 +282,33 @@ export async function getQuizResultsByUser(): Promise<QuizAttemptResult[]> {
   return data as unknown as QuizAttemptResult[];
 }
 
+// ─── 直近の受験スコア取得 ──────────────────────────────────────────
+
+export type RecentAttemptSummary = {
+  score: number;
+  max_score: number;
+  submitted_at: string;
+};
+
+/**
+ * 指定ユーザーの指定クイズ直近3回の受験スコアを取得する
+ */
+export async function getRecentQuizAttempts(
+  quizId: string,
+  userId: string
+): Promise<RecentAttemptSummary[]> {
+  const supabase = await createClient();
+  const { data, error } = await supabase
+    .from("quiz_attempts")
+    .select("score, max_score, submitted_at")
+    .eq("quiz_id", quizId)
+    .eq("user_id", userId)
+    .order("submitted_at", { ascending: false })
+    .limit(3);
+  if (error || !data) return [];
+  return data;
+}
+
 /**
  * ユーザーが指定クイズを1回以上提出済みか確認する
  */
