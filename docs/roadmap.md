@@ -645,8 +645,8 @@ create table public.quiz_attempt_answers (
 
 ### タスク
 
-- [ ] マイグレーション：`quiz_attempt_answers` テーブルを追加（RLS含む）
-- [ ] `POST /api/quizzes/[quizId]/attempts` のレスポンスを拡張し、各問の回答詳細も保存
+- [x] マイグレーション：`quiz_attempt_answers` テーブルを追加（RLS含む）
+- [x] `POST /api/quizzes/[quizId]/attempts` のレスポンスを拡張し、各問の回答詳細も保存
 - [ ] 生徒が自分の回答履歴・正誤を確認できるUIを追加（任意）
 - [ ] 教師向け分析ページへの組み込み（Phase 13 と連携）
 
@@ -742,7 +742,7 @@ create table public.quiz_attempt_answers (
 [✅] Phase 13.7: エディタ機能拡張（表・画像）
 [--] Phase 14:  いいね機能（見送り）
 [✅] Phase 15:   小テスト完了ゲート
-[ ] Phase 15.5: 小テスト回答詳細の保存
+[🔄] Phase 15.5: 小テスト回答詳細の保存
 [ ] Phase 16:   トロフィー・実績機能
 [ ] Phase 17:   匿名プライベートコメント機能
 ```
