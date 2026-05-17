@@ -282,31 +282,46 @@ export async function getQuizResultsByUser(): Promise<QuizAttemptResult[]> {
   return data as unknown as QuizAttemptResult[];
 }
 
-// ─── 直近の受験スコア取得 ──────────────────────────────────────────
+// ─── 直近の受験スコア取得（回答詳細付き） ────────────────────────────
 
-export type RecentAttemptSummary = {
+export type RecentAttemptDetail = {
   score: number;
   max_score: number;
   submitted_at: string;
+  quiz_attempt_answers: {
+    is_correct: boolean | null;
+    quiz_questions: { id: string; order: number };
+  }[];
 };
 
 /**
- * 指定ユーザーの指定クイズ直近3回の受験スコアを取得する
+ * 指定ユーザーの指定クイズ直近10回の受験を回答詳細付きで取得する
  */
-export async function getRecentQuizAttempts(
+export async function getRecentQuizAttemptsWithAnswers(
   quizId: string,
   userId: string
-): Promise<RecentAttemptSummary[]> {
+): Promise<RecentAttemptDetail[]> {
   const supabase = await createClient();
   const { data, error } = await supabase
     .from("quiz_attempts")
-    .select("score, max_score, submitted_at")
+    .select(`
+      score,
+      max_score,
+      submitted_at,
+      quiz_attempt_answers (
+        is_correct,
+        quiz_questions (
+          id,
+          order
+        )
+      )
+    `)
     .eq("quiz_id", quizId)
     .eq("user_id", userId)
     .order("submitted_at", { ascending: false })
-    .limit(3);
+    .limit(10);
   if (error || !data) return [];
-  return data;
+  return data as unknown as RecentAttemptDetail[];
 }
 
 /**
