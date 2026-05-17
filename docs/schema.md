@@ -9,7 +9,9 @@ subjects
               ├── questions
               ├── memos ──→ posts
               └── quizzes
-                    └── quiz_questions
+                    ├── quiz_questions
+                    └── quiz_attempts
+                          └── quiz_attempt_answers
 ```
 
 ---
@@ -23,6 +25,8 @@ subjects
 | role | enum | 'admin' / 'teacher' / 'student' |
 | is_approved | bool | default false（teacher承認フラグ） |
 | display_name | text | |
+| student_number | int | nullable、学籍番号 |
+| note | text | nullable、備考 |
 | created_at | timestamptz | |
 
 ### subjects
@@ -99,6 +103,31 @@ subjects
 | quiz_id | uuid | FK → quizzes |
 | type | enum | 'multiple_choice' / 'short_answer' / 'ordering' |
 | content | jsonb | tiptap JSON（問題文） |
+| explanation | jsonb | nullable、tiptap JSON（解説） |
 | correct_answer | jsonb | 正解 |
 | options | jsonb | nullable（選択肢・並び替えの要素） |
 | order | int | 表示順 |
+
+### quiz_attempts
+| カラム | 型 | 備考 |
+|---|---|---|
+| id | uuid | PK |
+| quiz_id | uuid | FK → quizzes |
+| user_id | uuid | FK → profiles |
+| score | int | 正解数（short_answer 除く） |
+| max_score | int | 採点対象の問題数 |
+| submitted_at | timestamptz | |
+
+### quiz_attempt_answers
+| カラム | 型 | 備考 |
+|---|---|---|
+| id | uuid | PK |
+| attempt_id | uuid | FK → quiz_attempts |
+| question_id | uuid | FK → quiz_questions |
+| answer | jsonb | 回答内容（選択肢テキスト / 記述テキスト / 順序配列） |
+| is_correct | bool | nullable（null = short_answer・自己採点のため） |
+
+`answer` カラムの格納形式：
+- 選択式：`{"type": "multiple_choice", "selectedText": "..."}`
+- 記述式：`{"type": "short_answer", "text": "..."}`
+- 並び替え：`{"type": "ordering", "items": [...]}`
