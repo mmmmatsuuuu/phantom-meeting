@@ -207,7 +207,7 @@ export default function QuizAnalytics({ subjects }: Props) {
                 </thead>
                 <tbody>
                   {data.lessons.map((lesson) => (
-                    <tr key={lesson.lessonId} className="border-b hover:bg-muted/10">
+                    <tr key={lesson.lessonId} className="border-b">
                       <td className="px-4 py-2.5 border-r sticky left-0 bg-background">
                         <div className="font-medium truncate max-w-[200px]">
                           {lesson.lessonTitle}
@@ -220,7 +220,7 @@ export default function QuizAnalytics({ subjects }: Props) {
                         const q = lesson.questions[i];
                         if (!q) {
                           return (
-                            <td key={i} className="px-3 py-2.5 border-r text-center">
+                            <td key={i} className="border-r text-center bg-muted/20">
                               <span className="text-xs text-muted-foreground">—</span>
                             </td>
                           );
@@ -233,15 +233,19 @@ export default function QuizAnalytics({ subjects }: Props) {
                         const questionText = tiptapDocToText(q.content);
 
                         return (
-                          <td key={i} className="px-3 py-2.5 border-r text-center">
+                          <td
+                            key={i}
+                            className="border-r text-center p-0"
+                            style={{ backgroundColor: bg }}
+                          >
                             <Tooltip>
                               <TooltipTrigger asChild>
-                                <span
-                                  className="inline-block px-2 py-1 rounded text-xs font-medium min-w-[44px] cursor-default"
-                                  style={{ backgroundColor: bg, color: textColor }}
+                                <div
+                                  className="w-full h-full px-3 py-2.5 cursor-default text-xs font-medium"
+                                  style={{ color: textColor }}
                                 >
                                   {label}
-                                </span>
+                                </div>
                               </TooltipTrigger>
                               <TooltipContent side="top" className="max-w-[240px] text-left">
                                 <p className="font-medium mb-1">Q{i + 1}</p>
