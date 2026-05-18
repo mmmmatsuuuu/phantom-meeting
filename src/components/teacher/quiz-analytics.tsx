@@ -196,16 +196,16 @@ export default function QuizAnalytics({ subjects }: Props) {
                       {unitName}
                     </h2>
                     <div className="rounded-md border overflow-x-auto">
-                      <table className="text-sm border-collapse w-full">
+                      <table className="text-sm border-collapse">
                         <thead>
                           <tr className="bg-muted/50">
-                            <th className="text-left px-4 py-2.5 font-medium border-b border-r min-w-[200px] sticky left-0 bg-muted/50">
+                            <th className="text-left px-4 py-2.5 font-medium border-b border-r w-[200px] sticky left-0 bg-muted/50">
                               授業
                             </th>
                             {Array.from({ length: unitMaxQuestions }).map((_, i) => (
                               <th
                                 key={i}
-                                className="px-3 py-2.5 font-medium border-b border-r text-center min-w-[68px]"
+                                className="px-3 py-2.5 font-medium border-b border-r text-center w-[72px]"
                               >
                                 Q{i + 1}
                               </th>
