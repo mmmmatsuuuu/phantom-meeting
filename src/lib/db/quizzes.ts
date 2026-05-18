@@ -338,6 +338,7 @@ export type QuizQuestionAnalytics = {
 export type LessonAnalytics = {
   lessonId: string;
   lessonTitle: string;
+  unitId: string;
   unitName: string;
   questions: QuizQuestionAnalytics[];
 };
@@ -497,6 +498,7 @@ export async function getQuizAnalytics(
     lessonAnalytics.push({
       lessonId: lesson.id,
       lessonTitle: lesson.title,
+      unitId: lesson.unit_id,
       unitName: unitMap.get(lesson.unit_id) ?? "",
       questions: questionAnalytics,
     });
