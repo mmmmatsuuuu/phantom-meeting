@@ -324,6 +324,187 @@ export async function getRecentQuizAttemptsWithAnswers(
   return data as unknown as RecentAttemptDetail[];
 }
 
+// ─── 教員向け分析用の型 ────────────────────────────────────────────
+
+export type QuizQuestionAnalytics = {
+  id: string;
+  order: number;
+  type: QuizQuestionType;
+  content: Record<string, unknown>;
+  avgCorrectRate: number | null; // null = short_answer or 回答なし
+  answerCount: number;
+};
+
+export type LessonAnalytics = {
+  lessonId: string;
+  lessonTitle: string;
+  unitName: string;
+  questions: QuizQuestionAnalytics[];
+};
+
+export type QuizAnalyticsResult = {
+  subjectId: string;
+  subjectName: string;
+  lessons: LessonAnalytics[];
+};
+
+/**
+ * 指定科目・クラスの全授業×設問の平均正答率を取得する（teacher/admin 向け）
+ * classNum: 数値でクラス指定、"all" で学年全体
+ */
+export async function getQuizAnalytics(
+  subjectId: string,
+  grade: number,
+  classNum: number | "all"
+): Promise<QuizAnalyticsResult | null> {
+  const supabase = await createClient();
+
+  const { data: subject } = await supabase
+    .from("subjects")
+    .select("name")
+    .eq("id", subjectId)
+    .single();
+  if (!subject) return null;
+
+  const { data: units } = await supabase
+    .from("units")
+    .select("id, name")
+    .eq("subject_id", subjectId)
+    .order("order");
+
+  const emptyResult: QuizAnalyticsResult = {
+    subjectId,
+    subjectName: subject.name,
+    lessons: [],
+  };
+
+  if (!units || units.length === 0) return emptyResult;
+
+  const unitIds = units.map((u) => u.id);
+  const { data: lessons } = await supabase
+    .from("lessons")
+    .select("id, title, unit_id")
+    .in("unit_id", unitIds)
+    .order("order");
+  if (!lessons || lessons.length === 0) return emptyResult;
+
+  const lessonIds = lessons.map((l) => l.id);
+
+  const { data: quizzes } = await supabase
+    .from("quizzes")
+    .select("id, lesson_id")
+    .in("lesson_id", lessonIds);
+  if (!quizzes || quizzes.length === 0) return emptyResult;
+
+  const quizIds = quizzes.map((q) => q.id);
+  const { data: questions } = await supabase
+    .from("quiz_questions")
+    .select("id, quiz_id, type, content, order")
+    .in("quiz_id", quizIds)
+    .order("order");
+  if (!questions) return null;
+
+  // フィルタされた生徒IDを取得
+  let profilesQuery = supabase
+    .from("profiles")
+    .select("id")
+    .eq("role", "student")
+    .not("student_number", "is", null);
+
+  if (classNum === "all") {
+    profilesQuery = profilesQuery
+      .gte("student_number", grade * 1000)
+      .lte("student_number", grade * 1000 + 999);
+  } else {
+    const min = grade * 1000 + classNum * 100;
+    profilesQuery = profilesQuery
+      .gte("student_number", min)
+      .lte("student_number", min + 99);
+  }
+
+  const { data: profiles } = await profilesQuery;
+  const studentIds = (profiles ?? []).map((p) => p.id);
+
+  const questionStats = new Map<string, { correct: number; total: number }>();
+
+  if (studentIds.length > 0) {
+    // 各生徒・各クイズの最新受験IDを特定
+    const { data: attempts } = await supabase
+      .from("quiz_attempts")
+      .select("id, quiz_id, user_id, submitted_at")
+      .in("quiz_id", quizIds)
+      .in("user_id", studentIds)
+      .order("submitted_at", { ascending: false });
+
+    if (attempts && attempts.length > 0) {
+      const latestAttemptMap = new Map<string, string>();
+      for (const attempt of attempts) {
+        const key = `${attempt.user_id}_${attempt.quiz_id}`;
+        if (!latestAttemptMap.has(key)) {
+          latestAttemptMap.set(key, attempt.id);
+        }
+      }
+      const latestAttemptIds = Array.from(latestAttemptMap.values());
+
+      const { data: answers } = await supabase
+        .from("quiz_attempt_answers")
+        .select("question_id, is_correct")
+        .in("attempt_id", latestAttemptIds);
+
+      for (const answer of answers ?? []) {
+        if (answer.is_correct === null) continue;
+        const stats = questionStats.get(answer.question_id) ?? { correct: 0, total: 0 };
+        stats.total++;
+        if (answer.is_correct) stats.correct++;
+        questionStats.set(answer.question_id, stats);
+      }
+    }
+  }
+
+  // 授業・単元のマッピング
+  const unitMap = new Map(units.map((u) => [u.id, u.name]));
+  const quizByLesson = new Map(quizzes.map((q) => [q.lesson_id, q.id]));
+  const questionsByQuiz = new Map<string, typeof questions>();
+  for (const q of questions) {
+    const list = questionsByQuiz.get(q.quiz_id) ?? [];
+    list.push(q);
+    questionsByQuiz.set(q.quiz_id, list);
+  }
+
+  const lessonAnalytics: LessonAnalytics[] = [];
+  for (const lesson of lessons) {
+    const quizId = quizByLesson.get(lesson.id);
+    if (!quizId) continue;
+    const qs = questionsByQuiz.get(quizId) ?? [];
+    if (qs.length === 0) continue;
+
+    const questionAnalytics: QuizQuestionAnalytics[] = qs.map((q) => {
+      const stats = questionStats.get(q.id);
+      const isShortAnswer = q.type === "short_answer";
+      return {
+        id: q.id,
+        order: q.order,
+        type: q.type as QuizQuestionType,
+        content: q.content as Record<string, unknown>,
+        avgCorrectRate:
+          isShortAnswer || !stats || stats.total === 0
+            ? null
+            : stats.correct / stats.total,
+        answerCount: stats?.total ?? 0,
+      };
+    });
+
+    lessonAnalytics.push({
+      lessonId: lesson.id,
+      lessonTitle: lesson.title,
+      unitName: unitMap.get(lesson.unit_id) ?? "",
+      questions: questionAnalytics,
+    });
+  }
+
+  return { subjectId, subjectName: subject.name, lessons: lessonAnalytics };
+}
+
 /**
  * ユーザーが指定クイズを1回以上提出済みか確認する
  */
