@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from "react";
 import type { SubjectWithUnits } from "@/lib/db/contents";
-import type { QuizAnalyticsResult } from "@/lib/db/quizzes";
+import type { QuizAnalyticsResult, LessonAnalytics } from "@/lib/db/quizzes";
 import { tiptapDocToText } from "@/lib/tiptap-utils";
 import {
   Tooltip,
@@ -87,10 +87,6 @@ export default function QuizAnalytics({ subjects }: Props) {
     setGrade(value);
     setClassNum(null);
   };
-
-  const maxQuestions = data
-    ? Math.max(0, ...data.lessons.map((l) => l.questions.length))
-    : 0;
 
   return (
     <div className="space-y-6">
@@ -188,95 +184,107 @@ export default function QuizAnalytics({ subjects }: Props) {
       {!loading && data && data.lessons.length > 0 && (
         <>
           <TooltipProvider>
-            <div className="rounded-md border overflow-x-auto">
-              <table className="text-sm border-collapse w-full">
-                <thead>
-                  <tr className="bg-muted/50">
-                    <th className="text-left px-4 py-2.5 font-medium border-b border-r min-w-[200px] sticky left-0 bg-muted/50">
-                      授業
-                    </th>
-                    {Array.from({ length: maxQuestions }).map((_, i) => (
-                      <th
-                        key={i}
-                        className="px-3 py-2.5 font-medium border-b border-r text-center min-w-[68px]"
-                      >
-                        Q{i + 1}
-                      </th>
-                    ))}
-                  </tr>
-                </thead>
-                <tbody>
-                  {data.lessons.map((lesson) => (
-                    <tr key={lesson.lessonId} className="border-b">
-                      <td className="px-4 py-2.5 border-r sticky left-0 bg-background">
-                        <div className="font-medium truncate max-w-[200px]">
-                          {lesson.lessonTitle}
-                        </div>
-                        <div className="text-xs text-muted-foreground truncate max-w-[200px]">
-                          {lesson.unitName}
-                        </div>
-                      </td>
-                      {Array.from({ length: maxQuestions }).map((_, i) => {
-                        const q = lesson.questions[i];
-                        if (!q) {
-                          return (
-                            <td key={i} className="border-r text-center bg-muted/20">
-                              <span className="text-xs text-muted-foreground">—</span>
-                            </td>
-                          );
-                        }
-                        const rate = q.avgCorrectRate;
-                        const bg = getRateColor(rate);
-                        const textColor = getRateTextColor(rate);
-                        const label =
-                          rate === null ? "N/A" : `${Math.round(rate * 100)}%`;
-                        const questionText = tiptapDocToText(q.content);
-
-                        return (
-                          <td
-                            key={i}
-                            className="border-r text-center p-0"
-                            style={{ backgroundColor: bg }}
-                          >
-                            <Tooltip>
-                              <TooltipTrigger asChild>
-                                <div
-                                  className="w-full h-full px-3 py-2.5 cursor-default text-xs font-medium"
-                                  style={{ color: textColor }}
-                                >
-                                  {label}
+            <div className="space-y-6">
+              {groupByUnit(data.lessons).map(({ unitId, unitName, lessons }) => {
+                const unitMaxQuestions = Math.max(
+                  0,
+                  ...lessons.map((l) => l.questions.length)
+                );
+                return (
+                  <div key={unitId}>
+                    <h2 className="text-sm font-semibold text-muted-foreground mb-2 px-1">
+                      {unitName}
+                    </h2>
+                    <div className="rounded-md border overflow-x-auto">
+                      <table className="text-sm border-collapse">
+                        <thead>
+                          <tr className="bg-muted/50">
+                            <th className="text-left px-4 py-2.5 font-medium border-b border-r w-[200px] sticky left-0 bg-muted/50">
+                              授業
+                            </th>
+                            {Array.from({ length: unitMaxQuestions }).map((_, i) => (
+                              <th
+                                key={i}
+                                className="px-3 py-2.5 font-medium border-b border-r text-center w-[72px]"
+                              >
+                                Q{i + 1}
+                              </th>
+                            ))}
+                          </tr>
+                        </thead>
+                        <tbody>
+                          {lessons.map((lesson) => (
+                            <tr key={lesson.lessonId} className="border-b">
+                              <td className="px-4 py-2.5 border-r sticky left-0 bg-background">
+                                <div className="font-medium truncate max-w-[200px]">
+                                  {lesson.lessonTitle}
                                 </div>
-                              </TooltipTrigger>
-                              <TooltipContent side="top" className="max-w-[240px] text-left">
-                                <p className="font-medium mb-1">Q{i + 1}</p>
-                                <p className="text-xs opacity-80 line-clamp-3">
-                                  {questionText || "（問題文なし）"}
-                                </p>
-                                {rate !== null && (
-                                  <p className="mt-1.5 text-xs">
-                                    平均正答率:{" "}
-                                    <span className="font-medium">
-                                      {Math.round(rate * 100)}%
-                                    </span>
-                                    <span className="opacity-70 ml-1">
-                                      （{q.answerCount}人）
-                                    </span>
-                                  </p>
-                                )}
-                                {q.type === "short_answer" && (
-                                  <p className="mt-1 text-xs opacity-70">
-                                    記述式（自動採点なし）
-                                  </p>
-                                )}
-                              </TooltipContent>
-                            </Tooltip>
-                          </td>
-                        );
-                      })}
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
+                              </td>
+                              {Array.from({ length: unitMaxQuestions }).map((_, i) => {
+                                const q = lesson.questions[i];
+                                if (!q) {
+                                  return (
+                                    <td key={i} className="border-r text-center bg-muted/20">
+                                      <span className="text-xs text-muted-foreground">—</span>
+                                    </td>
+                                  );
+                                }
+                                const rate = q.avgCorrectRate;
+                                const bg = getRateColor(rate);
+                                const textColor = getRateTextColor(rate);
+                                const label =
+                                  rate === null ? "N/A" : `${Math.round(rate * 100)}%`;
+                                const questionText = tiptapDocToText(q.content);
+
+                                return (
+                                  <td
+                                    key={i}
+                                    className="border-r text-center p-0"
+                                    style={{ backgroundColor: bg }}
+                                  >
+                                    <Tooltip>
+                                      <TooltipTrigger asChild>
+                                        <div
+                                          className="w-full h-full px-3 py-2.5 cursor-default text-xs font-medium"
+                                          style={{ color: textColor }}
+                                        >
+                                          {label}
+                                        </div>
+                                      </TooltipTrigger>
+                                      <TooltipContent side="top" className="max-w-[240px] text-left">
+                                        <p className="font-medium mb-1">Q{i + 1}</p>
+                                        <p className="text-xs opacity-80 line-clamp-3">
+                                          {questionText || "（問題文なし）"}
+                                        </p>
+                                        {rate !== null && (
+                                          <p className="mt-1.5 text-xs">
+                                            平均正答率:{" "}
+                                            <span className="font-medium">
+                                              {Math.round(rate * 100)}%
+                                            </span>
+                                            <span className="opacity-70 ml-1">
+                                              （{q.answerCount}人）
+                                            </span>
+                                          </p>
+                                        )}
+                                        {q.type === "short_answer" && (
+                                          <p className="mt-1 text-xs opacity-70">
+                                            記述式（自動採点なし）
+                                          </p>
+                                        )}
+                                      </TooltipContent>
+                                    </Tooltip>
+                                  </td>
+                                );
+                              })}
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                    </div>
+                  </div>
+                );
+              })}
             </div>
           </TooltipProvider>
 
@@ -304,4 +312,24 @@ export default function QuizAnalytics({ subjects }: Props) {
       )}
     </div>
   );
+}
+
+type UnitGroup = {
+  unitId: string;
+  unitName: string;
+  lessons: LessonAnalytics[];
+};
+
+function groupByUnit(lessons: LessonAnalytics[]): UnitGroup[] {
+  const map = new Map<string, UnitGroup>();
+  for (const lesson of lessons) {
+    const group = map.get(lesson.unitId) ?? {
+      unitId: lesson.unitId,
+      unitName: lesson.unitName,
+      lessons: [],
+    };
+    group.lessons.push(lesson);
+    map.set(lesson.unitId, group);
+  }
+  return Array.from(map.values());
 }
