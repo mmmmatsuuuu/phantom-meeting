@@ -423,19 +423,21 @@ export async function getQuizAnalytics(
       .lte("student_number", min + 99);
   }
 
-  const { data: profiles } = await profilesQuery;
+  const { data: profiles } = await profilesQuery.limit(2000);
   const studentIds = (profiles ?? []).map((p) => p.id);
 
   const questionStats = new Map<string, { correct: number; total: number }>();
 
   if (studentIds.length > 0) {
     // 各生徒・各クイズの最新受験IDを特定
+    // Supabase デフォルト上限(1000件)を超えないよう limit を明示する
     const { data: attempts } = await supabase
       .from("quiz_attempts")
       .select("id, quiz_id, user_id, submitted_at")
       .in("quiz_id", quizIds)
       .in("user_id", studentIds)
-      .order("submitted_at", { ascending: false });
+      .order("submitted_at", { ascending: false })
+      .limit(20000);
 
     if (attempts && attempts.length > 0) {
       const latestAttemptMap = new Map<string, string>();
@@ -447,12 +449,23 @@ export async function getQuizAnalytics(
       }
       const latestAttemptIds = Array.from(latestAttemptMap.values());
 
-      const { data: answers } = await supabase
-        .from("quiz_attempt_answers")
-        .select("question_id, is_correct")
-        .in("attempt_id", latestAttemptIds);
+      // .in() に大量の UUID を渡すと PostgREST の URL 長制限を超えて
+      // クエリが失敗し全問 N/A になるため、チャンクに分割して取得する
+      const CHUNK_SIZE = 100;
+      const allAnswers: Array<{ question_id: string; is_correct: boolean | null }> = [];
+      for (let i = 0; i < latestAttemptIds.length; i += CHUNK_SIZE) {
+        const chunk = latestAttemptIds.slice(i, i + CHUNK_SIZE);
+        const { data: chunkAnswers } = await supabase
+          .from("quiz_attempt_answers")
+          .select("question_id, is_correct")
+          .in("attempt_id", chunk)
+          .limit(CHUNK_SIZE * 30);
+        if (chunkAnswers) {
+          allAnswers.push(...chunkAnswers);
+        }
+      }
 
-      for (const answer of answers ?? []) {
+      for (const answer of allAnswers) {
         if (answer.is_correct === null) continue;
         const stats = questionStats.get(answer.question_id) ?? { correct: 0, total: 0 };
         stats.total++;
