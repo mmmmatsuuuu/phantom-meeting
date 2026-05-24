@@ -21,6 +21,7 @@ import { toast } from "sonner";
 import type { Memo } from "@/lib/db/memos";
 import MemoToolbar from "@/components/lesson/memo-toolbar";
 import RichContent from "@/components/shared/rich-content";
+import SubmitButton from "@/components/shared/submit-button";
 
 const lowlight = createLowlight();
 lowlight.register("javascript", javascript);
@@ -58,6 +59,7 @@ export default function MemoSection({ lessonId, getCurrentTime, seekTo, onClose 
   const [editorEmpty, setEditorEmpty] = useState(true);
   const [codeBlockLang, setCodeBlockLang] = useState<string>("");
   const [isCodeBlockActive, setIsCodeBlockActive] = useState(false);
+  const [postingMemoId, setPostingMemoId] = useState<string | null>(null);
 
   const syncEditorState = (editor: Parameters<NonNullable<Parameters<typeof useEditor>[0]["onUpdate"]>>[0]["editor"]) => {
     const active = editor.isActive("codeBlock");
@@ -142,19 +144,24 @@ export default function MemoSection({ lessonId, getCurrentTime, seekTo, onClose 
   };
 
   const handlePost = async (memo: Memo) => {
-    const res = await fetch("/api/posts", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ memoId: memo.id, lessonId, content: memo.content, timestampSeconds: memo.timestamp_seconds }),
-    });
-    if (res.status === 409) {
-      toast.warning("このメモはすでに投稿済みです");
-      return;
-    }
-    if (res.ok) {
-      toast.success("クラスに投稿しました");
-    } else {
-      toast.error("投稿に失敗しました");
+    setPostingMemoId(memo.id);
+    try {
+      const res = await fetch("/api/posts", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ memoId: memo.id, lessonId, content: memo.content, timestampSeconds: memo.timestamp_seconds }),
+      });
+      if (res.status === 409) {
+        toast.warning("このメモはすでに投稿済みです");
+        return;
+      }
+      if (res.ok) {
+        toast.success("クラスに投稿しました");
+      } else {
+        toast.error("投稿に失敗しました");
+      }
+    } finally {
+      setPostingMemoId(null);
     }
   };
 
@@ -193,17 +200,15 @@ export default function MemoSection({ lessonId, getCurrentTime, seekTo, onClose 
         <EditorContent editor={editor} />
       </div>
 
-      <button
+      <SubmitButton
+        loading={saveState === "saving"}
+        loadingLabel="保存中..."
+        disabled={!editor || editorEmpty}
         onClick={handleSave}
-        disabled={saveState === "saving" || !editor || editorEmpty}
         className="w-full py-2 text-sm rounded-md bg-primary text-primary-foreground hover:opacity-90 transition-opacity disabled:opacity-40 disabled:cursor-not-allowed"
       >
-        {saveState === "saved"
-          ? "✅ 保存しました！"
-          : saveState === "saving"
-          ? "保存中..."
-          : "保存する"}
-      </button>
+        {saveState === "saved" ? "✅ 保存しました！" : "保存する"}
+      </SubmitButton>
 
       {/* 過去のメモ タイムライン */}
       <div className="pt-1 space-y-2">
@@ -242,12 +247,14 @@ export default function MemoSection({ lessonId, getCurrentTime, seekTo, onClose 
                   </button>
                 </div>
                 <RichContent content={m.content as Record<string, unknown>} />
-                <button
+                <SubmitButton
+                  loading={postingMemoId === m.id}
+                  loadingLabel="投稿中..."
                   onClick={() => handlePost(m)}
-                  className="text-xs px-2 py-1 rounded-md border hover:bg-muted transition-colors"
+                  className="text-xs px-2 py-1 rounded-md border hover:bg-muted transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                 >
                   クラスに投稿
-                </button>
+                </SubmitButton>
               </div>
             ))}
           </div>
