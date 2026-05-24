@@ -303,6 +303,7 @@ export default function QuizSection({ quiz, onCompleted }: Props) {
     quiz.questions.map(initAnswer)
   );
   const [quizState, setQuizState] = useState<QuizState>("answering");
+  const [submitting, setSubmitting] = useState(false);
   const [recentAttempts, setRecentAttempts] = useState<RecentAttemptDetail[]>([]);
 
   useEffect(() => {
@@ -364,6 +365,8 @@ export default function QuizSection({ quiz, onCompleted }: Props) {
   }, [quizState, answers, quiz.questions]);
 
   const handleSubmit = async () => {
+    if (submitting) return;
+    setSubmitting(true);
     setQuizState("submitted");
 
     // 提出内容をAPIに送信して完了フラグを記録
@@ -384,19 +387,23 @@ export default function QuizSection({ quiz, onCompleted }: Props) {
       return { questionId: q.id, type: "ordering" as const, items: ans.items };
     });
 
-    const res = await fetch(`/api/quizzes/${quiz.id}/attempts`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ answers: payload }),
-    });
+    try {
+      const res = await fetch(`/api/quizzes/${quiz.id}/attempts`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ answers: payload }),
+      });
 
-    if (res.ok) {
-      onCompleted?.();
-      const statsRes = await fetch(`/api/quizzes/${quiz.id}/attempts`);
-      if (statsRes.ok) {
-        const json = (await statsRes.json()) as { data: RecentAttemptDetail[] | null };
-        if (json.data) setRecentAttempts(json.data);
+      if (res.ok) {
+        onCompleted?.();
+        const statsRes = await fetch(`/api/quizzes/${quiz.id}/attempts`);
+        if (statsRes.ok) {
+          const json = (await statsRes.json()) as { data: RecentAttemptDetail[] | null };
+          if (json.data) setRecentAttempts(json.data);
+        }
       }
+    } finally {
+      setSubmitting(false);
     }
   };
 
@@ -481,9 +488,10 @@ export default function QuizSection({ quiz, onCompleted }: Props) {
       {quizState === "answering" ? (
         <button
           onClick={handleSubmit}
-          className="w-full py-2.5 text-sm rounded-md bg-primary text-primary-foreground hover:opacity-90 transition-opacity"
+          disabled={submitting}
+          className="w-full py-2.5 text-sm rounded-md bg-primary text-primary-foreground hover:opacity-90 transition-opacity disabled:opacity-50 disabled:cursor-not-allowed"
         >
-          回答を提出する
+          {submitting ? "送信中..." : "回答を提出する"}
         </button>
       ) : (
         <button

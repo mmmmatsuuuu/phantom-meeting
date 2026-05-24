@@ -110,7 +110,7 @@ function buildTree(attempts: QuizAttemptResult[]): SubjectResult[] {
   const subjectMap = new Map<string, SubjectResult>();
 
   for (const info of lessonInfoMap.values()) {
-    const lessonAttempts = lessonMap.get(info.lessonId) ?? [];
+    const lessonAttempts = (lessonMap.get(info.lessonId) ?? []).slice(0, 3);
     const { recentMaxRate, recentAvgRate } = computeLessonStats(lessonAttempts);
     const frequentlyMissed = computeFrequentlyMissed(lessonAttempts);
 
