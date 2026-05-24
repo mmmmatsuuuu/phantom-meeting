@@ -6,6 +6,7 @@ import { toast } from "sonner";
 import type { QuizWithQuestions, QuizQuestion, QuizQuestionType } from "@/lib/db/quizzes";
 import RichContent from "@/components/shared/rich-content";
 import QuizQuestionEditor from "@/components/teacher/quiz-question-editor";
+import SubmitButton from "@/components/shared/submit-button";
 
 // --------------- 定数 ---------------
 
@@ -351,14 +352,14 @@ function AddQuestionForm({ quizId, formKey, onAdded, onCancel }: AddQuestionForm
       </div>
 
       <div className="flex gap-2 pt-1">
-        <button
-          type="button"
+        <SubmitButton
+          loading={saving}
+          loadingLabel="追加中..."
           onClick={handleAdd}
-          disabled={saving}
-          className="flex-1 py-2 text-sm rounded-md bg-primary text-primary-foreground hover:opacity-90 transition-opacity disabled:opacity-40"
+          className="flex-1 py-2 text-sm rounded-md bg-primary text-primary-foreground hover:opacity-90 transition-opacity disabled:opacity-40 disabled:cursor-not-allowed"
         >
-          {saving ? "追加中..." : "問題を追加する"}
-        </button>
+          問題を追加する
+        </SubmitButton>
         <button
           type="button"
           onClick={onCancel}

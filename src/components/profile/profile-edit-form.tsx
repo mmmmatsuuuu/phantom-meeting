@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { toast } from "sonner";
+import SubmitButton from "@/components/shared/submit-button";
 
 type Props = {
   initialStudentNumber: number | null;
@@ -76,13 +77,14 @@ export default function ProfileEditForm({
         />
       </div>
 
-      <button
+      <SubmitButton
         type="submit"
-        disabled={saving}
+        loading={saving}
+        loadingLabel="保存中..."
         className="w-full py-2 text-sm rounded-md bg-primary text-primary-foreground hover:opacity-90 transition-opacity disabled:opacity-40 disabled:cursor-not-allowed"
       >
-        {saving ? "保存中..." : "保存する"}
-      </button>
+        保存する
+      </SubmitButton>
     </form>
   );
 }

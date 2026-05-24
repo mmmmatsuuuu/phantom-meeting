@@ -6,6 +6,7 @@ import { toast } from "sonner";
 import QuizQuestionEditor from "@/components/teacher/quiz-question-editor";
 import type { QuizQuestionType } from "@/lib/db/quizzes";
 import { textToTiptapDoc } from "@/lib/tiptap-utils";
+import SubmitButton from "@/components/shared/submit-button";
 
 const QUESTION_TYPE_LABELS: Record<QuizQuestionType, string> = {
   multiple_choice: "選択式",
@@ -464,14 +465,14 @@ export default function QuizForm({ lessonId }: Props) {
         + 問題を追加
       </button>
 
-      <button
-        type="button"
+      <SubmitButton
+        loading={saving}
+        loadingLabel="保存中..."
         onClick={handleSubmit}
-        disabled={saving}
         className="w-full py-2 text-sm rounded-md bg-primary text-primary-foreground hover:opacity-90 transition-opacity disabled:opacity-40 disabled:cursor-not-allowed"
       >
-        {saving ? "保存中..." : "クイズを保存する"}
-      </button>
+        クイズを保存する
+      </SubmitButton>
     </div>
   );
 }

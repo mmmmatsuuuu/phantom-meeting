@@ -81,6 +81,12 @@
 - クライアントは`lib/supabase/`配下に集約
 - サーバーサイドは`createServerClient`、クライアントは`createBrowserClient`
 
+### ボタン（送信系）
+- サーバーへのデータ書き込みを伴うボタン（POST / PUT）には必ず `SubmitButton` コンポーネント（`src/components/shared/submit-button.tsx`）を使うこと
+  - `loading` prop に通信中フラグを渡すことで、多重送信を自動的に防止する
+  - 呼び出し元で `const [saving, setSaving] = useState(false)` を管理し、通信開始時に `true`・`finally` で `false` をセットする
+- DELETE 系は冪等性があるため通常の `<button>` で可
+
 ### その他
 - `any`型は禁止
 - `console.log`は開発時のみ（コミット前に削除）

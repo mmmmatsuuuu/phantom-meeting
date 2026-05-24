@@ -4,6 +4,7 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 import type { SubjectWithUnits } from "@/lib/db/contents";
+import SubmitButton from "@/components/shared/submit-button";
 
 type QuestionInput = {
   id: string;
@@ -239,13 +240,14 @@ export default function LessonNewForm({ subjects, defaultUnitId }: Props) {
         </div>
 
         {/* 保存ボタン */}
-        <button
+        <SubmitButton
+          loading={isSaving}
+          loadingLabel="登録中..."
           onClick={handleSave}
-          disabled={isSaving}
           className="w-full py-2.5 rounded-md bg-primary text-primary-foreground font-medium hover:opacity-90 transition-opacity disabled:opacity-40 disabled:cursor-not-allowed"
         >
-          {isSaving ? "登録中..." : "保存する"}
-        </button>
+          保存する
+        </SubmitButton>
       </div>
     </div>
   );

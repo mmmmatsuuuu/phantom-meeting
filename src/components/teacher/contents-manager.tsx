@@ -4,6 +4,7 @@ import { useState } from "react";
 import Link from "next/link";
 import { toast } from "sonner";
 import type { SubjectWithUnits, Subject, Unit, Lesson } from "@/lib/db/contents";
+import SubmitButton from "@/components/shared/submit-button";
 
 type Props = {
   initialSubjects: SubjectWithUnits[];
@@ -21,39 +22,50 @@ export default function ContentsManager({ initialSubjects }: Props) {
   const [addingUnitForSubjectId, setAddingUnitForSubjectId] = useState<string | null>(null);
   const [newUnitName, setNewUnitName] = useState("");
   const [editing, setEditing] = useState<EditingState>(null);
+  const [saving, setSaving] = useState(false);
 
   // ---- 科目 ----
 
   const handleAddSubject = async () => {
     if (!newSubjectName.trim()) return;
-    const res = await fetch("/api/contents/subjects", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ name: newSubjectName.trim() }),
-    });
-    const json = (await res.json()) as { data: Subject | null; error: string | null };
-    if (json.data) {
-      setSubjects((prev) => [...prev, { ...json.data!, units: [] }]);
-      setNewSubjectName("");
-      setIsAddingSubject(false);
-    } else {
-      toast.error("科目の追加に失敗しました");
+    setSaving(true);
+    try {
+      const res = await fetch("/api/contents/subjects", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ name: newSubjectName.trim() }),
+      });
+      const json = (await res.json()) as { data: Subject | null; error: string | null };
+      if (json.data) {
+        setSubjects((prev) => [...prev, { ...json.data!, units: [] }]);
+        setNewSubjectName("");
+        setIsAddingSubject(false);
+      } else {
+        toast.error("科目の追加に失敗しました");
+      }
+    } finally {
+      setSaving(false);
     }
   };
 
   const handleUpdateSubject = async (id: string, name: string) => {
-    const res = await fetch(`/api/contents/subjects/${id}`, {
-      method: "PUT",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ name }),
-    });
-    if (res.ok) {
-      setSubjects((prev) =>
-        prev.map((s) => (s.id === id ? { ...s, name } : s))
-      );
-      setEditing(null);
-    } else {
-      toast.error("科目名の変更に失敗しました");
+    setSaving(true);
+    try {
+      const res = await fetch(`/api/contents/subjects/${id}`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ name }),
+      });
+      if (res.ok) {
+        setSubjects((prev) =>
+          prev.map((s) => (s.id === id ? { ...s, name } : s))
+        );
+        setEditing(null);
+      } else {
+        toast.error("科目名の変更に失敗しました");
+      }
+    } finally {
+      setSaving(false);
     }
   };
 
@@ -101,43 +113,53 @@ export default function ContentsManager({ initialSubjects }: Props) {
 
   const handleAddUnit = async (subjectId: string) => {
     if (!newUnitName.trim()) return;
-    const res = await fetch("/api/contents/units", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ subjectId, name: newUnitName.trim() }),
-    });
-    const json = (await res.json()) as { data: Unit | null; error: string | null };
-    if (json.data) {
-      setSubjects((prev) =>
-        prev.map((s) =>
-          s.id === subjectId
-            ? { ...s, units: [...s.units, { ...json.data!, lessons: [] }] }
-            : s
-        )
-      );
-      setNewUnitName("");
-      setAddingUnitForSubjectId(null);
-    } else {
-      toast.error("単元の追加に失敗しました");
+    setSaving(true);
+    try {
+      const res = await fetch("/api/contents/units", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ subjectId, name: newUnitName.trim() }),
+      });
+      const json = (await res.json()) as { data: Unit | null; error: string | null };
+      if (json.data) {
+        setSubjects((prev) =>
+          prev.map((s) =>
+            s.id === subjectId
+              ? { ...s, units: [...s.units, { ...json.data!, lessons: [] }] }
+              : s
+          )
+        );
+        setNewUnitName("");
+        setAddingUnitForSubjectId(null);
+      } else {
+        toast.error("単元の追加に失敗しました");
+      }
+    } finally {
+      setSaving(false);
     }
   };
 
   const handleUpdateUnit = async (id: string, name: string) => {
-    const res = await fetch(`/api/contents/units/${id}`, {
-      method: "PUT",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ name }),
-    });
-    if (res.ok) {
-      setSubjects((prev) =>
-        prev.map((s) => ({
-          ...s,
-          units: s.units.map((u) => (u.id === id ? { ...u, name } : u)),
-        }))
-      );
-      setEditing(null);
-    } else {
-      toast.error("単元名の変更に失敗しました");
+    setSaving(true);
+    try {
+      const res = await fetch(`/api/contents/units/${id}`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ name }),
+      });
+      if (res.ok) {
+        setSubjects((prev) =>
+          prev.map((s) => ({
+            ...s,
+            units: s.units.map((u) => (u.id === id ? { ...u, name } : u)),
+          }))
+        );
+        setEditing(null);
+      } else {
+        toast.error("単元名の変更に失敗しました");
+      }
+    } finally {
+      setSaving(false);
     }
   };
 
@@ -189,12 +211,14 @@ export default function ContentsManager({ initialSubjects }: Props) {
                       setEditing({ type: "subject", id: subject.id, name: e.target.value })
                     }
                   />
-                  <button
+                  <SubmitButton
                     type="submit"
-                    className="px-3 py-1 text-xs rounded bg-primary text-primary-foreground"
+                    loading={saving}
+                    loadingLabel="保存中..."
+                    className="px-3 py-1 text-xs rounded bg-primary text-primary-foreground disabled:opacity-50 disabled:cursor-not-allowed"
                   >
                     保存
-                  </button>
+                  </SubmitButton>
                   <button
                     type="button"
                     onClick={() => setEditing(null)}
@@ -246,12 +270,14 @@ export default function ContentsManager({ initialSubjects }: Props) {
                             setEditing({ type: "unit", id: unit.id, name: e.target.value })
                           }
                         />
-                        <button
+                        <SubmitButton
                           type="submit"
-                          className="px-3 py-1 text-xs rounded bg-primary text-primary-foreground"
+                          loading={saving}
+                          loadingLabel="保存中..."
+                          className="px-3 py-1 text-xs rounded bg-primary text-primary-foreground disabled:opacity-50 disabled:cursor-not-allowed"
                         >
                           保存
-                        </button>
+                        </SubmitButton>
                         <button
                           type="button"
                           onClick={() => setEditing(null)}
@@ -337,12 +363,14 @@ export default function ContentsManager({ initialSubjects }: Props) {
                     value={newUnitName}
                     onChange={(e) => setNewUnitName(e.target.value)}
                   />
-                  <button
+                  <SubmitButton
                     type="submit"
-                    className="px-3 py-1 text-xs rounded bg-primary text-primary-foreground"
+                    loading={saving}
+                    loadingLabel="追加中..."
+                    className="px-3 py-1 text-xs rounded bg-primary text-primary-foreground disabled:opacity-50 disabled:cursor-not-allowed"
                   >
                     追加
-                  </button>
+                  </SubmitButton>
                   <button
                     type="button"
                     onClick={() => {
@@ -387,12 +415,14 @@ export default function ContentsManager({ initialSubjects }: Props) {
               value={newSubjectName}
               onChange={(e) => setNewSubjectName(e.target.value)}
             />
-            <button
+            <SubmitButton
               type="submit"
-              className="px-4 py-2 text-sm rounded-md bg-primary text-primary-foreground hover:opacity-90 transition-opacity"
+              loading={saving}
+              loadingLabel="追加中..."
+              className="px-4 py-2 text-sm rounded-md bg-primary text-primary-foreground hover:opacity-90 transition-opacity disabled:opacity-50 disabled:cursor-not-allowed"
             >
               追加
-            </button>
+            </SubmitButton>
             <button
               type="button"
               onClick={() => {

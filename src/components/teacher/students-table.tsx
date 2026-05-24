@@ -3,6 +3,7 @@
 import { useState, useMemo } from "react";
 import { toast } from "sonner";
 import type { Profile } from "@/lib/db/users";
+import SubmitButton from "@/components/shared/submit-button";
 
 type SortKey = "student_number" | "display_name";
 type SortOrder = "asc" | "desc";
@@ -299,13 +300,14 @@ export default function StudentsTable({ initialProfiles }: Props) {
                   <td className="px-4 py-2.5">
                     {isEditing ? (
                       <div className="flex gap-1.5">
-                        <button
+                        <SubmitButton
+                          loading={saving}
+                          loadingLabel="…"
                           onClick={handleSave}
-                          disabled={saving}
-                          className="text-xs px-2 py-1 rounded bg-primary text-primary-foreground hover:opacity-90 disabled:opacity-40"
+                          className="text-xs px-2 py-1 rounded bg-primary text-primary-foreground hover:opacity-90 disabled:opacity-40 disabled:cursor-not-allowed"
                         >
-                          {saving ? "…" : "保存"}
-                        </button>
+                          保存
+                        </SubmitButton>
                         <button
                           onClick={cancelEdit}
                           disabled={saving}

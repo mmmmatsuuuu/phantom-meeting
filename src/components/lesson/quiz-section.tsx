@@ -19,6 +19,7 @@ import {
 } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
 import RichContent from "@/components/shared/rich-content";
+import SubmitButton from "@/components/shared/submit-button";
 import type { QuizWithQuestions, QuizQuestion } from "@/lib/db/quizzes";
 
 // --------------- 型 ---------------
@@ -486,13 +487,14 @@ export default function QuizSection({ quiz, onCompleted }: Props) {
       </div>
 
       {quizState === "answering" ? (
-        <button
+        <SubmitButton
+          loading={submitting}
+          loadingLabel="送信中..."
           onClick={handleSubmit}
-          disabled={submitting}
           className="w-full py-2.5 text-sm rounded-md bg-primary text-primary-foreground hover:opacity-90 transition-opacity disabled:opacity-50 disabled:cursor-not-allowed"
         >
-          {submitting ? "送信中..." : "回答を提出する"}
-        </button>
+          回答を提出する
+        </SubmitButton>
       ) : (
         <button
           onClick={handleRetry}
