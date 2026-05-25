@@ -9,49 +9,76 @@ type Props = { lessonId: string };
 const GRADES = [1, 2, 3];
 const CLASSES = [1, 2, 3, 4, 5, 6, 7, 8, 9];
 
+function SkeletonMemos() {
+  return (
+    <div className="space-y-3 animate-pulse">
+      {[1, 2].map((i) => (
+        <div key={i} className="rounded-md border p-3 space-y-2">
+          <div className="h-3 bg-muted rounded w-1/2" />
+          <div className="h-4 bg-muted rounded" />
+          <div className="h-4 bg-muted rounded w-3/4" />
+        </div>
+      ))}
+    </div>
+  );
+}
+
 export default function StudentMemoViewer({ lessonId }: Props) {
   const [grade, setGrade] = useState<number | null>(null);
   const [classNum, setClassNum] = useState<number | null>(null);
   const [students, setStudents] = useState<StudentWithMemoCount[] | null>(null);
   const [loadingStudents, setLoadingStudents] = useState(false);
-  const [expandedUserId, setExpandedUserId] = useState<string | null>(null);
   const [memosByUser, setMemosByUser] = useState<Record<string, Memo[]>>({});
-  const [loadingMemoUserId, setLoadingMemoUserId] = useState<string | null>(null);
+  const [loadingUserIds, setLoadingUserIds] = useState<Set<string>>(new Set());
 
   const canLoad = grade !== null || classNum !== null;
 
   const handleLoad = async () => {
     if (!canLoad) return;
     setStudents(null);
-    setExpandedUserId(null);
     setMemosByUser({});
+    setLoadingUserIds(new Set());
     setLoadingStudents(true);
+
     const params = new URLSearchParams();
     if (grade !== null) params.set("grade", String(grade));
     if (classNum !== null) params.set("class", String(classNum));
+
     const res = await fetch(
       `/api/teacher/lessons/${lessonId}/memo-students?${params.toString()}`
     );
-    const json = (await res.json()) as { data: StudentWithMemoCount[] | null; error: string | null };
-    setStudents(json.data ?? []);
+    const json = (await res.json()) as {
+      data: StudentWithMemoCount[] | null;
+      error: string | null;
+    };
+    const studentList = json.data ?? [];
+    setStudents(studentList);
     setLoadingStudents(false);
-  };
 
-  const handleToggleStudent = async (userId: string, memoCount: number) => {
-    if (expandedUserId === userId) {
-      setExpandedUserId(null);
-      return;
-    }
-    setExpandedUserId(userId);
-    if (memosByUser[userId] || memoCount === 0) return;
+    // メモがある生徒のみ並列フェッチ
+    const studentsWithMemos = studentList.filter((s) => s.memo_count > 0);
+    if (studentsWithMemos.length === 0) return;
 
-    setLoadingMemoUserId(userId);
-    const res = await fetch(
-      `/api/teacher/lessons/${lessonId}/memo-students/${userId}`
-    );
-    const json = (await res.json()) as { data: Memo[] | null; error: string | null };
-    setMemosByUser((prev) => ({ ...prev, [userId]: json.data ?? [] }));
-    setLoadingMemoUserId(null);
+    setLoadingUserIds(new Set(studentsWithMemos.map((s) => s.id)));
+
+    studentsWithMemos.forEach(async (student) => {
+      const memoRes = await fetch(
+        `/api/teacher/lessons/${lessonId}/memo-students/${student.id}`
+      );
+      const memoJson = (await memoRes.json()) as {
+        data: Memo[] | null;
+        error: string | null;
+      };
+      setMemosByUser((prev) => ({
+        ...prev,
+        [student.id]: memoJson.data ?? [],
+      }));
+      setLoadingUserIds((prev) => {
+        const next = new Set(prev);
+        next.delete(student.id);
+        return next;
+      });
+    });
   };
 
   return (
@@ -63,11 +90,15 @@ export default function StudentMemoViewer({ lessonId }: Props) {
           <select
             className="px-3 py-1.5 rounded-md border bg-background text-sm focus:outline-none focus:ring-2 focus:ring-ring"
             value={grade ?? ""}
-            onChange={(e) => setGrade(e.target.value === "" ? null : Number(e.target.value))}
+            onChange={(e) =>
+              setGrade(e.target.value === "" ? null : Number(e.target.value))
+            }
           >
             <option value="">指定なし</option>
             {GRADES.map((g) => (
-              <option key={g} value={g}>{g}年</option>
+              <option key={g} value={g}>
+                {g}年
+              </option>
             ))}
           </select>
         </div>
@@ -76,11 +107,15 @@ export default function StudentMemoViewer({ lessonId }: Props) {
           <select
             className="px-3 py-1.5 rounded-md border bg-background text-sm focus:outline-none focus:ring-2 focus:ring-ring"
             value={classNum ?? ""}
-            onChange={(e) => setClassNum(e.target.value === "" ? null : Number(e.target.value))}
+            onChange={(e) =>
+              setClassNum(e.target.value === "" ? null : Number(e.target.value))
+            }
           >
             <option value="">指定なし</option>
             {CLASSES.map((c) => (
-              <option key={c} value={c}>{c}組</option>
+              <option key={c} value={c}>
+                {c}組
+              </option>
             ))}
           </select>
         </div>
@@ -93,11 +128,12 @@ export default function StudentMemoViewer({ lessonId }: Props) {
         </button>
       </div>
 
-      {/* 生徒一覧 */}
+      {/* 読み込み中 */}
       {loadingStudents && (
         <p className="text-sm text-muted-foreground">読み込み中...</p>
       )}
 
+      {/* 生徒カード一覧 */}
       {students !== null && !loadingStudents && (
         <>
           {students.length === 0 ? (
@@ -105,52 +141,71 @@ export default function StudentMemoViewer({ lessonId }: Props) {
               該当する生徒が見つかりませんでした。
             </p>
           ) : (
-            <div className="rounded-md border divide-y">
-              {students.map((student) => (
-                <div key={student.id}>
-                  <button
-                    className="w-full flex items-center gap-3 px-4 py-3 hover:bg-muted/40 transition-colors text-left"
-                    onClick={() => handleToggleStudent(student.id, student.memo_count)}
-                  >
-                    <span className="text-xs text-muted-foreground w-12 shrink-0">
-                      {student.student_number ?? "—"}
-                    </span>
-                    <span className="flex-1 text-sm font-medium">{student.display_name}</span>
-                    <span className="text-xs text-muted-foreground shrink-0">
-                      メモ {student.memo_count} 件
-                    </span>
-                    <span className="text-xs text-muted-foreground shrink-0">
-                      {expandedUserId === student.id ? "▲" : "▼"}
-                    </span>
-                  </button>
+            <div className="flex flex-wrap gap-4">
+              {students.map((student) => {
+                const isLoading = loadingUserIds.has(student.id);
+                const memos = memosByUser[student.id] ?? [];
 
-                  {expandedUserId === student.id && (
-                    <div className="px-4 pb-4 bg-muted/10 border-t">
-                      {loadingMemoUserId === student.id ? (
-                        <p className="text-sm text-muted-foreground py-3">読み込み中...</p>
+                return (
+                  <div
+                    key={student.id}
+                    className="w-72 h-96 rounded-md border flex flex-col bg-background"
+                  >
+                    {/* カードヘッダー */}
+                    <div className="flex items-center gap-2 px-4 py-3 border-b shrink-0">
+                      <span className="text-xs text-muted-foreground w-12 shrink-0">
+                        {student.student_number ?? "—"}
+                      </span>
+                      <span className="flex-1 text-sm font-medium truncate">
+                        {student.display_name}
+                      </span>
+                      <span className="text-xs text-muted-foreground shrink-0">
+                        {student.memo_count} 件
+                      </span>
+                    </div>
+
+                    {/* カードボディ（スクロール可能） */}
+                    <div className="flex-1 overflow-y-auto p-3">
+                      {isLoading ? (
+                        <SkeletonMemos />
                       ) : student.memo_count === 0 ? (
-                        <p className="text-sm text-muted-foreground py-3">メモはありません。</p>
+                        <p className="text-sm text-muted-foreground py-2">
+                          メモはありません。
+                        </p>
                       ) : (
-                        <div className="space-y-3 pt-3">
-                          {(memosByUser[student.id] ?? []).map((memo) => (
-                            <div key={memo.id} className="rounded-md border bg-background p-3">
+                        <div className="space-y-3">
+                          {memos.map((memo) => (
+                            <div
+                              key={memo.id}
+                              className="rounded-md border bg-muted/20 p-3"
+                            >
                               <div className="text-xs text-muted-foreground mb-2">
-                                {new Date(memo.created_at).toLocaleString("ja-JP")}
+                                {new Date(memo.created_at).toLocaleString(
+                                  "ja-JP"
+                                )}
                                 {memo.timestamp_seconds !== null && (
                                   <span className="ml-2">
-                                    動画 {Math.floor(memo.timestamp_seconds / 60)}:{String(memo.timestamp_seconds % 60).padStart(2, "0")}
+                                    ▶{" "}
+                                    {Math.floor(memo.timestamp_seconds / 60)}:
+                                    {String(
+                                      memo.timestamp_seconds % 60
+                                    ).padStart(2, "0")}
                                   </span>
                                 )}
                               </div>
-                              <RichContent content={memo.content as Record<string, unknown>} />
+                              <RichContent
+                                content={
+                                  memo.content as Record<string, unknown>
+                                }
+                              />
                             </div>
                           ))}
                         </div>
                       )}
                     </div>
-                  )}
-                </div>
-              ))}
+                  </div>
+                );
+              })}
             </div>
           )}
         </>
