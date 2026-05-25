@@ -219,9 +219,11 @@ export type QuizAttemptResult = {
     lessons: {
       id: string;
       title: string;
+      order: number;
       units: {
         id: string;
         name: string;
+        order: number;
         subjects: {
           id: string;
           name: string;
@@ -254,9 +256,11 @@ export async function getQuizResultsByUser(): Promise<QuizAttemptResult[]> {
         lessons (
           id,
           title,
+          order,
           units (
             id,
             name,
+            order,
             subjects (
               id,
               name,

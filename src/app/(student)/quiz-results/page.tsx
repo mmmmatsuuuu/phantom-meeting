@@ -10,6 +10,7 @@ type FrequentlyMissed = { label: string };
 type LessonResult = {
   lessonId: string;
   lessonTitle: string;
+  lessonOrder: number;
   quizId: string;
   quizTitle: string;
   attempts: QuizAttemptResult[];
@@ -21,6 +22,7 @@ type LessonResult = {
 type UnitResult = {
   unitId: string;
   unitName: string;
+  unitOrder: number;
   unitAvgRate: number;
   lessons: LessonResult[];
 };
@@ -88,7 +90,7 @@ function buildTree(attempts: QuizAttemptResult[]): SubjectResult[] {
 
   const lessonInfoMap = new Map<
     string,
-    { lessonId: string; lessonTitle: string; quizId: string; quizTitle: string; unitId: string; unitName: string; subjectId: string; subjectName: string; subjectOrder: number }
+    { lessonId: string; lessonTitle: string; lessonOrder: number; quizId: string; quizTitle: string; unitId: string; unitName: string; unitOrder: number; subjectId: string; subjectName: string; subjectOrder: number }
   >();
   for (const a of attempts) {
     const l = a.quizzes.lessons;
@@ -96,10 +98,12 @@ function buildTree(attempts: QuizAttemptResult[]): SubjectResult[] {
       lessonInfoMap.set(l.id, {
         lessonId: l.id,
         lessonTitle: l.title,
+        lessonOrder: l.order,
         quizId: a.quizzes.id,
         quizTitle: a.quizzes.title,
         unitId: l.units.id,
         unitName: l.units.name,
+        unitOrder: l.units.order,
         subjectId: l.units.subjects.id,
         subjectName: l.units.subjects.name,
         subjectOrder: l.units.subjects.order,
@@ -117,6 +121,7 @@ function buildTree(attempts: QuizAttemptResult[]): SubjectResult[] {
     const lesson: LessonResult = {
       lessonId: info.lessonId,
       lessonTitle: info.lessonTitle,
+      lessonOrder: info.lessonOrder,
       quizId: info.quizId,
       quizTitle: info.quizTitle,
       attempts: lessonAttempts,
@@ -137,7 +142,7 @@ function buildTree(attempts: QuizAttemptResult[]): SubjectResult[] {
 
     let unit = subject.units.find((u) => u.unitId === info.unitId);
     if (!unit) {
-      unit = { unitId: info.unitId, unitName: info.unitName, unitAvgRate: 0, lessons: [] };
+      unit = { unitId: info.unitId, unitName: info.unitName, unitOrder: info.unitOrder, unitAvgRate: 0, lessons: [] };
       subject.units.push(unit);
     }
     unit.lessons.push(lesson);
@@ -145,9 +150,11 @@ function buildTree(attempts: QuizAttemptResult[]): SubjectResult[] {
 
   for (const subject of subjectMap.values()) {
     for (const unit of subject.units) {
+      unit.lessons.sort((a, b) => a.lessonOrder - b.lessonOrder);
       const maxRates = unit.lessons.map((l) => l.recentMaxRate);
       unit.unitAvgRate = Math.round(maxRates.reduce((s, r) => s + r, 0) / maxRates.length);
     }
+    subject.units.sort((a, b) => a.unitOrder - b.unitOrder);
   }
 
   return [...subjectMap.values()].sort((a, b) => a.subjectOrder - b.subjectOrder);
