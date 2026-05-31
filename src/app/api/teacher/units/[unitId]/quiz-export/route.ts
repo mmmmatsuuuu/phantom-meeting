@@ -102,27 +102,30 @@ function generateCsv(data: UnitExportData): string {
 
   lines.push("");
 
-  // Section 3: 記述回答サンプル（問題文・正答例・生徒回答3件）
+  // Section 3: 記述回答サンプル（1設問1行）
   lines.push("## 記述回答サンプル（最新回答・ランダム3件）");
-  lines.push(["レッスン", "Q番号", "種別", "テキスト"].map(escapeCsv).join(","));
+  lines.push(
+    ["レッスン", "Q番号", "問題文（要約）", "正答例", "生徒の回答1", "生徒の回答2", "生徒の回答3"]
+      .map(escapeCsv)
+      .join(",")
+  );
 
   let hasSamples = false;
   for (const lesson of data.lessons) {
     for (const q of lesson.questions) {
       if (q.type !== "short_answer") continue;
 
-      const lessonCol = lesson.lessonTitle;
-      const qCol = `Q${q.questionOrder}`;
-
-      lines.push([lessonCol, qCol, "問題文", q.contentSummary].map(escapeCsv).join(","));
-      lines.push(
-        [lessonCol, qCol, "正答例", q.correctAnswerText ?? "（未設定）"]
-          .map(escapeCsv)
-          .join(",")
-      );
-      for (const text of q.shortAnswerSamples) {
-        lines.push([lessonCol, qCol, "生徒回答", text].map(escapeCsv).join(","));
-      }
+      const samples = q.shortAnswerSamples;
+      const row = [
+        lesson.lessonTitle,
+        `Q${q.questionOrder}`,
+        q.contentSummary,
+        q.correctAnswerText ?? "（未設定）",
+        samples[0] ?? "",
+        samples[1] ?? "",
+        samples[2] ?? "",
+      ];
+      lines.push(row.map(escapeCsv).join(","));
       hasSamples = true;
     }
   }
