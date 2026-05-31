@@ -19,7 +19,7 @@ function rateToPercent(rate: number | null): string {
 }
 
 function classLabel(cls: number): string {
-  return String.fromCharCode(64 + cls) + "組";
+  return `${cls}組`;
 }
 
 function typeLabel(type: QuizQuestionType): string {
