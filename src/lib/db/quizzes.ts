@@ -541,6 +541,7 @@ export type QuestionExportData = {
   overallRate: number | null;
   classRates: Map<number, number | null>;
   answerDistribution: AnswerDistributionItem[] | null;
+  correctAnswerText: string | null;
   shortAnswerSamples: string[];
 };
 
@@ -778,6 +779,13 @@ export async function getUnitQuizResultsForExport(
         }));
       }
 
+      // 記述式：正答例を取得
+      let correctAnswerText: string | null = null;
+      if (type === "short_answer") {
+        const ca = q.correct_answer as { text?: string };
+        correctAnswerText = ca?.text?.trim() || null;
+      }
+
       // 記述式：最新回答からランダム3件
       let shortAnswerSamples: string[] = [];
       if (type === "short_answer" && stats && stats.shortAnswerTexts.length > 0) {
@@ -796,6 +804,7 @@ export async function getUnitQuizResultsForExport(
         overallRate,
         classRates,
         answerDistribution,
+        correctAnswerText,
         shortAnswerSamples,
       };
     });

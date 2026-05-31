@@ -19,7 +19,7 @@ function rateToPercent(rate: number | null): string {
 }
 
 function classLabel(cls: number): string {
-  return String.fromCharCode(64 + cls) + "組";
+  return `${cls}組`;
 }
 
 function typeLabel(type: QuizQuestionType): string {
@@ -102,19 +102,31 @@ function generateCsv(data: UnitExportData): string {
 
   lines.push("");
 
-  // Section 3: 記述回答サンプル
+  // Section 3: 記述回答サンプル（1設問1行）
   lines.push("## 記述回答サンプル（最新回答・ランダム3件）");
-  lines.push(["レッスン", "Q番号", "回答テキスト"].map(escapeCsv).join(","));
+  lines.push(
+    ["レッスン", "Q番号", "問題文（要約）", "正答例", "生徒の回答1", "生徒の回答2", "生徒の回答3"]
+      .map(escapeCsv)
+      .join(",")
+  );
 
   let hasSamples = false;
   for (const lesson of data.lessons) {
     for (const q of lesson.questions) {
       if (q.type !== "short_answer") continue;
-      for (const text of q.shortAnswerSamples) {
-        const row = [lesson.lessonTitle, `Q${q.questionOrder}`, text];
-        lines.push(row.map(escapeCsv).join(","));
-        hasSamples = true;
-      }
+
+      const samples = q.shortAnswerSamples;
+      const row = [
+        lesson.lessonTitle,
+        `Q${q.questionOrder}`,
+        q.contentSummary,
+        q.correctAnswerText ?? "（未設定）",
+        samples[0] ?? "",
+        samples[1] ?? "",
+        samples[2] ?? "",
+      ];
+      lines.push(row.map(escapeCsv).join(","));
+      hasSamples = true;
     }
   }
 
