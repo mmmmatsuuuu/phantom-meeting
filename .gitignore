@@ -42,3 +42,6 @@ next-env.d.ts
 
 # supabase studio snippets (auto-synced, not part of codebase)
 /supabase/snippets/
+
+# claude code worktrees (temporary isolated workspaces created by claude agents)
+.claude/worktrees/
