@@ -82,11 +82,6 @@ export default function UserMenu({ displayName, role }: Props) {
             </DropdownMenuItem>
           </>
         )}
-        {role === "admin" && (
-          <DropdownMenuItem asChild>
-            <Link href="/admin/users">👤 ユーザー管理</Link>
-          </DropdownMenuItem>
-        )}
         <DropdownMenuSeparator />
         <DropdownMenuItem asChild>
           <Link href="/profile">プロフィール編集</Link>
