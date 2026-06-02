@@ -13,7 +13,8 @@ type Params = { params: Promise<{ quizId: string }> };
 export async function GET(_req: NextRequest, { params }: Params) {
   const { quizId } = await params;
   const supabase = await createClient();
-  const { data: { user } } = await supabase.auth.getUser();
+  const { data: { session } } = await supabase.auth.getSession();
+  const user = session?.user ?? null;
   if (!user) return NextResponse.json({ data: null, error: "Unauthorized" }, { status: 401 });
 
   const attempts = await getRecentQuizAttemptsWithAnswers(quizId, user.id);
@@ -23,7 +24,8 @@ export async function GET(_req: NextRequest, { params }: Params) {
 export async function POST(req: NextRequest, { params }: Params) {
   const { quizId } = await params;
   const supabase = await createClient();
-  const { data: { user } } = await supabase.auth.getUser();
+  const { data: { session } } = await supabase.auth.getSession();
+  const user = session?.user ?? null;
   if (!user) return NextResponse.json({ data: null, error: "Unauthorized" }, { status: 401 });
 
   const body = (await req.json()) as { answers: AnswerPayload[] };
