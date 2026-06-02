@@ -8,7 +8,8 @@ export async function DELETE(
 ) {
   const { postId } = await params;
   const supabase = await createClient();
-  const { data: { user } } = await supabase.auth.getUser();
+  const { data: { session } } = await supabase.auth.getSession();
+  const user = session?.user ?? null;
   if (!user) return NextResponse.json({ data: null, error: "Unauthorized" }, { status: 401 });
 
   const success = await deletePost(postId);

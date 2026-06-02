@@ -6,8 +6,9 @@ type Params = { params: Promise<{ fileId: string }> };
 export async function DELETE(req: NextRequest, { params }: Params) {
   const supabase = await createClient();
   const {
-    data: { user },
-  } = await supabase.auth.getUser();
+    data: { session },
+  } = await supabase.auth.getSession();
+  const user = session?.user ?? null;
   if (!user) {
     return NextResponse.json({ data: null, error: "Unauthorized" }, { status: 401 });
   }
