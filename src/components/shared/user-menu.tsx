@@ -17,6 +17,12 @@ type Props = {
   role: "admin" | "teacher" | "student";
 };
 
+const ROLE_LABELS: Record<Props["role"], string> = {
+  student: "生徒",
+  teacher: "教師",
+  admin: "管理者",
+};
+
 export default function UserMenu({ displayName, role }: Props) {
   const router = useRouter();
 
@@ -32,7 +38,10 @@ export default function UserMenu({ displayName, role }: Props) {
         <span className="flex items-center justify-center w-7 h-7 rounded-full bg-indigo-600 text-white text-xs font-bold shrink-0">
           {displayName.charAt(0) || "?"}
         </span>
-        <span className="max-w-[120px] truncate text-foreground">{displayName}</span>
+        <div className="flex flex-col items-start leading-tight">
+          <span className="max-w-[120px] truncate text-foreground">{displayName}</span>
+          <span className="text-[10px] text-muted-foreground">{ROLE_LABELS[role]}</span>
+        </div>
         <svg
           xmlns="http://www.w3.org/2000/svg"
           width="14"
