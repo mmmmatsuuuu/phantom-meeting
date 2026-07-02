@@ -15,39 +15,25 @@ export type LessonWithQuestions = Lesson & {
 };
 
 /**
- * 科目・単元・レッスン一覧を取得する
+ * 科目・単元・レッスン一覧を取得する（ネスト select で1クエリ）
  */
 export async function getContents(): Promise<SubjectWithUnits[]> {
   const supabase = await createClient();
 
-  const { data: subjects, error: subjectsError } = await supabase
+  const { data, error } = await supabase
     .from("subjects")
-    .select("*")
+    .select("*, units(*, lessons(*))")
     .order("order");
 
-  if (subjectsError || !subjects) return [];
+  if (error || !data) return [];
 
-  const { data: units, error: unitsError } = await supabase
-    .from("units")
-    .select("*")
-    .order("order");
-
-  if (unitsError || !units) return [];
-
-  const { data: lessons, error: lessonsError } = await supabase
-    .from("lessons")
-    .select("*")
-    .order("order");
-
-  if (lessonsError || !lessons) return [];
-
-  return subjects.map((subject) => ({
+  return data.map((subject) => ({
     ...subject,
-    units: units
-      .filter((unit) => unit.subject_id === subject.id)
+    units: [...subject.units]
+      .sort((a, b) => a.order - b.order)
       .map((unit) => ({
         ...unit,
-        lessons: lessons.filter((lesson) => lesson.unit_id === unit.id),
+        lessons: [...unit.lessons].sort((a, b) => a.order - b.order),
       })),
   }));
 }
@@ -190,7 +176,7 @@ export async function createLesson(params: {
 }
 
 /**
- * レッスン詳細と発問を取得する
+ * レッスン詳細と発問を取得する（ネスト select で1クエリ）
  */
 export async function getLessonWithQuestions(
   lessonId: string
@@ -199,22 +185,14 @@ export async function getLessonWithQuestions(
 
   const { data: lesson, error: lessonError } = await supabase
     .from("lessons")
-    .select("*, unit:units(*, subject:subjects(*))")
+    .select("*, unit:units(*, subject:subjects(*)), questions(*)")
     .eq("id", lessonId)
     .single();
 
   if (lessonError || !lesson) return null;
 
-  const { data: questions, error: questionsError } = await supabase
-    .from("questions")
-    .select("*")
-    .eq("lesson_id", lessonId)
-    .order("order");
-
-  if (questionsError) return null;
-
   return {
     ...lesson,
-    questions: questions ?? [],
+    questions: [...lesson.questions].sort((a, b) => a.order - b.order),
   };
 }

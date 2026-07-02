@@ -201,19 +201,16 @@ export async function getUnitMemoSamplesForExport(
 ): Promise<UnitMemoExportData | null> {
   const supabase = await createClient();
 
+  // 単元とレッスンをネスト select で1クエリで取得
   const { data: unit } = await supabase
     .from("units")
-    .select("name")
+    .select("name, lessons(id, title, order)")
     .eq("id", unitId)
     .single();
   if (!unit) return null;
 
-  const { data: lessons } = await supabase
-    .from("lessons")
-    .select("id, title, order")
-    .eq("unit_id", unitId)
-    .order("order");
-  if (!lessons || lessons.length === 0) return null;
+  const lessons = [...unit.lessons].sort((a, b) => a.order - b.order);
+  if (lessons.length === 0) return null;
 
   const lessonIds = lessons.map((l) => l.id);
 
