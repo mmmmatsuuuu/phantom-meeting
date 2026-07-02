@@ -1,4 +1,4 @@
-import { createClient } from "@/lib/supabase/server";
+import { createClient, getUser } from "@/lib/supabase/server";
 import type { Database } from "@/lib/supabase/types";
 
 export type Subject = Database["public"]["Tables"]["subjects"]["Row"];
@@ -57,9 +57,7 @@ export async function getContents(): Promise<SubjectWithUnits[]> {
  */
 export async function createSubject(name: string): Promise<Subject | null> {
   const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
+  const user = await getUser();
   if (!user) return null;
 
   const { count } = await supabase

@@ -2,7 +2,7 @@ import { notFound } from "next/navigation";
 import Link from "next/link";
 import { getLessonWithQuestions } from "@/lib/db/contents";
 import { getQuizWithQuestions, hasCompletedQuiz } from "@/lib/db/quizzes";
-import { createClient } from "@/lib/supabase/server";
+import { getUserProfile } from "@/lib/supabase/server";
 import LessonContent from "@/components/lesson/lesson-content";
 
 type Props = {
@@ -12,21 +12,18 @@ type Props = {
 export default async function LessonPage({ params }: Props) {
   const { lessonId } = await params;
 
-  const supabase = await createClient();
-  const [lesson, quiz, { data: { user } }] = await Promise.all([
+  const [lesson, quiz, profile] = await Promise.all([
     getLessonWithQuestions(lessonId),
     getQuizWithQuestions(lessonId),
-    supabase.auth.getUser(),
+    getUserProfile(),
   ]);
 
   if (!lesson) return notFound();
-  if (!user) return notFound();
+  if (!profile) return notFound();
 
-  const [initialIsCompleted, profileResult] = await Promise.all([
-    quiz ? hasCompletedQuiz(quiz.id, user.id) : Promise.resolve(false),
-    supabase.from("profiles").select("role").eq("id", user.id).single(),
-  ]);
-  const currentUserRole = profileResult.data?.role ?? "student";
+  const initialIsCompleted = quiz
+    ? await hasCompletedQuiz(quiz.id, profile.userId)
+    : false;
 
   const { unit, questions } = lesson;
   const subject = unit.subject;
@@ -53,8 +50,8 @@ export default async function LessonPage({ params }: Props) {
         youtubeUrl={lesson.youtube_url}
         questions={questions}
         quiz={quiz}
-        currentUserId={user.id}
-        currentUserRole={currentUserRole}
+        currentUserId={profile.userId}
+        currentUserRole={profile.role}
         initialIsCompleted={initialIsCompleted}
       />
     </div>

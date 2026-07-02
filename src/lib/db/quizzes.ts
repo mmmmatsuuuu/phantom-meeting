@@ -1,4 +1,4 @@
-import { createClient } from "@/lib/supabase/server";
+import { createClient, getUser } from "@/lib/supabase/server";
 import type { Database } from "@/lib/supabase/types";
 import { tiptapDocToText } from "@/lib/tiptap-utils";
 
@@ -241,7 +241,7 @@ export type QuizAttemptResult = {
  */
 export async function getQuizResultsByUser(): Promise<QuizAttemptResult[]> {
   const supabase = await createClient();
-  const { data: { user } } = await supabase.auth.getUser();
+  const user = await getUser();
   if (!user) return [];
 
   const { data, error } = await supabase

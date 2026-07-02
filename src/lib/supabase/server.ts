@@ -1,6 +1,7 @@
 import { createServerClient } from "@supabase/ssr";
 import { cookies } from "next/headers";
 import { cache } from "react";
+import type { Database } from "@/lib/supabase/types";
 
 export async function createClient() {
   const cookieStore = await cookies();
@@ -46,4 +47,34 @@ export const getUser = cache(async () => {
     data: { user },
   } = await supabase.auth.getUser();
   return user;
+});
+
+export type Role = Database["public"]["Enums"]["role"];
+
+export type UserProfile = {
+  userId: string;
+  displayName: string;
+  role: Role;
+};
+
+/**
+ * ログインユーザーのプロフィール（表示名・ロール）を取得する。
+ * React cache により同一リクエスト内では認証確認・profiles クエリとも1回だけ実行される。
+ */
+export const getUserProfile = cache(async (): Promise<UserProfile | null> => {
+  const user = await getUser();
+  if (!user) return null;
+
+  const supabase = await createClient();
+  const { data: profile } = await supabase
+    .from("profiles")
+    .select("display_name, role")
+    .eq("id", user.id)
+    .single();
+
+  return {
+    userId: user.id,
+    displayName: profile?.display_name ?? user.email ?? "",
+    role: profile?.role ?? "student",
+  };
 });

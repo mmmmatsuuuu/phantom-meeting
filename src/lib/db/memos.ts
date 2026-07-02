@@ -1,4 +1,4 @@
-import { createClient } from "@/lib/supabase/server";
+import { createClient, getUser } from "@/lib/supabase/server";
 import type { Database } from "@/lib/supabase/types";
 import { tiptapDocToText } from "@/lib/tiptap-utils";
 
@@ -26,9 +26,7 @@ export type TiptapContent = {
  */
 export async function getMemosByLessonId(lessonId: string): Promise<Memo[]> {
   const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
+  const user = await getUser();
   if (!user) return [];
 
   const { data, error } = await supabase
@@ -51,9 +49,7 @@ export async function createMemo(params: {
   timestampSeconds: number | null;
 }): Promise<Memo | null> {
   const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
+  const user = await getUser();
   if (!user) return null;
 
   const { data, error } = await supabase
@@ -76,9 +72,7 @@ export async function createMemo(params: {
  */
 export async function getAllMemos(): Promise<Memo[]> {
   const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
+  const user = await getUser();
   if (!user) return [];
 
   const { data, error } = await supabase
