@@ -39,10 +39,11 @@ export async function updateSession(request: NextRequest) {
     }
   );
 
-  // セッションを更新（必ずgetUser()を呼ぶ）
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
+  // セッションを更新し JWT を検証する。
+  // JWT Signing Keys（非対称鍵）移行後は Auth サーバーへの通信なしでローカル検証される。
+  // 移行前は自動的に従来どおりサーバー問い合わせで検証される。
+  const { data } = await supabase.auth.getClaims();
+  const user = data?.claims ?? null;
 
   // 未認証ユーザーを /login にリダイレクト（認証不要パスを除く）
   const pathname = request.nextUrl.pathname;

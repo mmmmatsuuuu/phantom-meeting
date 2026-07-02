@@ -41,12 +41,17 @@ export async function createClient() {
   );
 }
 
+/**
+ * ログインユーザーの ID・メールアドレスを JWT クレームから取得する。
+ * JWT Signing Keys（非対称鍵）移行後は Auth サーバーへの通信なしでローカル検証される。
+ * React cache により同一リクエスト内では1回だけ実行される。
+ */
 export const getUser = cache(async () => {
   const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-  return user;
+  const { data } = await supabase.auth.getClaims();
+  const claims = data?.claims;
+  if (!claims) return null;
+  return { id: claims.sub, email: claims.email };
 });
 
 export type Role = Database["public"]["Enums"]["role"];

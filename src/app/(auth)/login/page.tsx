@@ -1,4 +1,4 @@
-import { createClient } from "@/lib/supabase/server";
+import { getUser } from "@/lib/supabase/server";
 import { redirect } from "next/navigation";
 import LoginButton from "@/components/shared/login-button";
 
@@ -10,10 +10,7 @@ export default async function LoginPage({
   const { error } = await searchParams;
 
   // すでにログイン済みなら / にリダイレクト
-  const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
+  const user = await getUser();
   if (user) redirect("/");
 
   return (
