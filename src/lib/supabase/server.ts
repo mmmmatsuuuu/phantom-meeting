@@ -42,16 +42,20 @@ export async function createClient() {
 }
 
 /**
- * ログインユーザーの ID・メールアドレスを JWT クレームから取得する。
- * JWT Signing Keys（非対称鍵）移行後は Auth サーバーへの通信なしでローカル検証される。
+ * ログインユーザーの ID・メールアドレスを取得する（Auth サーバーへの通信なし）。
+ *
+ * JWT の署名検証はミドルウェア（proxy.ts → updateSession）が全リクエストで
+ * getClaims() により実施済みのため、ここでは Cookie のセッションを信頼して読み取る。
  * React cache により同一リクエスト内では1回だけ実行される。
  */
 export const getUser = cache(async () => {
   const supabase = await createClient();
-  const { data } = await supabase.auth.getClaims();
-  const claims = data?.claims;
-  if (!claims) return null;
-  return { id: claims.sub, email: claims.email };
+  const {
+    data: { session },
+  } = await supabase.auth.getSession();
+  const user = session?.user;
+  if (!user) return null;
+  return { id: user.id, email: user.email };
 });
 
 export type Role = Database["public"]["Enums"]["role"];

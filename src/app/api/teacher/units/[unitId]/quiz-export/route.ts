@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { createClient } from "@/lib/supabase/server";
+import { requireTeacher } from "@/lib/api/auth";
 import {
   getUnitQuizResultsForExport,
   type UnitExportData,
@@ -141,25 +141,8 @@ export async function GET(
   req: NextRequest,
   { params }: { params: Promise<{ unitId: string }> }
 ) {
-  const supabase = await createClient();
-  const {
-    data: { session },
-  } = await supabase.auth.getSession();
-  const user = session?.user ?? null;
-
-  if (!user) {
-    return NextResponse.json({ data: null, error: "Unauthorized" }, { status: 401 });
-  }
-
-  const { data: profile } = await supabase
-    .from("profiles")
-    .select("role")
-    .eq("id", user.id)
-    .single();
-
-  if (profile?.role !== "teacher" && profile?.role !== "admin") {
-    return NextResponse.json({ data: null, error: "Forbidden" }, { status: 403 });
-  }
+  const { errorResponse } = await requireTeacher();
+  if (errorResponse) return errorResponse;
 
   const { unitId } = await params;
   const gradeRaw = req.nextUrl.searchParams.get("grade");
