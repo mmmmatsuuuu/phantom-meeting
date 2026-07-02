@@ -1,24 +1,9 @@
 import Link from "next/link";
-import { createClient } from "@/lib/supabase/server";
+import { getUserProfile } from "@/lib/supabase/server";
 import UserMenu from "@/components/shared/user-menu";
 
 export default async function NavBar() {
-  const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-
-  let displayName = "";
-  let role: "admin" | "teacher" | "student" = "student";
-  if (user) {
-    const { data: profile } = await supabase
-      .from("profiles")
-      .select("display_name, role")
-      .eq("id", user.id)
-      .single();
-    displayName = profile?.display_name ?? user.email ?? "";
-    role = profile?.role ?? "student";
-  }
+  const profile = await getUserProfile();
 
   return (
     <header className="border-b bg-card sticky top-0 z-10">
@@ -41,7 +26,9 @@ export default async function NavBar() {
           </span>
         </Link>
         <nav className="flex items-center text-sm">
-          {user && <UserMenu displayName={displayName} role={role} />}
+          {profile && (
+            <UserMenu displayName={profile.displayName} role={profile.role} />
+          )}
         </nav>
       </div>
     </header>

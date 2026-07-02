@@ -1,4 +1,4 @@
-import { createClient } from "@/lib/supabase/server";
+import { createClient, getUser } from "@/lib/supabase/server";
 import type { Database } from "@/lib/supabase/types";
 import { tiptapDocToText } from "@/lib/tiptap-utils";
 
@@ -36,7 +36,7 @@ export type QuizAttemptAnswerInput = {
 };
 
 /**
- * レッスンに紐づくクイズと問題一覧を取得する
+ * レッスンに紐づくクイズと問題一覧を取得する（ネスト select で1クエリ）
  */
 export async function getQuizWithQuestions(
   lessonId: string
@@ -45,21 +45,16 @@ export async function getQuizWithQuestions(
 
   const { data: quiz, error: quizError } = await supabase
     .from("quizzes")
-    .select("*")
+    .select("*, questions:quiz_questions(*)")
     .eq("lesson_id", lessonId)
     .maybeSingle();
 
   if (quizError || !quiz) return null;
 
-  const { data: questions, error: questionsError } = await supabase
-    .from("quiz_questions")
-    .select("*")
-    .eq("quiz_id", quiz.id)
-    .order("order");
-
-  if (questionsError) return null;
-
-  return { ...quiz, questions: questions ?? [] };
+  return {
+    ...quiz,
+    questions: [...quiz.questions].sort((a, b) => a.order - b.order),
+  };
 }
 
 /**
@@ -241,7 +236,7 @@ export type QuizAttemptResult = {
  */
 export async function getQuizResultsByUser(): Promise<QuizAttemptResult[]> {
   const supabase = await createClient();
-  const { data: { user } } = await supabase.auth.getUser();
+  const user = await getUser();
   if (!user) return [];
 
   const { data, error } = await supabase
@@ -365,18 +360,15 @@ export async function getQuizAnalytics(
 ): Promise<QuizAnalyticsResult | null> {
   const supabase = await createClient();
 
+  // 科目・単元・レッスンをネスト select で1クエリで取得
   const { data: subject } = await supabase
     .from("subjects")
-    .select("name")
+    .select("name, units(id, name, order, lessons(id, title, order, unit_id))")
     .eq("id", subjectId)
     .single();
   if (!subject) return null;
 
-  const { data: units } = await supabase
-    .from("units")
-    .select("id, name")
-    .eq("subject_id", subjectId)
-    .order("order");
+  const units = [...subject.units].sort((a, b) => a.order - b.order);
 
   const emptyResult: QuizAnalyticsResult = {
     subjectId,
@@ -384,31 +376,26 @@ export async function getQuizAnalytics(
     lessons: [],
   };
 
-  if (!units || units.length === 0) return emptyResult;
+  if (units.length === 0) return emptyResult;
 
-  const unitIds = units.map((u) => u.id);
-  const { data: lessons } = await supabase
-    .from("lessons")
-    .select("id, title, unit_id")
-    .in("unit_id", unitIds)
-    .order("order");
-  if (!lessons || lessons.length === 0) return emptyResult;
+  const lessons = units
+    .flatMap((u) => u.lessons)
+    .sort((a, b) => a.order - b.order);
+  if (lessons.length === 0) return emptyResult;
 
   const lessonIds = lessons.map((l) => l.id);
 
+  // クイズと問題をネスト select で1クエリで取得
   const { data: quizzes } = await supabase
     .from("quizzes")
-    .select("id, lesson_id")
+    .select("id, lesson_id, quiz_questions(id, quiz_id, type, content, order)")
     .in("lesson_id", lessonIds);
   if (!quizzes || quizzes.length === 0) return emptyResult;
 
   const quizIds = quizzes.map((q) => q.id);
-  const { data: questions } = await supabase
-    .from("quiz_questions")
-    .select("id, quiz_id, type, content, order")
-    .in("quiz_id", quizIds)
-    .order("order");
-  if (!questions) return null;
+  const questions = quizzes
+    .flatMap((q) => q.quiz_questions)
+    .sort((a, b) => a.order - b.order);
 
   // フィルタされた生徒IDを取得
   let profilesQuery = supabase
@@ -569,37 +556,34 @@ export async function getUnitQuizResultsForExport(
 ): Promise<UnitExportData | null> {
   const supabase = await createClient();
 
+  // 単元とレッスンをネスト select で1クエリで取得
   const { data: unit } = await supabase
     .from("units")
-    .select("name")
+    .select("name, lessons(id, title, order)")
     .eq("id", unitId)
     .single();
   if (!unit) return null;
 
-  const { data: lessons } = await supabase
-    .from("lessons")
-    .select("id, title, order")
-    .eq("unit_id", unitId)
-    .order("order");
-  if (!lessons || lessons.length === 0) return null;
+  const lessons = [...unit.lessons].sort((a, b) => a.order - b.order);
+  if (lessons.length === 0) return null;
 
   const lessonIds = lessons.map((l) => l.id);
 
+  // クイズと問題をネスト select で1クエリで取得
   const { data: quizzes } = await supabase
     .from("quizzes")
-    .select("id, lesson_id")
+    .select(
+      "id, lesson_id, quiz_questions(id, quiz_id, type, content, correct_answer, options, order)"
+    )
     .in("lesson_id", lessonIds);
   if (!quizzes || quizzes.length === 0) return null;
 
   const quizIds = quizzes.map((q) => q.id);
   const quizByLesson = new Map(quizzes.map((q) => [q.lesson_id, q.id]));
 
-  const { data: questions } = await supabase
-    .from("quiz_questions")
-    .select("id, quiz_id, type, content, correct_answer, options, order")
-    .in("quiz_id", quizIds)
-    .order("order");
-  if (!questions) return null;
+  const questions = quizzes
+    .flatMap((q) => q.quiz_questions)
+    .sort((a, b) => a.order - b.order);
 
   // 対象学年の生徒を全員取得
   const { data: profiles } = await supabase

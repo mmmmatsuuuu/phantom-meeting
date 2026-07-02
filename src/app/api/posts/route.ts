@@ -1,5 +1,5 @@
 import { NextResponse, type NextRequest } from "next/server";
-import { createClient } from "@/lib/supabase/server";
+import { getUserProfile } from "@/lib/supabase/server";
 import {
   getPostsByLessonId,
   getPostsWithAuthorsByLessonId,
@@ -14,21 +14,11 @@ export async function GET(request: NextRequest) {
     return NextResponse.json({ data: null, error: "lessonId is required" }, { status: 400 });
   }
 
-  const supabase = await createClient();
-  const { data: { session } } = await supabase.auth.getSession();
-  const user = session?.user ?? null;
+  const profile = await getUserProfile();
 
-  if (user) {
-    const { data: profile } = await supabase
-      .from("profiles")
-      .select("role")
-      .eq("id", user.id)
-      .single();
-
-    if (profile?.role === "teacher" || profile?.role === "admin") {
-      const data = await getPostsWithAuthorsByLessonId(lessonId);
-      return NextResponse.json({ data, error: null });
-    }
+  if (profile?.role === "teacher" || profile?.role === "admin") {
+    const data = await getPostsWithAuthorsByLessonId(lessonId);
+    return NextResponse.json({ data, error: null });
   }
 
   const data = await getPostsByLessonId(lessonId);

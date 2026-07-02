@@ -1,28 +1,17 @@
 import Image from "next/image";
 import { cookies } from "next/headers";
 import { getContents } from "@/lib/db/contents";
-import { createClient } from "@/lib/supabase/server";
+import { getUserProfile } from "@/lib/supabase/server";
 import SubjectList from "@/components/lesson/subject-list";
 
 export default async function HomePage() {
-  const [subjects, supabase, cookieStore] = await Promise.all([
+  const [subjects, profile, cookieStore] = await Promise.all([
     getContents(),
-    createClient(),
+    getUserProfile(),
     cookies(),
   ]);
 
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-  let displayName = "";
-  if (user) {
-    const { data: profile } = await supabase
-      .from("profiles")
-      .select("display_name")
-      .eq("id", user.id)
-      .single();
-    displayName = profile?.display_name ?? "";
-  }
+  const displayName = profile?.displayName ?? "";
 
   // cookie から折りたたまれている科目IDを取得
   let initialCollapsedIds: string[] = [];

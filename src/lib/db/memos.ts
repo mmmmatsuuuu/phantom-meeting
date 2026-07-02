@@ -1,4 +1,4 @@
-import { createClient } from "@/lib/supabase/server";
+import { createClient, getUser } from "@/lib/supabase/server";
 import type { Database } from "@/lib/supabase/types";
 import { tiptapDocToText } from "@/lib/tiptap-utils";
 
@@ -26,9 +26,7 @@ export type TiptapContent = {
  */
 export async function getMemosByLessonId(lessonId: string): Promise<Memo[]> {
   const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
+  const user = await getUser();
   if (!user) return [];
 
   const { data, error } = await supabase
@@ -51,9 +49,7 @@ export async function createMemo(params: {
   timestampSeconds: number | null;
 }): Promise<Memo | null> {
   const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
+  const user = await getUser();
   if (!user) return null;
 
   const { data, error } = await supabase
@@ -76,9 +72,7 @@ export async function createMemo(params: {
  */
 export async function getAllMemos(): Promise<Memo[]> {
   const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
+  const user = await getUser();
   if (!user) return [];
 
   const { data, error } = await supabase
@@ -207,19 +201,16 @@ export async function getUnitMemoSamplesForExport(
 ): Promise<UnitMemoExportData | null> {
   const supabase = await createClient();
 
+  // 単元とレッスンをネスト select で1クエリで取得
   const { data: unit } = await supabase
     .from("units")
-    .select("name")
+    .select("name, lessons(id, title, order)")
     .eq("id", unitId)
     .single();
   if (!unit) return null;
 
-  const { data: lessons } = await supabase
-    .from("lessons")
-    .select("id, title, order")
-    .eq("unit_id", unitId)
-    .order("order");
-  if (!lessons || lessons.length === 0) return null;
+  const lessons = [...unit.lessons].sort((a, b) => a.order - b.order);
+  if (lessons.length === 0) return null;
 
   const lessonIds = lessons.map((l) => l.id);
 

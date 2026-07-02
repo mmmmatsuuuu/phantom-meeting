@@ -1,17 +1,11 @@
 import { NextRequest, NextResponse } from "next/server";
-import { createClient } from "@/lib/supabase/server";
+import { requireUser } from "@/lib/api/auth";
 
 const MAX_FILE_SIZE = 5 * 1024 * 1024; // 5MB
 
 export async function POST(req: NextRequest) {
-  const supabase = await createClient();
-  const {
-    data: { session },
-  } = await supabase.auth.getSession();
-  const user = session?.user ?? null;
-  if (!user) {
-    return NextResponse.json({ data: null, error: "Unauthorized" }, { status: 401 });
-  }
+  const { errorResponse } = await requireUser();
+  if (errorResponse) return errorResponse;
 
   const formData = await req.formData();
   const file = formData.get("file");

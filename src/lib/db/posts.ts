@@ -1,4 +1,4 @@
-import { createClient } from "@/lib/supabase/server";
+import { createClient, getUser } from "@/lib/supabase/server";
 import type { Database } from "@/lib/supabase/types";
 import type { TiptapContent } from "@/lib/db/memos";
 
@@ -78,9 +78,7 @@ export async function createPost(params: {
   timestampSeconds: number | null;
 }): Promise<Post | null> {
   const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
+  const user = await getUser();
   if (!user) return null;
 
   const { data, error } = await supabase
