@@ -12,7 +12,8 @@ export const config = {
      * - _next/static（静的ファイル）
      * - _next/image（画像最適化）
      * - favicon.ico
+     * - 画像などの静的アセット（認証チェック不要のため除外し、Auth への通信を削減）
      */
-    "/((?!_next/static|_next/image|favicon.ico).*)",
+    "/((?!_next/static|_next/image|favicon.ico|.*\\.(?:svg|png|jpg|jpeg|gif|webp|ico)$).*)",
   ],
 };
