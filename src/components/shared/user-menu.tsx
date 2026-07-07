@@ -143,7 +143,7 @@ export default function UserMenu({ displayName, role }: Props) {
                 生徒をみる
               </DropdownMenuLabel>
               <DropdownMenuItem asChild>
-                <Link href="/teacher/quiz-analytics">📈 小テスト分析</Link>
+                <Link href="/teacher/analytics">📈 分析</Link>
               </DropdownMenuItem>
               <DropdownMenuItem asChild>
                 <Link href="/teacher/students">👥 生徒一覧</Link>

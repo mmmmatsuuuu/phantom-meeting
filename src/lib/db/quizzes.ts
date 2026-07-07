@@ -512,6 +512,236 @@ export async function getQuizAnalytics(
   return { subjectId, subjectName: subject.name, lessons: lessonAnalytics };
 }
 
+// ─── レッスン別分析（教員向け） ─────────────────────────────────────
+
+export type QuestionDetailAnalytics = {
+  id: string;
+  order: number;
+  type: QuizQuestionType;
+  content: Record<string, unknown>;
+  /** 正答率（0-1）。short_answer・回答なしは null */
+  correctRate: number | null;
+  answerCount: number;
+  /** 選択式のみ：選択肢ごとの回答分布 */
+  answerDistribution:
+    | { text: string; isCorrect: boolean; count: number; rate: number }[]
+    | null;
+  /** 記述式のみ：模範解答 */
+  correctAnswerText: string | null;
+  /** 記述式のみ：最新回答からランダム抽出したサンプル */
+  shortAnswerSamples: string[];
+};
+
+export type LessonQuizAnalyticsDetail = {
+  lessonId: string;
+  lessonTitle: string;
+  quizTitle: string;
+  studentCount: number;
+  attemptedCount: number;
+  memoStudentCount: number;
+  questions: QuestionDetailAnalytics[];
+};
+
+const SHORT_ANSWER_SAMPLE_COUNT = 3;
+
+/**
+ * 指定レッスンの小テストを設問単位で詳細分析する（teacher/admin 向け）
+ * 各生徒の最新受験のみを集計対象とする。
+ */
+export async function getLessonQuizAnalyticsDetail(
+  lessonId: string,
+  grade: number,
+  classNum: number | "all"
+): Promise<LessonQuizAnalyticsDetail | null> {
+  const supabase = await createClient();
+
+  // レッスン・クイズ・設問をネスト select で1クエリで取得
+  const { data: lesson } = await supabase
+    .from("lessons")
+    .select(
+      "id, title, quizzes(id, title, quiz_questions(id, type, content, correct_answer, options, order))"
+    )
+    .eq("id", lessonId)
+    .single();
+  if (!lesson) return null;
+
+  const quiz = lesson.quizzes[0];
+  if (!quiz) return null;
+
+  const questions = [...quiz.quiz_questions].sort((a, b) => a.order - b.order);
+
+  // 対象生徒を取得
+  let profilesQuery = supabase
+    .from("profiles")
+    .select("id")
+    .eq("role", "student")
+    .not("student_number", "is", null);
+
+  if (classNum === "all") {
+    profilesQuery = profilesQuery
+      .gte("student_number", grade * 1000)
+      .lte("student_number", grade * 1000 + 999);
+  } else {
+    const min = grade * 1000 + classNum * 100;
+    profilesQuery = profilesQuery
+      .gte("student_number", min)
+      .lte("student_number", min + 99);
+  }
+
+  const { data: profiles } = await profilesQuery.limit(2000);
+  const studentIds = (profiles ?? []).map((p) => p.id);
+
+  const base: LessonQuizAnalyticsDetail = {
+    lessonId: lesson.id,
+    lessonTitle: lesson.title,
+    quizTitle: quiz.title,
+    studentCount: studentIds.length,
+    attemptedCount: 0,
+    memoStudentCount: 0,
+    questions: questions.map((q) => ({
+      id: q.id,
+      order: q.order,
+      type: q.type as QuizQuestionType,
+      content: q.content as Record<string, unknown>,
+      correctRate: null,
+      answerCount: 0,
+      answerDistribution: null,
+      correctAnswerText:
+        q.type === "short_answer"
+          ? ((q.correct_answer as { text?: string })?.text?.trim() ?? null)
+          : null,
+      shortAnswerSamples: [],
+    })),
+  };
+
+  if (studentIds.length === 0) return base;
+
+  // メモを1件以上書いた生徒数
+  const { data: memoRows } = await supabase
+    .from("memos")
+    .select("user_id")
+    .eq("lesson_id", lessonId)
+    .in("user_id", studentIds)
+    .limit(5000);
+  base.memoStudentCount = new Set((memoRows ?? []).map((m) => m.user_id)).size;
+
+  // 各生徒の最新受験を特定
+  const { data: attempts } = await supabase
+    .from("quiz_attempts")
+    .select("id, user_id, submitted_at")
+    .eq("quiz_id", quiz.id)
+    .in("user_id", studentIds)
+    .order("submitted_at", { ascending: false })
+    .limit(20000);
+
+  if (!attempts || attempts.length === 0) return base;
+
+  const latestByUser = new Map<string, string>();
+  for (const attempt of attempts) {
+    if (!latestByUser.has(attempt.user_id)) {
+      latestByUser.set(attempt.user_id, attempt.id);
+    }
+  }
+  const latestAttemptIds = [...latestByUser.values()];
+  base.attemptedCount = latestAttemptIds.length;
+
+  // 回答詳細をチャンク分割で取得
+  type AnswerRow = {
+    question_id: string;
+    answer: Record<string, unknown>;
+    is_correct: boolean | null;
+  };
+  const allAnswers: AnswerRow[] = [];
+  const CHUNK_SIZE = 100;
+  for (let i = 0; i < latestAttemptIds.length; i += CHUNK_SIZE) {
+    const chunk = latestAttemptIds.slice(i, i + CHUNK_SIZE);
+    const { data: chunkAnswers } = await supabase
+      .from("quiz_attempt_answers")
+      .select("question_id, answer, is_correct")
+      .in("attempt_id", chunk)
+      .limit(CHUNK_SIZE * 30);
+    if (chunkAnswers) allAnswers.push(...(chunkAnswers as AnswerRow[]));
+  }
+
+  // 設問ごとに集計
+  const questionLookup = new Map(questions.map((q) => [q.id, q]));
+  type Stats = {
+    correct: number;
+    total: number;
+    answerCounts: Map<string, number>;
+    shortAnswerTexts: string[];
+  };
+  const statsMap = new Map<string, Stats>();
+
+  for (const answer of allAnswers) {
+    const q = questionLookup.get(answer.question_id);
+    if (!q) continue;
+
+    const stats = statsMap.get(q.id) ?? {
+      correct: 0,
+      total: 0,
+      answerCounts: new Map<string, number>(),
+      shortAnswerTexts: [],
+    };
+
+    if (q.type === "short_answer") {
+      const text = String((answer.answer as { text?: unknown })?.text ?? "").trim();
+      if (text) stats.shortAnswerTexts.push(text);
+    } else {
+      stats.total++;
+      if (answer.is_correct) stats.correct++;
+
+      if (q.type === "multiple_choice") {
+        const selectedText = String(
+          (answer.answer as { selectedText?: unknown })?.selectedText ?? ""
+        );
+        if (selectedText) {
+          stats.answerCounts.set(
+            selectedText,
+            (stats.answerCounts.get(selectedText) ?? 0) + 1
+          );
+        }
+      }
+    }
+    statsMap.set(q.id, stats);
+  }
+
+  for (const detail of base.questions) {
+    const q = questionLookup.get(detail.id);
+    const stats = statsMap.get(detail.id);
+    if (!q || !stats) continue;
+
+    if (detail.type === "short_answer") {
+      detail.answerCount = stats.shortAnswerTexts.length;
+      // Fisher–Yates シャッフルでランダム抽出
+      const texts = [...stats.shortAnswerTexts];
+      for (let i = texts.length - 1; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i + 1));
+        [texts[i], texts[j]] = [texts[j], texts[i]];
+      }
+      detail.shortAnswerSamples = texts.slice(0, SHORT_ANSWER_SAMPLE_COUNT);
+      continue;
+    }
+
+    detail.answerCount = stats.total;
+    detail.correctRate = stats.total > 0 ? stats.correct / stats.total : null;
+
+    if (detail.type === "multiple_choice" && stats.total > 0) {
+      const opts = (q.options as string[] | null) ?? [];
+      const correctIndex = (q.correct_answer as { index?: number })?.index ?? -1;
+      const correctText = opts[correctIndex] ?? "";
+      detail.answerDistribution = opts.map((opt) => ({
+        text: opt,
+        isCorrect: opt === correctText,
+        count: stats.answerCounts.get(opt) ?? 0,
+        rate: (stats.answerCounts.get(opt) ?? 0) / stats.total,
+      }));
+    }
+  }
+
+  return base;
+}
+
 // ─── 小テスト結果エクスポート用の型 ──────────────────────────────────
 
 export type AnswerDistributionItem = {

@@ -1019,9 +1019,11 @@ teacher ロール以外がエクスポートできないこと、出力データ
 
 ### 20c: 分析ページのタブ統合＋レッスン別分析
 
-- [ ] `/teacher/analytics` 新設（単元別 / レッスン別 / 生徒別 のタブ構成）
-- [ ] 単元別タブ：既存 `/teacher/quiz-analytics` を移設（旧URLはリダイレクト）
-- [ ] レッスン別タブ：設問別正答率・誤答分布・記述回答サンプル・メモ記入状況を1画面に集約
+- [x] `/teacher/analytics` 新設（単元別 / レッスン別 のタブ構成。生徒別タブは 20d で追加）
+- [x] 単元別タブ：既存 `/teacher/quiz-analytics` を移設（旧URLは `/teacher/analytics/units` へリダイレクト）
+- [x] レッスン別タブ：設問別正答率・誤答分布・記述回答サンプル・メモ記入状況を1画面に集約
+  - `getLessonQuizAnalyticsDetail(lessonId, grade, classNum)` + `GET /api/teacher/lessons/[lessonId]/quiz-analytics`
+  - 各生徒の最新受験のみを集計。生徒メモ閲覧ページへの導線もサマリーに設置
 
 ### 20d: 生徒別分析
 
@@ -1073,8 +1075,8 @@ teacher ロール以外がエクスポートできないこと、出力データ
 [ ] Phase 19:   データの利活用
 [✅] Phase 20a: 生徒ダッシュボード
 [✅] Phase 20b: 教師ハブ・メニュー整理
-[ ] Phase 20c: 分析タブ統合＋レッスン別分析
+[✅] Phase 20c: 分析タブ統合＋レッスン別分析
 [ ] Phase 20d: 生徒別分析
 ```
 
-次の着手は **Phase 20c: 分析タブ統合＋レッスン別分析**。
+次の着手は **Phase 20d: 生徒別分析**。

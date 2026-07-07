@@ -18,10 +18,10 @@ const CREATE_CARDS: HubCard[] = [
 
 const OBSERVE_CARDS: HubCard[] = [
   {
-    href: "/teacher/quiz-analytics",
+    href: "/teacher/analytics",
     emoji: "📈",
-    title: "小テスト分析",
-    description: "単元・レッスンごとの正答率から生徒のつまずきを把握する",
+    title: "分析",
+    description: "単元別・レッスン別の正答率から生徒のつまずきを把握する",
   },
   {
     href: "/teacher/students",
