@@ -512,6 +512,218 @@ export async function getQuizAnalytics(
   return { subjectId, subjectName: subject.name, lessons: lessonAnalytics };
 }
 
+// ─── レッスン別分析（教員向け・生徒×設問） ──────────────────────────
+
+export type LessonQuizQuestionMeta = {
+  id: string;
+  order: number;
+  type: QuizQuestionType;
+  content: Record<string, unknown>;
+  /** 正解のテキスト表現（選択式: 正解選択肢 / 並び替え: 正解順 / 記述式: 模範解答） */
+  correctAnswerText: string;
+};
+
+export type LessonQuizStudentAnswer = {
+  /** null = 記述式（自己採点） */
+  isCorrect: boolean | null;
+  /** 生徒の回答内容（選択式: 選んだ選択肢 / 並び替え: 回答順 / 記述式: 記入内容） */
+  answerText: string;
+};
+
+export type LessonQuizStudentRow = {
+  userId: string;
+  displayName: string;
+  studentNumber: number | null;
+  attempted: boolean;
+  score: number | null;
+  maxScore: number | null;
+  /** questionId → 最新受験の回答。未回答の設問はキーなし */
+  answers: Record<string, LessonQuizStudentAnswer>;
+  memoCount: number;
+};
+
+export type LessonQuizStudentResults = {
+  lessonId: string;
+  lessonTitle: string;
+  quizTitle: string;
+  questions: LessonQuizQuestionMeta[];
+  students: LessonQuizStudentRow[];
+};
+
+/**
+ * 指定レッスンの小テスト結果を生徒×設問のマトリクスで取得する（teacher/admin 向け）
+ * 各生徒の最新受験のみを対象とする。
+ */
+export async function getLessonQuizResultsByStudent(
+  lessonId: string,
+  grade: number,
+  classNum: number | "all"
+): Promise<LessonQuizStudentResults | null> {
+  const supabase = await createClient();
+
+  // レッスン・クイズ・設問をネスト select で1クエリで取得
+  const { data: lesson } = await supabase
+    .from("lessons")
+    .select(
+      "id, title, quizzes(id, title, quiz_questions(id, type, content, correct_answer, options, order))"
+    )
+    .eq("id", lessonId)
+    .single();
+  if (!lesson) return null;
+
+  const quiz = lesson.quizzes[0];
+  if (!quiz) return null;
+
+  const questions: LessonQuizQuestionMeta[] = [...quiz.quiz_questions]
+    .sort((a, b) => a.order - b.order)
+    .map((q) => {
+      let correctAnswerText = "";
+      if (q.type === "multiple_choice") {
+        const opts = (q.options as string[] | null) ?? [];
+        const index = (q.correct_answer as { index?: number })?.index ?? -1;
+        correctAnswerText = opts[index] ?? "";
+      } else if (q.type === "ordering") {
+        correctAnswerText = ((q.correct_answer as string[] | null) ?? []).join(" → ");
+      } else {
+        correctAnswerText = (q.correct_answer as { text?: string })?.text?.trim() ?? "";
+      }
+      return {
+        id: q.id,
+        order: q.order,
+        type: q.type as QuizQuestionType,
+        content: q.content as Record<string, unknown>,
+        correctAnswerText,
+      };
+    });
+
+  // 対象生徒を取得
+  let profilesQuery = supabase
+    .from("profiles")
+    .select("id, display_name, student_number")
+    .eq("role", "student")
+    .not("student_number", "is", null);
+
+  if (classNum === "all") {
+    profilesQuery = profilesQuery
+      .gte("student_number", grade * 1000)
+      .lte("student_number", grade * 1000 + 999);
+  } else {
+    const min = grade * 1000 + classNum * 100;
+    profilesQuery = profilesQuery
+      .gte("student_number", min)
+      .lte("student_number", min + 99);
+  }
+
+  const { data: profiles } = await profilesQuery
+    .order("student_number", { ascending: true })
+    .limit(2000);
+  const studentProfiles = profiles ?? [];
+
+  const result: LessonQuizStudentResults = {
+    lessonId: lesson.id,
+    lessonTitle: lesson.title,
+    quizTitle: quiz.title,
+    questions,
+    students: studentProfiles.map((p) => ({
+      userId: p.id,
+      displayName: p.display_name,
+      studentNumber: p.student_number,
+      attempted: false,
+      score: null,
+      maxScore: null,
+      answers: {},
+      memoCount: 0,
+    })),
+  };
+
+  if (studentProfiles.length === 0) return result;
+
+  const studentIds = studentProfiles.map((p) => p.id);
+  const rowByUser = new Map(result.students.map((s) => [s.userId, s]));
+
+  // レッスンのメモ件数（生徒ごと）
+  const { data: memoRows } = await supabase
+    .from("memos")
+    .select("user_id")
+    .eq("lesson_id", lessonId)
+    .in("user_id", studentIds)
+    .limit(5000);
+  for (const memo of memoRows ?? []) {
+    const row = rowByUser.get(memo.user_id);
+    if (row) row.memoCount++;
+  }
+
+  // 各生徒の最新受験を特定
+  const { data: attempts } = await supabase
+    .from("quiz_attempts")
+    .select("id, user_id, score, max_score, submitted_at")
+    .eq("quiz_id", quiz.id)
+    .in("user_id", studentIds)
+    .order("submitted_at", { ascending: false })
+    .limit(20000);
+
+  if (!attempts || attempts.length === 0) return result;
+
+  const userByAttempt = new Map<string, string>();
+  for (const attempt of attempts) {
+    const row = rowByUser.get(attempt.user_id);
+    if (!row || row.attempted) continue;
+    row.attempted = true;
+    row.score = attempt.score;
+    row.maxScore = attempt.max_score;
+    userByAttempt.set(attempt.id, attempt.user_id);
+  }
+  const latestAttemptIds = [...userByAttempt.keys()];
+
+  // 回答詳細をチャンク分割で取得
+  type AnswerRow = {
+    attempt_id: string;
+    question_id: string;
+    answer: Record<string, unknown>;
+    is_correct: boolean | null;
+  };
+  const allAnswers: AnswerRow[] = [];
+  const CHUNK_SIZE = 100;
+  for (let i = 0; i < latestAttemptIds.length; i += CHUNK_SIZE) {
+    const chunk = latestAttemptIds.slice(i, i + CHUNK_SIZE);
+    const { data: chunkAnswers } = await supabase
+      .from("quiz_attempt_answers")
+      .select("attempt_id, question_id, answer, is_correct")
+      .in("attempt_id", chunk)
+      .limit(CHUNK_SIZE * 30);
+    if (chunkAnswers) allAnswers.push(...(chunkAnswers as AnswerRow[]));
+  }
+
+  const questionTypeById = new Map(questions.map((q) => [q.id, q.type]));
+
+  for (const answer of allAnswers) {
+    const userId = userByAttempt.get(answer.attempt_id);
+    if (!userId) continue;
+    const row = rowByUser.get(userId);
+    const type = questionTypeById.get(answer.question_id);
+    if (!row || !type) continue;
+
+    let answerText = "";
+    if (type === "multiple_choice") {
+      answerText = String(
+        (answer.answer as { selectedText?: unknown })?.selectedText ?? ""
+      );
+    } else if (type === "ordering") {
+      const items = (answer.answer as { items?: unknown })?.items;
+      answerText = Array.isArray(items) ? items.map(String).join(" → ") : "";
+    } else {
+      answerText = String((answer.answer as { text?: unknown })?.text ?? "").trim();
+    }
+
+    row.answers[answer.question_id] = {
+      isCorrect: answer.is_correct,
+      answerText,
+    };
+  }
+
+  return result;
+}
+
 // ─── 小テスト結果エクスポート用の型 ──────────────────────────────────
 
 export type AnswerDistributionItem = {
