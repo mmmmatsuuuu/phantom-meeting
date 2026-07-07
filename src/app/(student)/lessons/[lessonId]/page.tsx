@@ -1,9 +1,11 @@
 import { notFound } from "next/navigation";
 import Link from "next/link";
 import { getLessonWithQuestions } from "@/lib/db/contents";
-import { getQuizWithQuestions, hasCompletedQuiz } from "@/lib/db/quizzes";
+import { getQuizWithQuestions, getStudentQuizStatuses, isReviewNeeded } from "@/lib/db/quizzes";
+import { getMemoCountsByLesson } from "@/lib/db/memos";
 import { getUserProfile } from "@/lib/supabase/server";
 import LessonContent from "@/components/lesson/lesson-content";
+import LessonStatusBar from "@/components/lesson/lesson-status-bar";
 
 type Props = {
   params: Promise<{ lessonId: string }>;
@@ -21,9 +23,28 @@ export default async function LessonPage({ params }: Props) {
   if (!lesson) return notFound();
   if (!profile) return notFound();
 
-  const initialIsCompleted = quiz
-    ? await hasCompletedQuiz(quiz.id, profile.userId)
-    : false;
+  // 生徒のみ: 自分の受験状況・メモ件数を取得（ステータスバー・ナッジ用）
+  const isStudent = profile.role === "student";
+  let initialIsCompleted = false;
+  let otherReviewCount = 0;
+  let statusBar: { latestRate: number | null; attemptCount: number; memoCount: number } | null = null;
+
+  if (isStudent) {
+    const [statuses, memoCounts] = await Promise.all([
+      getStudentQuizStatuses(profile.userId),
+      getMemoCountsByLesson(profile.userId),
+    ]);
+    const current = quiz ? statuses.find((s) => s.quizId === quiz.id) : undefined;
+    initialIsCompleted = current !== undefined;
+    otherReviewCount = statuses.filter(
+      (s) => s.quizId !== quiz?.id && isReviewNeeded(s)
+    ).length;
+    statusBar = {
+      latestRate: current?.latestRate ?? null,
+      attemptCount: current?.attemptCount ?? 0,
+      memoCount: memoCounts[lessonId] ?? 0,
+    };
+  }
 
   const { unit, questions } = lesson;
   const subject = unit.subject;
@@ -43,7 +64,16 @@ export default async function LessonPage({ params }: Props) {
         <span className="text-foreground font-medium">{lesson.title}</span>
       </nav>
 
-      <h1 className="text-xl font-bold mb-5">{lesson.title}</h1>
+      <h1 className="text-xl font-bold mb-3">{lesson.title}</h1>
+
+      {statusBar && (
+        <LessonStatusBar
+          hasQuiz={quiz !== null}
+          latestRate={statusBar.latestRate}
+          attemptCount={statusBar.attemptCount}
+          memoCount={statusBar.memoCount}
+        />
+      )}
 
       <LessonContent
         lessonId={lessonId}
@@ -53,6 +83,7 @@ export default async function LessonPage({ params }: Props) {
         currentUserId={profile.userId}
         currentUserRole={profile.role}
         initialIsCompleted={initialIsCompleted}
+        otherReviewCount={otherReviewCount}
       />
     </div>
   );

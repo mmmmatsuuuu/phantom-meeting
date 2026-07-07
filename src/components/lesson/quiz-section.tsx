@@ -18,6 +18,7 @@ import {
   arrayMove,
 } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
+import Link from "next/link";
 import RichContent from "@/components/shared/rich-content";
 import SubmitButton from "@/components/shared/submit-button";
 import type { QuizWithQuestions, QuizQuestion } from "@/lib/db/quizzes";
@@ -296,10 +297,12 @@ type RecentAttemptDetail = {
 
 type Props = {
   quiz: QuizWithQuestions;
+  /** このレッスン以外で要復習のレッスン数（提出後ナッジ用） */
+  otherReviewCount?: number;
   onCompleted?: () => void;
 };
 
-export default function QuizSection({ quiz, onCompleted }: Props) {
+export default function QuizSection({ quiz, otherReviewCount = 0, onCompleted }: Props) {
   const [answers, setAnswers] = useState<Answer[]>(() =>
     quiz.questions.map(initAnswer)
   );
@@ -467,6 +470,14 @@ export default function QuizSection({ quiz, onCompleted }: Props) {
           )}
           {quiz.questions.some((q) => q.type === "short_answer") && (
             <p className="text-sm text-muted-foreground">記述式は模範解答を参考に自己採点してください</p>
+          )}
+          {otherReviewCount > 0 && (
+            <Link
+              href="/quiz-results"
+              className="inline-flex items-center gap-1.5 text-sm text-red-600 dark:text-red-400 hover:underline pt-1"
+            >
+              ⚠ ほかに要復習のレッスンが {otherReviewCount} 件あります → 小テスト結果で確認
+            </Link>
           )}
         </div>
       )}

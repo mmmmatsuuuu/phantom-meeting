@@ -1,8 +1,14 @@
 import Image from "next/image";
 import { cookies } from "next/headers";
 import { getContents } from "@/lib/db/contents";
+import { getStudentQuizStatuses, getQuizLessonPairs } from "@/lib/db/quizzes";
+import { getMemoCountsByLesson } from "@/lib/db/memos";
+import { buildStudentDashboard } from "@/lib/student-dashboard";
+import type { StudentDashboard } from "@/lib/student-dashboard";
 import { getUserProfile } from "@/lib/supabase/server";
 import SubjectList from "@/components/lesson/subject-list";
+import DashboardSummaryCards from "@/components/student/dashboard-summary";
+import NextActions from "@/components/student/next-actions";
 
 export default async function HomePage() {
   const [subjects, profile, cookieStore] = await Promise.all([
@@ -12,6 +18,17 @@ export default async function HomePage() {
   ]);
 
   const displayName = profile?.displayName ?? "";
+
+  // 生徒のみ学習状況ダッシュボードを表示する
+  let dashboard: StudentDashboard | null = null;
+  if (profile?.role === "student") {
+    const [quizPairs, statuses, memoCounts] = await Promise.all([
+      getQuizLessonPairs(),
+      getStudentQuizStatuses(profile.userId),
+      getMemoCountsByLesson(profile.userId),
+    ]);
+    dashboard = buildStudentDashboard(subjects, quizPairs, statuses, memoCounts);
+  }
 
   // cookie から折りたたまれている科目IDを取得
   let initialCollapsedIds: string[] = [];
@@ -51,7 +68,17 @@ export default async function HomePage() {
         </div>
       </div>
 
-      <div className="max-w-4xl mx-auto px-4 py-8">
+      <div className="max-w-4xl mx-auto px-4 py-8 space-y-8">
+        {dashboard && dashboard.summary.totalQuizCount + dashboard.summary.memoCount > 0 && (
+          <section className="space-y-3">
+            <h2 className="text-sm font-semibold text-muted-foreground">
+              あなたの学習状況
+            </h2>
+            <DashboardSummaryCards summary={dashboard.summary} />
+            <NextActions actions={dashboard.nextActions} />
+          </section>
+        )}
+
         {subjects.length === 0 ? (
           <div className="flex flex-col items-center justify-center py-20 text-center">
             <div className="w-16 h-16 rounded-full bg-indigo-50 dark:bg-indigo-950 flex items-center justify-center mb-4">
@@ -77,6 +104,7 @@ export default async function HomePage() {
           <SubjectList
             subjects={subjects}
             initialCollapsedIds={initialCollapsedIds}
+            lessonBadges={dashboard?.lessonBadges}
           />
         )}
       </div>
