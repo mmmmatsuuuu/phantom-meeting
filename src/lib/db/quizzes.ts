@@ -809,15 +809,62 @@ export async function getUnitQuizResultsForExport(
   };
 }
 
+// ─── 生徒の受験状況スナップショット ─────────────────────────────────
+
+/** 要復習と判定する得点率の閾値（この値未満で要復習） */
+export const REVIEW_RATE_THRESHOLD = 60;
+
+export type QuizStatus = {
+  quizId: string;
+  /** 最新受験の得点率（0-100）。自動採点問題がないクイズは null */
+  latestRate: number | null;
+  attemptCount: number;
+};
+
+/** 得点率が要復習の水準か判定する */
+export function isReviewNeeded(status: QuizStatus): boolean {
+  return status.latestRate !== null && status.latestRate < REVIEW_RATE_THRESHOLD;
+}
+
 /**
- * ユーザーが指定クイズを1回以上提出済みか確認する
+ * 指定ユーザーの全クイズの受験状況（最新得点率・受験回数）を1クエリで取得する
  */
-export async function hasCompletedQuiz(quizId: string, userId: string): Promise<boolean> {
+export async function getStudentQuizStatuses(userId: string): Promise<QuizStatus[]> {
   const supabase = await createClient();
-  const { count } = await supabase
+  const { data } = await supabase
     .from("quiz_attempts")
-    .select("*", { count: "exact", head: true })
-    .eq("quiz_id", quizId)
-    .eq("user_id", userId);
-  return (count ?? 0) > 0;
+    .select("quiz_id, score, max_score")
+    .eq("user_id", userId)
+    .order("submitted_at", { ascending: false })
+    .limit(2000);
+  if (!data) return [];
+
+  const map = new Map<string, QuizStatus>();
+  for (const attempt of data) {
+    const existing = map.get(attempt.quiz_id);
+    if (existing) {
+      existing.attemptCount++;
+    } else {
+      map.set(attempt.quiz_id, {
+        quizId: attempt.quiz_id,
+        latestRate:
+          attempt.max_score > 0
+            ? Math.round((attempt.score / attempt.max_score) * 100)
+            : null,
+        attemptCount: 1,
+      });
+    }
+  }
+  return [...map.values()];
+}
+
+/**
+ * 全クイズの ID とレッスン ID の対応を取得する
+ */
+export async function getQuizLessonPairs(): Promise<
+  { id: string; lesson_id: string }[]
+> {
+  const supabase = await createClient();
+  const { data } = await supabase.from("quizzes").select("id, lesson_id");
+  return data ?? [];
 }

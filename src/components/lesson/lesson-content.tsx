@@ -16,6 +16,8 @@ type Props = {
   currentUserId: string;
   currentUserRole: string;
   initialIsCompleted: boolean;
+  /** このレッスン以外で要復習のレッスン数（提出後ナッジ用） */
+  otherReviewCount?: number;
 };
 
 export default function LessonContent({
@@ -26,6 +28,7 @@ export default function LessonContent({
   currentUserId,
   currentUserRole,
   initialIsCompleted,
+  otherReviewCount = 0,
 }: Props) {
   const [memoVisible, setMemoVisible] = useState(true);
   const isTeacherOrAdmin = currentUserRole === "teacher" || currentUserRole === "admin";
@@ -63,6 +66,7 @@ export default function LessonContent({
             youtubeUrl={youtubeUrl}
             questions={questions}
             quiz={quiz}
+            otherReviewCount={otherReviewCount}
             onPlayerReady={(player) => {
               playerRef.current = player;
             }}

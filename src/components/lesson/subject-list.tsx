@@ -8,6 +8,7 @@ import {
   CollapsibleTrigger,
 } from "@/components/ui/collapsible";
 import type { SubjectWithUnits } from "@/lib/db/contents";
+import type { LessonBadge } from "@/lib/student-dashboard";
 
 const SUBJECT_COLORS = [
   "from-indigo-500 to-indigo-600",
@@ -42,9 +43,43 @@ function writeCollapsedIds(ids: Set<string>) {
 type Props = {
   subjects: SubjectWithUnits[];
   initialCollapsedIds: string[];
+  /** 生徒の学習状況バッジ（レッスンID → バッジ）。未指定なら非表示 */
+  lessonBadges?: Record<string, LessonBadge>;
 };
 
-export default function SubjectList({ subjects, initialCollapsedIds }: Props) {
+function LessonStatusBadges({ badge }: { badge: LessonBadge }) {
+  return (
+    <div className="flex items-center gap-1.5 shrink-0">
+      {badge.memoCount > 0 && (
+        <span className="text-xs px-1.5 py-0.5 rounded-full bg-muted text-muted-foreground">
+          📝 {badge.memoCount}
+        </span>
+      )}
+      {badge.hasQuiz &&
+        (badge.attempted ? (
+          badge.needsReview ? (
+            <span className="text-xs px-2 py-0.5 rounded-full bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400 font-medium">
+              ⚠ {badge.latestRate}%
+            </span>
+          ) : (
+            <span className="text-xs px-2 py-0.5 rounded-full bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400 font-medium">
+              ✓ {badge.latestRate !== null ? `${badge.latestRate}%` : "済"}
+            </span>
+          )
+        ) : (
+          <span className="text-xs px-2 py-0.5 rounded-full border text-muted-foreground">
+            未受験
+          </span>
+        ))}
+    </div>
+  );
+}
+
+export default function SubjectList({
+  subjects,
+  initialCollapsedIds,
+  lessonBadges,
+}: Props) {
   const [collapsedIds, setCollapsedIds] = useState<Set<string>>(
     new Set(initialCollapsedIds)
   );
@@ -138,19 +173,24 @@ export default function SubjectList({ subjects, initialCollapsedIds }: Props) {
                                 </span>
                               </div>
                             </div>
-                            <svg
-                              viewBox="0 0 24 24"
-                              fill="none"
-                              stroke="currentColor"
-                              strokeWidth={2}
-                              className="w-4 h-4 text-muted-foreground group-hover:text-indigo-500 transition-colors shrink-0"
-                            >
-                              <path
-                                strokeLinecap="round"
-                                strokeLinejoin="round"
-                                d="M9 5l7 7-7 7"
-                              />
-                            </svg>
+                            <div className="flex items-center gap-2 shrink-0">
+                              {lessonBadges?.[lesson.id] && (
+                                <LessonStatusBadges badge={lessonBadges[lesson.id]} />
+                              )}
+                              <svg
+                                viewBox="0 0 24 24"
+                                fill="none"
+                                stroke="currentColor"
+                                strokeWidth={2}
+                                className="w-4 h-4 text-muted-foreground group-hover:text-indigo-500 transition-colors shrink-0"
+                              >
+                                <path
+                                  strokeLinecap="round"
+                                  strokeLinejoin="round"
+                                  d="M9 5l7 7-7 7"
+                                />
+                              </svg>
+                            </div>
                           </Link>
                         ))}
                       </div>

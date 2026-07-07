@@ -301,6 +301,26 @@ export async function getUnitMemoSamplesForExport(
 }
 
 /**
+ * 指定ユーザーのレッスンごとのメモ件数を1クエリで取得する
+ */
+export async function getMemoCountsByLesson(
+  userId: string
+): Promise<Record<string, number>> {
+  const supabase = await createClient();
+  const { data } = await supabase
+    .from("memos")
+    .select("lesson_id")
+    .eq("user_id", userId)
+    .limit(5000);
+
+  const counts: Record<string, number> = {};
+  for (const memo of data ?? []) {
+    counts[memo.lesson_id] = (counts[memo.lesson_id] ?? 0) + 1;
+  }
+  return counts;
+}
+
+/**
  * メモを削除する
  */
 export async function deleteMemo(memoId: string): Promise<boolean> {
