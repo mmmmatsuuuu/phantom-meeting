@@ -724,6 +724,135 @@ export async function getLessonQuizResultsByStudent(
   return result;
 }
 
+// ─── 生徒別ヒートマップ（教員向け） ─────────────────────────────────
+
+export type StudentHeatmapLesson = {
+  lessonId: string;
+  lessonTitle: string;
+  unitName: string;
+  quizId: string;
+};
+
+export type StudentHeatmapRow = {
+  userId: string;
+  displayName: string;
+  studentNumber: number | null;
+  /** quizId → 最新受験の得点率（0-100）。自動採点なしは null。未受験はキーなし */
+  rates: Record<string, number | null>;
+};
+
+export type StudentHeatmapResult = {
+  lessons: StudentHeatmapLesson[];
+  students: StudentHeatmapRow[];
+};
+
+/**
+ * 指定科目×学年（クラス）の生徒×レッスンの最新得点率マトリクスを取得する（teacher/admin 向け）
+ */
+export async function getStudentQuizHeatmap(
+  subjectId: string,
+  grade: number,
+  classNum: number | "all"
+): Promise<StudentHeatmapResult | null> {
+  const supabase = await createClient();
+
+  // 科目・単元・レッスンをネスト select で1クエリで取得
+  const { data: subject } = await supabase
+    .from("subjects")
+    .select("id, units(id, name, order, lessons(id, title, order))")
+    .eq("id", subjectId)
+    .single();
+  if (!subject) return null;
+
+  const units = [...subject.units].sort((a, b) => a.order - b.order);
+  const orderedLessons = units.flatMap((unit) =>
+    [...unit.lessons]
+      .sort((a, b) => a.order - b.order)
+      .map((lesson) => ({ ...lesson, unitName: unit.name }))
+  );
+  if (orderedLessons.length === 0) return { lessons: [], students: [] };
+
+  const { data: quizzes } = await supabase
+    .from("quizzes")
+    .select("id, lesson_id")
+    .in(
+      "lesson_id",
+      orderedLessons.map((l) => l.id)
+    );
+  const quizByLesson = new Map((quizzes ?? []).map((q) => [q.lesson_id, q.id]));
+
+  const lessons: StudentHeatmapLesson[] = orderedLessons
+    .filter((l) => quizByLesson.has(l.id))
+    .map((l) => ({
+      lessonId: l.id,
+      lessonTitle: l.title,
+      unitName: l.unitName,
+      quizId: quizByLesson.get(l.id)!,
+    }));
+  if (lessons.length === 0) return { lessons: [], students: [] };
+
+  // 対象生徒を取得
+  let profilesQuery = supabase
+    .from("profiles")
+    .select("id, display_name, student_number")
+    .eq("role", "student")
+    .not("student_number", "is", null);
+
+  if (classNum === "all") {
+    profilesQuery = profilesQuery
+      .gte("student_number", grade * 1000)
+      .lte("student_number", grade * 1000 + 999);
+  } else {
+    const min = grade * 1000 + classNum * 100;
+    profilesQuery = profilesQuery
+      .gte("student_number", min)
+      .lte("student_number", min + 99);
+  }
+
+  const { data: profiles } = await profilesQuery
+    .order("student_number", { ascending: true })
+    .limit(2000);
+  const students = profiles ?? [];
+  if (students.length === 0) return { lessons, students: [] };
+
+  // 各生徒×各クイズの最新受験を取得
+  const { data: attempts } = await supabase
+    .from("quiz_attempts")
+    .select("quiz_id, user_id, score, max_score, submitted_at")
+    .in(
+      "quiz_id",
+      lessons.map((l) => l.quizId)
+    )
+    .in(
+      "user_id",
+      students.map((s) => s.id)
+    )
+    .order("submitted_at", { ascending: false })
+    .limit(20000);
+
+  const ratesByUser = new Map<string, Record<string, number | null>>();
+  for (const attempt of attempts ?? []) {
+    const userRates = ratesByUser.get(attempt.user_id) ?? {};
+    if (!(attempt.quiz_id in userRates)) {
+      userRates[attempt.quiz_id] =
+        attempt.max_score > 0
+          ? Math.round((attempt.score / attempt.max_score) * 100)
+          : null;
+      ratesByUser.set(attempt.user_id, userRates);
+    }
+  }
+
+  return {
+    lessons,
+    students: students.map((s) => ({
+      userId: s.id,
+      displayName: s.display_name,
+      studentNumber: s.student_number,
+      rates: ratesByUser.get(s.id) ?? {},
+    })),
+  };
+}
+
 // ─── 小テスト結果エクスポート用の型 ──────────────────────────────────
 
 export type AnswerDistributionItem = {

@@ -6,6 +6,7 @@ import { usePathname } from "next/navigation";
 const TABS = [
   { href: "/teacher/analytics/units", label: "単元別" },
   { href: "/teacher/analytics/lessons", label: "レッスン別" },
+  { href: "/teacher/analytics/students", label: "生徒別" },
 ] as const;
 
 export default function AnalyticsTabs() {

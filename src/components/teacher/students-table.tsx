@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useMemo } from "react";
+import Link from "next/link";
 import { toast } from "sonner";
 import type { Profile } from "@/lib/db/users";
 import SubmitButton from "@/components/shared/submit-button";
@@ -275,8 +276,15 @@ export default function StudentsTable({ initialProfiles }: Props) {
                     )}
                   </td>
 
-                  {/* 表示名 */}
-                  <td className="px-4 py-2.5 font-medium">{profile.display_name}</td>
+                  {/* 表示名（クリックで個人詳細へ） */}
+                  <td className="px-4 py-2.5 font-medium">
+                    <Link
+                      href={`/teacher/students/${profile.id}`}
+                      className="hover:text-indigo-600 hover:underline transition-colors"
+                    >
+                      {profile.display_name}
+                    </Link>
+                  </td>
 
                   {/* 備考 */}
                   <td className="px-4 py-2.5 max-w-xs">
