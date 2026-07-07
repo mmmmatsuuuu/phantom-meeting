@@ -1,15 +1,15 @@
-import { getContents } from "@/lib/db/contents";
-import StudentAnalytics from "@/components/teacher/student-analytics";
+import { getAllProfiles } from "@/lib/db/users";
+import StudentPicker from "@/components/teacher/student-picker";
 
 export default async function StudentAnalyticsPage() {
-  const subjects = await getContents();
+  const profiles = await getAllProfiles();
 
   return (
     <div>
       <p className="text-sm text-muted-foreground mb-4">
-        生徒×レッスンの最新得点率をヒートマップで表示します。生徒名をクリックすると個人詳細を確認できます
+        生徒を選択すると、その生徒の学習状況（授業全体・単元・レッスン別）を確認できます
       </p>
-      <StudentAnalytics subjects={subjects} />
+      <StudentPicker profiles={profiles} />
     </div>
   );
 }
