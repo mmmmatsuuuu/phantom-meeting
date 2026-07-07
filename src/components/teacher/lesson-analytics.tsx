@@ -3,8 +3,18 @@
 import { useState, useEffect } from "react";
 import Link from "next/link";
 import type { SubjectWithUnits } from "@/lib/db/contents";
-import type { LessonQuizAnalyticsDetail } from "@/lib/db/quizzes";
+import type {
+  LessonQuizStudentResults,
+  LessonQuizQuestionMeta,
+  LessonQuizStudentRow,
+} from "@/lib/db/quizzes";
 import { tiptapDocToText } from "@/lib/tiptap-utils";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
 
 const GRADES = [1, 2, 3];
 const CLASSES = [1, 2, 3, 4, 5, 6, 7, 8, 9];
@@ -19,10 +29,58 @@ type Props = {
   subjects: SubjectWithUnits[];
 };
 
-function rateColor(rate: number): string {
-  if (rate >= 0.8) return "text-green-600";
-  if (rate >= 0.6) return "text-amber-600";
-  return "text-red-500";
+/** 設問セル：正解は○、誤答は誤答内容、記述式は記入内容を表示する */
+function AnswerCell({
+  question,
+  row,
+}: {
+  question: LessonQuizQuestionMeta;
+  row: LessonQuizStudentRow;
+}) {
+  const answer = row.answers[question.id];
+
+  if (!answer) {
+    return <span className="text-muted-foreground text-xs">—</span>;
+  }
+
+  // 記述式：記入内容をそのまま表示（ホバーで全文）
+  if (question.type === "short_answer") {
+    if (!answer.answerText) {
+      return <span className="text-muted-foreground text-xs">未記入</span>;
+    }
+    return (
+      <Tooltip>
+        <TooltipTrigger asChild>
+          <span className="block max-w-[180px] truncate text-left text-xs cursor-default">
+            {answer.answerText}
+          </span>
+        </TooltipTrigger>
+        <TooltipContent side="top" className="max-w-[320px] text-left whitespace-pre-wrap">
+          {answer.answerText}
+        </TooltipContent>
+      </Tooltip>
+    );
+  }
+
+  // 選択式・並び替え：正解は○、誤答は選んだ内容
+  if (answer.isCorrect) {
+    return <span className="text-green-600 font-bold">○</span>;
+  }
+  return (
+    <Tooltip>
+      <TooltipTrigger asChild>
+        <span className="block max-w-[160px] truncate text-left text-xs text-red-700 dark:text-red-400 cursor-default">
+          ✕ {answer.answerText || "（無回答）"}
+        </span>
+      </TooltipTrigger>
+      <TooltipContent side="top" className="max-w-[320px] text-left">
+        <p className="text-xs opacity-80 mb-1">生徒の回答:</p>
+        <p>{answer.answerText || "（無回答）"}</p>
+        <p className="text-xs opacity-80 mt-1.5 mb-1">正解:</p>
+        <p>{question.correctAnswerText}</p>
+      </TooltipContent>
+    </Tooltip>
+  );
 }
 
 export default function LessonAnalytics({ subjects }: Props) {
@@ -30,7 +88,7 @@ export default function LessonAnalytics({ subjects }: Props) {
   const [classNum, setClassNum] = useState<number | "all" | null>(null);
   const [subjectId, setSubjectId] = useState<string>("");
   const [lessonId, setLessonId] = useState<string>("");
-  const [data, setData] = useState<LessonQuizAnalyticsDetail | null>(null);
+  const [data, setData] = useState<LessonQuizStudentResults | null>(null);
   const [loading, setLoading] = useState(false);
   const [fetchError, setFetchError] = useState<string | null>(null);
 
@@ -54,7 +112,7 @@ export default function LessonAnalytics({ subjects }: Props) {
           `/api/teacher/lessons/${lessonId}/quiz-analytics?${params.toString()}`
         );
         const json = (await res.json()) as {
-          data: LessonQuizAnalyticsDetail | null;
+          data: LessonQuizStudentResults | null;
           error: string | null;
         };
         if (json.error) {
@@ -71,6 +129,9 @@ export default function LessonAnalytics({ subjects }: Props) {
 
     fetchData();
   }, [grade, classNum, lessonId]);
+
+  const attemptedCount = data?.students.filter((s) => s.attempted).length ?? 0;
+  const memoStudentCount = data?.students.filter((s) => s.memoCount > 0).length ?? 0;
 
   return (
     <div className="space-y-6">
@@ -161,8 +222,8 @@ export default function LessonAnalytics({ subjects }: Props) {
       {loading && (
         <div className="rounded-md border overflow-hidden">
           <div className="animate-pulse space-y-px">
-            {Array.from({ length: 4 }).map((_, i) => (
-              <div key={i} className="h-16 bg-muted" />
+            {Array.from({ length: 8 }).map((_, i) => (
+              <div key={i} className="h-10 bg-muted" />
             ))}
           </div>
         </div>
@@ -182,13 +243,13 @@ export default function LessonAnalytics({ subjects }: Props) {
           <div className="flex flex-wrap items-center gap-x-6 gap-y-2 p-4 rounded-md border bg-card text-sm">
             <span className="font-semibold">{data.lessonTitle}</span>
             <span>
-              対象生徒 <span className="font-bold">{data.studentCount}</span> 人
+              対象生徒 <span className="font-bold">{data.students.length}</span> 人
             </span>
             <span>
-              受験済み <span className="font-bold">{data.attemptedCount}</span> 人
+              受験済み <span className="font-bold">{attemptedCount}</span> 人
             </span>
             <span>
-              メモ記入 <span className="font-bold">{data.memoStudentCount}</span> 人
+              メモ記入 <span className="font-bold">{memoStudentCount}</span> 人
             </span>
             <Link
               href={`/teacher/lessons/${data.lessonId}/memos`}
@@ -198,107 +259,136 @@ export default function LessonAnalytics({ subjects }: Props) {
             </Link>
           </div>
 
-          {/* 設問カード */}
-          <div className="space-y-4">
-            {data.questions.map((q) => (
-              <div key={q.id} className="rounded-lg border bg-card p-5 space-y-3">
-                <div className="flex items-start justify-between gap-3">
-                  <div className="flex items-start gap-2 min-w-0">
-                    <span className="text-sm font-semibold shrink-0">
-                      Q{q.order + 1}.
-                    </span>
-                    <p className="text-sm">{tiptapDocToText(q.content) || "（問題文なし）"}</p>
-                  </div>
-                  <div className="flex items-center gap-3 shrink-0">
-                    <span className="text-xs px-2 py-0.5 rounded-full bg-muted text-muted-foreground">
-                      {TYPE_LABELS[q.type] ?? q.type}
-                    </span>
-                    {q.type !== "short_answer" && (
-                      <span className="text-sm">
-                        正答率{" "}
-                        {q.correctRate !== null ? (
-                          <span className={`font-bold ${rateColor(q.correctRate)}`}>
-                            {Math.round(q.correctRate * 100)}%
-                          </span>
-                        ) : (
-                          <span className="text-muted-foreground">—</span>
-                        )}
-                        <span className="text-xs text-muted-foreground ml-1">
-                          （{q.answerCount}人）
-                        </span>
-                      </span>
-                    )}
-                  </div>
-                </div>
-
-                {/* 選択式：回答分布 */}
-                {q.answerDistribution && (
-                  <div className="space-y-1.5 pl-6">
-                    {q.answerDistribution.map((dist) => (
-                      <div key={dist.text} className="flex items-center gap-2 text-sm">
-                        <div className="flex-1 min-w-0">
-                          <div className="flex items-center gap-2">
-                            <span
-                              className={`truncate ${dist.isCorrect ? "font-medium" : ""}`}
-                            >
-                              {dist.isCorrect && (
-                                <span className="text-green-600 mr-1">✓</span>
+          {data.students.length === 0 ? (
+            <div className="p-8 text-center text-muted-foreground text-sm border rounded-md">
+              対象の生徒がいません
+            </div>
+          ) : (
+            <TooltipProvider>
+              {/* 生徒×設問テーブル */}
+              <div className="rounded-md border overflow-x-auto">
+                <table className="text-sm border-collapse">
+                  <thead>
+                    <tr className="bg-muted/50">
+                      <th className="text-left px-4 py-2.5 font-medium border-b border-r min-w-[170px] sticky left-0 bg-muted/50 z-10">
+                        生徒
+                      </th>
+                      <th className="px-3 py-2.5 font-medium border-b border-r text-center w-[72px]">
+                        得点
+                      </th>
+                      {data.questions.map((q, i) => (
+                        <th
+                          key={q.id}
+                          className="px-3 py-2.5 font-medium border-b border-r text-center min-w-[80px]"
+                        >
+                          <Tooltip>
+                            <TooltipTrigger asChild>
+                              <span className="cursor-default">
+                                Q{i + 1}
+                                <span className="block text-[10px] font-normal text-muted-foreground">
+                                  {TYPE_LABELS[q.type] ?? q.type}
+                                </span>
+                              </span>
+                            </TooltipTrigger>
+                            <TooltipContent side="top" className="max-w-[280px] text-left">
+                              <p className="text-xs opacity-80 line-clamp-4">
+                                {tiptapDocToText(q.content) || "（問題文なし）"}
+                              </p>
+                              {q.correctAnswerText && (
+                                <p className="mt-1.5 text-xs">
+                                  正解: <span className="font-medium">{q.correctAnswerText}</span>
+                                </p>
                               )}
-                              {dist.text}
+                            </TooltipContent>
+                          </Tooltip>
+                        </th>
+                      ))}
+                      <th className="px-3 py-2.5 font-medium border-b text-center w-[64px]">
+                        メモ
+                      </th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {data.students.map((row) => (
+                      <tr key={row.userId} className="border-b">
+                        <td className="px-4 py-2 border-r sticky left-0 bg-background z-10">
+                          <Link
+                            href={`/teacher/students/${row.userId}`}
+                            className="hover:text-indigo-600 hover:underline transition-colors"
+                          >
+                            <span className="text-xs text-muted-foreground mr-2 font-mono">
+                              {row.studentNumber ?? "—"}
                             </span>
-                          </div>
-                          <div className="h-2 rounded-full bg-muted mt-1 overflow-hidden">
-                            <div
-                              className={`h-full rounded-full ${
-                                dist.isCorrect ? "bg-green-500" : "bg-red-400"
-                              }`}
-                              style={{ width: `${Math.round(dist.rate * 100)}%` }}
-                            />
-                          </div>
-                        </div>
-                        <span className="text-xs text-muted-foreground w-20 text-right shrink-0">
-                          {dist.count}人（{Math.round(dist.rate * 100)}%）
-                        </span>
-                      </div>
+                            <span className="font-medium">{row.displayName}</span>
+                          </Link>
+                        </td>
+                        {row.attempted ? (
+                          <>
+                            <td className="px-3 py-2 border-r text-center">
+                              {row.maxScore !== null && row.maxScore > 0 ? (
+                                <span className="font-medium">
+                                  {row.score}/{row.maxScore}
+                                </span>
+                              ) : (
+                                <span className="text-xs text-muted-foreground">—</span>
+                              )}
+                            </td>
+                            {data.questions.map((q) => (
+                              <td
+                                key={q.id}
+                                className={`px-3 py-2 border-r text-center ${
+                                  row.answers[q.id] &&
+                                  row.answers[q.id].isCorrect === false
+                                    ? "bg-red-50 dark:bg-red-950/20"
+                                    : ""
+                                }`}
+                              >
+                                <AnswerCell question={q} row={row} />
+                              </td>
+                            ))}
+                          </>
+                        ) : (
+                          <td
+                            colSpan={data.questions.length + 1}
+                            className="px-3 py-2 border-r text-center text-xs text-muted-foreground bg-muted/20"
+                          >
+                            未受験
+                          </td>
+                        )}
+                        <td className="px-3 py-2 text-center">
+                          {row.memoCount > 0 ? (
+                            <span className="text-xs">📝 {row.memoCount}件</span>
+                          ) : (
+                            <span className="text-xs text-muted-foreground">—</span>
+                          )}
+                        </td>
+                      </tr>
                     ))}
-                  </div>
-                )}
-
-                {/* 記述式：模範解答とサンプル */}
-                {q.type === "short_answer" && (
-                  <div className="pl-6 space-y-2 text-sm">
-                    {q.correctAnswerText && (
-                      <div className="p-3 rounded-md bg-muted">
-                        <span className="font-medium">模範解答: </span>
-                        {q.correctAnswerText}
-                      </div>
-                    )}
-                    {q.shortAnswerSamples.length > 0 ? (
-                      <div className="space-y-1.5">
-                        <p className="text-xs text-muted-foreground">
-                          生徒の回答サンプル（最新回答からランダム{q.shortAnswerSamples.length}件 / 全{q.answerCount}件）
-                        </p>
-                        {q.shortAnswerSamples.map((sample, i) => (
-                          <p key={i} className="p-2.5 rounded-md border bg-background">
-                            {sample}
-                          </p>
-                        ))}
-                      </div>
-                    ) : (
-                      <p className="text-xs text-muted-foreground">まだ回答がありません</p>
-                    )}
-                  </div>
-                )}
+                  </tbody>
+                </table>
               </div>
-            ))}
-          </div>
+
+              {/* 凡例 */}
+              <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-xs text-muted-foreground">
+                <span className="font-medium">見方:</span>
+                <span>
+                  <span className="text-green-600 font-bold">○</span> = 正解
+                </span>
+                <span>
+                  <span className="text-red-700 dark:text-red-400">✕ 選択内容</span> = 誤答（ホバーで正解を表示）
+                </span>
+                <span>記述式はそのまま記入内容を表示（ホバーで全文）</span>
+                <span>直近の受験結果のみ・生徒名クリックで個人詳細へ</span>
+              </div>
+            </TooltipProvider>
+          )}
         </>
       )}
 
       {/* フィルタ未選択時のヒント */}
       {!loading && !data && !fetchError && (
         <div className="p-8 text-center text-muted-foreground text-sm border rounded-md border-dashed">
-          学年・クラス・科目・レッスンを選択すると設問別の分析が表示されます
+          学年・クラス・科目・レッスンを選択すると生徒ごとの回答一覧が表示されます
         </div>
       )}
     </div>

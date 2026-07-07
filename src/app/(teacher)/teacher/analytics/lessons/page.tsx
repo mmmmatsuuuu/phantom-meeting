@@ -7,7 +7,7 @@ export default async function LessonAnalyticsPage() {
   return (
     <div>
       <p className="text-sm text-muted-foreground mb-4">
-        レッスンを選択すると、設問ごとの正答率・回答分布・記述回答サンプル・メモ記入状況を表示します
+        レッスンを選択すると、生徒ごとの設問別の正誤・誤答内容・記述回答・メモ記入状況を一覧表示します
       </p>
       <LessonAnalytics subjects={subjects} />
     </div>

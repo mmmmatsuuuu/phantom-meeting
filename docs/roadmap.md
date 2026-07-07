@@ -1021,9 +1021,9 @@ teacher ロール以外がエクスポートできないこと、出力データ
 
 - [x] `/teacher/analytics` 新設（単元別 / レッスン別 のタブ構成。生徒別タブは 20d で追加）
 - [x] 単元別タブ：既存 `/teacher/quiz-analytics` を移設（旧URLは `/teacher/analytics/units` へリダイレクト）
-- [x] レッスン別タブ：設問別正答率・誤答分布・記述回答サンプル・メモ記入状況を1画面に集約
-  - `getLessonQuizAnalyticsDetail(lessonId, grade, classNum)` + `GET /api/teacher/lessons/[lessonId]/quiz-analytics`
-  - 各生徒の最新受験のみを集計。生徒メモ閲覧ページへの導線もサマリーに設置
+- [x] レッスン別タブ：生徒×設問の回答一覧テーブル（正誤・誤答内容・記述回答・メモ件数）
+  - `getLessonQuizResultsByStudent(lessonId, grade, classNum)` + `GET /api/teacher/lessons/[lessonId]/quiz-analytics`
+  - 各生徒の最新受験のみを表示。生徒メモ閲覧ページへの導線もサマリーに設置
 
 ### 20d: 生徒別分析
 

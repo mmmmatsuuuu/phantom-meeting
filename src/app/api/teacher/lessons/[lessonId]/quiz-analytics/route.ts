@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { requireTeacher } from "@/lib/api/auth";
-import { getLessonQuizAnalyticsDetail } from "@/lib/db/quizzes";
+import { getLessonQuizResultsByStudent } from "@/lib/db/quizzes";
 
 type Params = { params: Promise<{ lessonId: string }> };
 
@@ -36,7 +36,7 @@ export async function GET(req: NextRequest, { params }: Params) {
     classNum = parsed;
   }
 
-  const data = await getLessonQuizAnalyticsDetail(lessonId, grade, classNum);
+  const data = await getLessonQuizResultsByStudent(lessonId, grade, classNum);
   if (!data) {
     return NextResponse.json(
       { data: null, error: "レッスンまたは小テストが見つかりません" },

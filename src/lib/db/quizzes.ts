@@ -512,47 +512,53 @@ export async function getQuizAnalytics(
   return { subjectId, subjectName: subject.name, lessons: lessonAnalytics };
 }
 
-// ─── レッスン別分析（教員向け） ─────────────────────────────────────
+// ─── レッスン別分析（教員向け・生徒×設問） ──────────────────────────
 
-export type QuestionDetailAnalytics = {
+export type LessonQuizQuestionMeta = {
   id: string;
   order: number;
   type: QuizQuestionType;
   content: Record<string, unknown>;
-  /** 正答率（0-1）。short_answer・回答なしは null */
-  correctRate: number | null;
-  answerCount: number;
-  /** 選択式のみ：選択肢ごとの回答分布 */
-  answerDistribution:
-    | { text: string; isCorrect: boolean; count: number; rate: number }[]
-    | null;
-  /** 記述式のみ：模範解答 */
-  correctAnswerText: string | null;
-  /** 記述式のみ：最新回答からランダム抽出したサンプル */
-  shortAnswerSamples: string[];
+  /** 正解のテキスト表現（選択式: 正解選択肢 / 並び替え: 正解順 / 記述式: 模範解答） */
+  correctAnswerText: string;
 };
 
-export type LessonQuizAnalyticsDetail = {
+export type LessonQuizStudentAnswer = {
+  /** null = 記述式（自己採点） */
+  isCorrect: boolean | null;
+  /** 生徒の回答内容（選択式: 選んだ選択肢 / 並び替え: 回答順 / 記述式: 記入内容） */
+  answerText: string;
+};
+
+export type LessonQuizStudentRow = {
+  userId: string;
+  displayName: string;
+  studentNumber: number | null;
+  attempted: boolean;
+  score: number | null;
+  maxScore: number | null;
+  /** questionId → 最新受験の回答。未回答の設問はキーなし */
+  answers: Record<string, LessonQuizStudentAnswer>;
+  memoCount: number;
+};
+
+export type LessonQuizStudentResults = {
   lessonId: string;
   lessonTitle: string;
   quizTitle: string;
-  studentCount: number;
-  attemptedCount: number;
-  memoStudentCount: number;
-  questions: QuestionDetailAnalytics[];
+  questions: LessonQuizQuestionMeta[];
+  students: LessonQuizStudentRow[];
 };
 
-const SHORT_ANSWER_SAMPLE_COUNT = 3;
-
 /**
- * 指定レッスンの小テストを設問単位で詳細分析する（teacher/admin 向け）
- * 各生徒の最新受験のみを集計対象とする。
+ * 指定レッスンの小テスト結果を生徒×設問のマトリクスで取得する（teacher/admin 向け）
+ * 各生徒の最新受験のみを対象とする。
  */
-export async function getLessonQuizAnalyticsDetail(
+export async function getLessonQuizResultsByStudent(
   lessonId: string,
   grade: number,
   classNum: number | "all"
-): Promise<LessonQuizAnalyticsDetail | null> {
+): Promise<LessonQuizStudentResults | null> {
   const supabase = await createClient();
 
   // レッスン・クイズ・設問をネスト select で1クエリで取得
@@ -568,12 +574,32 @@ export async function getLessonQuizAnalyticsDetail(
   const quiz = lesson.quizzes[0];
   if (!quiz) return null;
 
-  const questions = [...quiz.quiz_questions].sort((a, b) => a.order - b.order);
+  const questions: LessonQuizQuestionMeta[] = [...quiz.quiz_questions]
+    .sort((a, b) => a.order - b.order)
+    .map((q) => {
+      let correctAnswerText = "";
+      if (q.type === "multiple_choice") {
+        const opts = (q.options as string[] | null) ?? [];
+        const index = (q.correct_answer as { index?: number })?.index ?? -1;
+        correctAnswerText = opts[index] ?? "";
+      } else if (q.type === "ordering") {
+        correctAnswerText = ((q.correct_answer as string[] | null) ?? []).join(" → ");
+      } else {
+        correctAnswerText = (q.correct_answer as { text?: string })?.text?.trim() ?? "";
+      }
+      return {
+        id: q.id,
+        order: q.order,
+        type: q.type as QuizQuestionType,
+        content: q.content as Record<string, unknown>,
+        correctAnswerText,
+      };
+    });
 
   // 対象生徒を取得
   let profilesQuery = supabase
     .from("profiles")
-    .select("id")
+    .select("id, display_name, student_number")
     .eq("role", "student")
     .not("student_number", "is", null);
 
@@ -588,65 +614,70 @@ export async function getLessonQuizAnalyticsDetail(
       .lte("student_number", min + 99);
   }
 
-  const { data: profiles } = await profilesQuery.limit(2000);
-  const studentIds = (profiles ?? []).map((p) => p.id);
+  const { data: profiles } = await profilesQuery
+    .order("student_number", { ascending: true })
+    .limit(2000);
+  const studentProfiles = profiles ?? [];
 
-  const base: LessonQuizAnalyticsDetail = {
+  const result: LessonQuizStudentResults = {
     lessonId: lesson.id,
     lessonTitle: lesson.title,
     quizTitle: quiz.title,
-    studentCount: studentIds.length,
-    attemptedCount: 0,
-    memoStudentCount: 0,
-    questions: questions.map((q) => ({
-      id: q.id,
-      order: q.order,
-      type: q.type as QuizQuestionType,
-      content: q.content as Record<string, unknown>,
-      correctRate: null,
-      answerCount: 0,
-      answerDistribution: null,
-      correctAnswerText:
-        q.type === "short_answer"
-          ? ((q.correct_answer as { text?: string })?.text?.trim() ?? null)
-          : null,
-      shortAnswerSamples: [],
+    questions,
+    students: studentProfiles.map((p) => ({
+      userId: p.id,
+      displayName: p.display_name,
+      studentNumber: p.student_number,
+      attempted: false,
+      score: null,
+      maxScore: null,
+      answers: {},
+      memoCount: 0,
     })),
   };
 
-  if (studentIds.length === 0) return base;
+  if (studentProfiles.length === 0) return result;
 
-  // メモを1件以上書いた生徒数
+  const studentIds = studentProfiles.map((p) => p.id);
+  const rowByUser = new Map(result.students.map((s) => [s.userId, s]));
+
+  // レッスンのメモ件数（生徒ごと）
   const { data: memoRows } = await supabase
     .from("memos")
     .select("user_id")
     .eq("lesson_id", lessonId)
     .in("user_id", studentIds)
     .limit(5000);
-  base.memoStudentCount = new Set((memoRows ?? []).map((m) => m.user_id)).size;
+  for (const memo of memoRows ?? []) {
+    const row = rowByUser.get(memo.user_id);
+    if (row) row.memoCount++;
+  }
 
   // 各生徒の最新受験を特定
   const { data: attempts } = await supabase
     .from("quiz_attempts")
-    .select("id, user_id, submitted_at")
+    .select("id, user_id, score, max_score, submitted_at")
     .eq("quiz_id", quiz.id)
     .in("user_id", studentIds)
     .order("submitted_at", { ascending: false })
     .limit(20000);
 
-  if (!attempts || attempts.length === 0) return base;
+  if (!attempts || attempts.length === 0) return result;
 
-  const latestByUser = new Map<string, string>();
+  const userByAttempt = new Map<string, string>();
   for (const attempt of attempts) {
-    if (!latestByUser.has(attempt.user_id)) {
-      latestByUser.set(attempt.user_id, attempt.id);
-    }
+    const row = rowByUser.get(attempt.user_id);
+    if (!row || row.attempted) continue;
+    row.attempted = true;
+    row.score = attempt.score;
+    row.maxScore = attempt.max_score;
+    userByAttempt.set(attempt.id, attempt.user_id);
   }
-  const latestAttemptIds = [...latestByUser.values()];
-  base.attemptedCount = latestAttemptIds.length;
+  const latestAttemptIds = [...userByAttempt.keys()];
 
   // 回答詳細をチャンク分割で取得
   type AnswerRow = {
+    attempt_id: string;
     question_id: string;
     answer: Record<string, unknown>;
     is_correct: boolean | null;
@@ -657,89 +688,40 @@ export async function getLessonQuizAnalyticsDetail(
     const chunk = latestAttemptIds.slice(i, i + CHUNK_SIZE);
     const { data: chunkAnswers } = await supabase
       .from("quiz_attempt_answers")
-      .select("question_id, answer, is_correct")
+      .select("attempt_id, question_id, answer, is_correct")
       .in("attempt_id", chunk)
       .limit(CHUNK_SIZE * 30);
     if (chunkAnswers) allAnswers.push(...(chunkAnswers as AnswerRow[]));
   }
 
-  // 設問ごとに集計
-  const questionLookup = new Map(questions.map((q) => [q.id, q]));
-  type Stats = {
-    correct: number;
-    total: number;
-    answerCounts: Map<string, number>;
-    shortAnswerTexts: string[];
-  };
-  const statsMap = new Map<string, Stats>();
+  const questionTypeById = new Map(questions.map((q) => [q.id, q.type]));
 
   for (const answer of allAnswers) {
-    const q = questionLookup.get(answer.question_id);
-    if (!q) continue;
+    const userId = userByAttempt.get(answer.attempt_id);
+    if (!userId) continue;
+    const row = rowByUser.get(userId);
+    const type = questionTypeById.get(answer.question_id);
+    if (!row || !type) continue;
 
-    const stats = statsMap.get(q.id) ?? {
-      correct: 0,
-      total: 0,
-      answerCounts: new Map<string, number>(),
-      shortAnswerTexts: [],
-    };
-
-    if (q.type === "short_answer") {
-      const text = String((answer.answer as { text?: unknown })?.text ?? "").trim();
-      if (text) stats.shortAnswerTexts.push(text);
+    let answerText = "";
+    if (type === "multiple_choice") {
+      answerText = String(
+        (answer.answer as { selectedText?: unknown })?.selectedText ?? ""
+      );
+    } else if (type === "ordering") {
+      const items = (answer.answer as { items?: unknown })?.items;
+      answerText = Array.isArray(items) ? items.map(String).join(" → ") : "";
     } else {
-      stats.total++;
-      if (answer.is_correct) stats.correct++;
-
-      if (q.type === "multiple_choice") {
-        const selectedText = String(
-          (answer.answer as { selectedText?: unknown })?.selectedText ?? ""
-        );
-        if (selectedText) {
-          stats.answerCounts.set(
-            selectedText,
-            (stats.answerCounts.get(selectedText) ?? 0) + 1
-          );
-        }
-      }
+      answerText = String((answer.answer as { text?: unknown })?.text ?? "").trim();
     }
-    statsMap.set(q.id, stats);
+
+    row.answers[answer.question_id] = {
+      isCorrect: answer.is_correct,
+      answerText,
+    };
   }
 
-  for (const detail of base.questions) {
-    const q = questionLookup.get(detail.id);
-    const stats = statsMap.get(detail.id);
-    if (!q || !stats) continue;
-
-    if (detail.type === "short_answer") {
-      detail.answerCount = stats.shortAnswerTexts.length;
-      // Fisher–Yates シャッフルでランダム抽出
-      const texts = [...stats.shortAnswerTexts];
-      for (let i = texts.length - 1; i > 0; i--) {
-        const j = Math.floor(Math.random() * (i + 1));
-        [texts[i], texts[j]] = [texts[j], texts[i]];
-      }
-      detail.shortAnswerSamples = texts.slice(0, SHORT_ANSWER_SAMPLE_COUNT);
-      continue;
-    }
-
-    detail.answerCount = stats.total;
-    detail.correctRate = stats.total > 0 ? stats.correct / stats.total : null;
-
-    if (detail.type === "multiple_choice" && stats.total > 0) {
-      const opts = (q.options as string[] | null) ?? [];
-      const correctIndex = (q.correct_answer as { index?: number })?.index ?? -1;
-      const correctText = opts[correctIndex] ?? "";
-      detail.answerDistribution = opts.map((opt) => ({
-        text: opt,
-        isCorrect: opt === correctText,
-        count: stats.answerCounts.get(opt) ?? 0,
-        rate: (stats.answerCounts.get(opt) ?? 0) / stats.total,
-      }));
-    }
-  }
-
-  return base;
+  return result;
 }
 
 // ─── 小テスト結果エクスポート用の型 ──────────────────────────────────
