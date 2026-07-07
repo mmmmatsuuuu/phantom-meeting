@@ -19,9 +19,10 @@ export default async function HomePage() {
 
   const displayName = profile?.displayName ?? "";
 
-  // 生徒のみ学習状況ダッシュボードを表示する
+  // 学習状況ダッシュボードは全ロールに表示する
+  // （教師が生徒向けの表示を確認できるようにするため。表示されるのは自分自身のデータ）
   let dashboard: StudentDashboard | null = null;
-  if (profile?.role === "student") {
+  if (profile) {
     const [quizPairs, statuses, memoCounts] = await Promise.all([
       getQuizLessonPairs(),
       getStudentQuizStatuses(profile.userId),

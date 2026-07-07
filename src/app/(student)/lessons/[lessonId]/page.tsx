@@ -23,28 +23,22 @@ export default async function LessonPage({ params }: Props) {
   if (!lesson) return notFound();
   if (!profile) return notFound();
 
-  // 生徒のみ: 自分の受験状況・メモ件数を取得（ステータスバー・ナッジ用）
-  const isStudent = profile.role === "student";
-  let initialIsCompleted = false;
-  let otherReviewCount = 0;
-  let statusBar: { latestRate: number | null; attemptCount: number; memoCount: number } | null = null;
-
-  if (isStudent) {
-    const [statuses, memoCounts] = await Promise.all([
-      getStudentQuizStatuses(profile.userId),
-      getMemoCountsByLesson(profile.userId),
-    ]);
-    const current = quiz ? statuses.find((s) => s.quizId === quiz.id) : undefined;
-    initialIsCompleted = current !== undefined;
-    otherReviewCount = statuses.filter(
-      (s) => s.quizId !== quiz?.id && isReviewNeeded(s)
-    ).length;
-    statusBar = {
-      latestRate: current?.latestRate ?? null,
-      attemptCount: current?.attemptCount ?? 0,
-      memoCount: memoCounts[lessonId] ?? 0,
-    };
-  }
+  // 自分の受験状況・メモ件数を取得（ステータスバー・ナッジ用）
+  // 全ロールで表示する（教師が生徒向けの表示を確認できるようにするため）
+  const [statuses, memoCounts] = await Promise.all([
+    getStudentQuizStatuses(profile.userId),
+    getMemoCountsByLesson(profile.userId),
+  ]);
+  const current = quiz ? statuses.find((s) => s.quizId === quiz.id) : undefined;
+  const initialIsCompleted = current !== undefined;
+  const otherReviewCount = statuses.filter(
+    (s) => s.quizId !== quiz?.id && isReviewNeeded(s)
+  ).length;
+  const statusBar = {
+    latestRate: current?.latestRate ?? null,
+    attemptCount: current?.attemptCount ?? 0,
+    memoCount: memoCounts[lessonId] ?? 0,
+  };
 
   const { unit, questions } = lesson;
   const subject = unit.subject;
@@ -66,14 +60,12 @@ export default async function LessonPage({ params }: Props) {
 
       <h1 className="text-xl font-bold mb-3">{lesson.title}</h1>
 
-      {statusBar && (
-        <LessonStatusBar
-          hasQuiz={quiz !== null}
-          latestRate={statusBar.latestRate}
-          attemptCount={statusBar.attemptCount}
-          memoCount={statusBar.memoCount}
-        />
-      )}
+      <LessonStatusBar
+        hasQuiz={quiz !== null}
+        latestRate={statusBar.latestRate}
+        attemptCount={statusBar.attemptCount}
+        memoCount={statusBar.memoCount}
+      />
 
       <LessonContent
         lessonId={lessonId}
