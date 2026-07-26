@@ -50,9 +50,9 @@
 - **JSONインポート：** Claude等のAIが生成したJSON形式の問題を貼り付けて一括インポート可能
 
 ## 6. ロール管理（admin 機能）
-- admin が student を teacher に昇格させる
-- `profiles.role` / `is_approved` を変更する専用ページ（`/admin/users`）
-- admin は DB に直接設定（開発者自身）
+- admin が Supabase 上で `profiles.role` を直接書き換えて student を teacher に昇格させる
+- 承認申請フローの UI（`/admin/users`、`is_approved` 列を使った承認）は運用されず機能していなかったため撤去済み（`profiles.is_approved` 列自体は DB に残るが未使用）
+- UI からの申請・承認フローはウェイトリストの検討事項
 
 ## 7. Tiptap エディタリッチ化
 - ツールバー追加（Bold / Italic / Heading / BulletList / OrderedList / InlineCode / CodeBlock / Callout / Link / Table）
