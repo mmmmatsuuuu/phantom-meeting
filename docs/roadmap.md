@@ -186,6 +186,8 @@ teacher ロール以外が登録・編集できないことを確認してから
 
 student ロールで teacher 専用メニューが非表示になっていること、昇格が admin のみ実行できることを確認してからマージ
 
+> **その後の変更**: 承認申請フローが実際には使われなかったため `/admin/users` ページ・関連APIは撤去済み（2026-05-31）。teacher への昇格は現在 admin が Supabase 上で `profiles.role` を直接編集する運用のみ。UI化はウェイトリスト参照。
+
 ---
 
 ## Phase 8: エディタ強化
@@ -728,19 +730,21 @@ create table public.quiz_attempt_answers (
 
 ### タスク
 
-- [ ] `lib/db/quizzes.ts` に以下を追加
+- [x] `lib/db/quizzes.ts` に以下を追加
   - `getQuizAnalytics(subjectId, grade, classNum | "all")` — 指定科目・クラスの全授業×設問の平均正答率を取得
-- [ ] `GET /api/teacher/quiz-analytics?subjectId=xxx&grade=x&class=x` を実装（teacher/admin のみ）
+- [x] `GET /api/teacher/quiz-analytics?subjectId=xxx&grade=x&class=x` を実装（teacher/admin のみ）
   - `class=all` を指定すると学年全体を集計
-- [ ] `/teacher/quiz-analytics` ページを追加（Client Component）
+- [x] `/teacher/quiz-analytics` ページを追加（Client Component）
   - 学年・クラス（全クラスあり）・科目の3段階フィルタ UI
   - フィルタ確定で自動フェッチ、ローディング中はスケルトン表示
   - 授業×設問ヒートマップを描画（カラースケール・ツールチップ付き）
-- [ ] UserMenu に「小テスト分析」リンクを追加（teacher/admin のみ）
+- [x] UserMenu に「小テスト分析」リンクを追加（teacher/admin のみ）
 
 ### マージ判断
 
 teacher ロール以外がアクセスできないこと、フィルタ切り替えで正しくデータが再取得されること、全クラス選択時に学年全体が集計されることを確認してからマージ
+
+> **その後の変更（Phase 20c）**: このページは `/teacher/analytics/units` に移設され、`/teacher/quiz-analytics` は現在リダイレクトのみ。UserMenu のリンクも「📈 分析」（`/teacher/analytics`）に更新済み。詳細は Phase 20 参照。
 
 ---
 
@@ -1041,6 +1045,7 @@ teacher ロール以外がエクスポートできないこと、出力データ
 > 実装予定はあるが、時期未定のタスク。優先度が上がった時点でフェーズに組み込む。
 
 - teacher 申請フロー：student がUI上で教師申請を出せる機能（現状は admin が DB を直接操作して role を変更）
+- **Python / JavaScript でコーディングできる機能**：生徒向けの学習機能として追加予定。詳細（対象範囲・実行環境・採点方法など）は今後詰める。要件が固まり次第フェーズに組み込む
 
 ※「小テスト分析・生徒ビュー」は Phase 20d（生徒別分析＝生徒リスト→個人詳細）で回収したためウェイトリストから削除
 
@@ -1072,7 +1077,7 @@ teacher ロール以外がエクスポートできないこと、出力データ
 [✅] Phase 15:   小テスト完了ゲート
 [✅] Phase 15.5: 小テスト回答詳細の保存
 [✅] Phase 15.8: 小テスト結果一覧（生徒向け）
-[ ] Phase 15.9: 小テスト得点分析ページ（教員向け）
+[✅] Phase 15.9: 小テスト得点分析ページ（教員向け）（Phase 20c で /teacher/analytics/units に移設）
 [ ] Phase 16:   トロフィー・実績機能
 [ ] Phase 17:   匿名プライベートコメント機能
 [✅] Phase 18:  Vercel Analytics 導入

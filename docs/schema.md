@@ -23,7 +23,7 @@ subjects
 |---|---|---|
 | id | uuid | PK、auth.usersと連携 |
 | role | enum | 'admin' / 'teacher' / 'student' |
-| is_approved | bool | default false（teacher承認フラグ） |
+| is_approved | bool | default false。**未使用**（teacher承認フローのUIを撤去したため参照箇所なし。列は削除せず残置） |
 | display_name | text | |
 | student_number | int | nullable、学籍番号 |
 | note | text | nullable、備考 |
