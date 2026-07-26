@@ -3,6 +3,10 @@ import Link from "next/link";
 import { getLessonWithQuestions } from "@/lib/db/contents";
 import { getQuizWithQuestions, getStudentQuizStatuses, isReviewNeeded } from "@/lib/db/quizzes";
 import { getMemoCountsByLesson } from "@/lib/db/memos";
+import {
+  getCodeSnippetsByLesson,
+  getStudentCodeStatesByLesson,
+} from "@/lib/db/code-snippets";
 import { getUserProfile } from "@/lib/supabase/server";
 import LessonContent from "@/components/lesson/lesson-content";
 import LessonStatusBar from "@/components/lesson/lesson-status-bar";
@@ -40,6 +44,14 @@ export default async function LessonPage({ params }: Props) {
     memoCount: memoCounts[lessonId] ?? 0,
   };
 
+  // プレイグラウンドが有効なレッスンのみ、コード例と自分の編集内容を取得
+  const [codeSnippets, initialCodeStates] = lesson.enable_playground
+    ? await Promise.all([
+        getCodeSnippetsByLesson(lessonId),
+        getStudentCodeStatesByLesson(lessonId, profile.userId),
+      ])
+    : [[], {}];
+
   const { unit, questions } = lesson;
   const subject = unit.subject;
 
@@ -76,6 +88,9 @@ export default async function LessonPage({ params }: Props) {
         currentUserRole={profile.role}
         initialIsCompleted={initialIsCompleted}
         otherReviewCount={otherReviewCount}
+        enablePlayground={lesson.enable_playground}
+        codeSnippets={codeSnippets}
+        initialCodeStates={initialCodeStates}
       />
     </div>
   );
