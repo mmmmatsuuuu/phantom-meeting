@@ -53,6 +53,7 @@ teacher への昇格は admin が Supabase 上で `profiles.role` を直接書�
 ## 将来検討（MVP対象外）
 
 - 多くの人が注目したポイントの集約表示（Kindleハイライト的）
-- Python / JavaScript のコーディング学習機能（詳細は今後検討。ウェイトリスト参照）
+
+> Python / JavaScript のコーディングプレイグラウンドは設計確定済み。[roadmap.md](roadmap.md) の Phase 21 参照。
 
 > 小テストの集計・可視化、生徒・教師それぞれのダッシュボードは Phase 15.9・20a〜20d で実装済み（[roadmap.md](roadmap.md) 参照）。
