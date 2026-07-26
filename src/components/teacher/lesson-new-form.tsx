@@ -4,11 +4,24 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 import type { SubjectWithUnits } from "@/lib/db/contents";
+import type { CodeLanguage } from "@/lib/db/code-snippets";
 import SubmitButton from "@/components/shared/submit-button";
 
 type QuestionInput = {
   id: string;
   content: string;
+};
+
+type CodeSnippetInput = {
+  id: string;
+  title: string;
+  language: CodeLanguage;
+  initialCode: string;
+};
+
+const LANGUAGE_LABELS: Record<CodeLanguage, string> = {
+  python: "Python",
+  javascript: "JavaScript",
 };
 
 function extractVideoId(url: string): string | null {
@@ -35,6 +48,8 @@ export default function LessonNewForm({ subjects, defaultUnitId }: Props) {
   const [questions, setQuestions] = useState<QuestionInput[]>([
     { id: "1", content: "" },
   ]);
+  const [enablePlayground, setEnablePlayground] = useState(false);
+  const [codeSnippets, setCodeSnippets] = useState<CodeSnippetInput[]>([]);
   const [isSaving, setIsSaving] = useState(false);
   const router = useRouter();
 
@@ -59,6 +74,23 @@ export default function LessonNewForm({ subjects, defaultUnitId }: Props) {
     );
   };
 
+  const addCodeSnippet = () => {
+    setCodeSnippets((prev) => [
+      ...prev,
+      { id: String(Date.now()), title: `例${prev.length + 1}`, language: "python", initialCode: "" },
+    ]);
+  };
+
+  const removeCodeSnippet = (id: string) => {
+    setCodeSnippets((prev) => prev.filter((s) => s.id !== id));
+  };
+
+  const updateCodeSnippet = (id: string, patch: Partial<CodeSnippetInput>) => {
+    setCodeSnippets((prev) =>
+      prev.map((s) => (s.id === id ? { ...s, ...patch } : s))
+    );
+  };
+
   const handleSave = async () => {
     if (!unitId || !title.trim() || !youtubeUrl.trim()) {
       toast.error("科目・単元・タイトル・YouTube URL は必須です");
@@ -77,6 +109,14 @@ export default function LessonNewForm({ subjects, defaultUnitId }: Props) {
         title: title.trim(),
         youtubeUrl: youtubeUrl.trim(),
         questions: questions.map((q) => q.content).filter((c) => c.trim() !== ""),
+        enablePlayground,
+        codeSnippets: codeSnippets
+          .filter((s) => s.initialCode.trim() !== "")
+          .map((s) => ({
+            title: s.title.trim(),
+            language: s.language,
+            initialCode: s.initialCode,
+          })),
       }),
     });
     setIsSaving(false);
@@ -237,6 +277,87 @@ export default function LessonNewForm({ subjects, defaultUnitId }: Props) {
           >
             ＋ 発問を追加
           </button>
+        </div>
+
+        {/* コーディングプレイグラウンド */}
+        <div className="p-5 rounded-md border bg-card space-y-4">
+          <label className="flex items-center gap-2 cursor-pointer">
+            <input
+              type="checkbox"
+              checked={enablePlayground}
+              onChange={(e) => setEnablePlayground(e.target.checked)}
+              className="w-4 h-4"
+            />
+            <span className="text-xs font-semibold text-muted-foreground uppercase tracking-widest">
+              💻 コーディングプレイグラウンドを有効にする
+            </span>
+          </label>
+
+          {enablePlayground && (
+            <>
+              <p className="text-xs text-muted-foreground">
+                生徒がメモ欄で切り替えて実行できる初期コードを登録します（任意）。
+              </p>
+
+              <div className="space-y-3">
+                {codeSnippets.map((snippet) => (
+                  <div key={snippet.id} className="border rounded-md p-3 space-y-2">
+                    <div className="flex gap-2 items-center">
+                      <input
+                        type="text"
+                        className="flex-1 px-2 py-1.5 rounded border bg-background text-sm focus:outline-none focus:ring-2 focus:ring-ring"
+                        placeholder="タイトル（例：例1）"
+                        value={snippet.title}
+                        onChange={(e) =>
+                          updateCodeSnippet(snippet.id, { title: e.target.value })
+                        }
+                      />
+                      <select
+                        className="px-2 py-1.5 rounded border bg-background text-sm focus:outline-none focus:ring-2 focus:ring-ring"
+                        value={snippet.language}
+                        onChange={(e) =>
+                          updateCodeSnippet(snippet.id, {
+                            language: e.target.value as CodeLanguage,
+                          })
+                        }
+                      >
+                        {(Object.keys(LANGUAGE_LABELS) as CodeLanguage[]).map((lang) => (
+                          <option key={lang} value={lang}>
+                            {LANGUAGE_LABELS[lang]}
+                          </option>
+                        ))}
+                      </select>
+                      <button
+                        onClick={() => removeCodeSnippet(snippet.id)}
+                        className="p-1.5 rounded-md text-muted-foreground hover:text-destructive hover:bg-destructive/10 transition-colors"
+                        aria-label="コード例を削除"
+                      >
+                        🗑️
+                      </button>
+                    </div>
+                    <textarea
+                      className="w-full px-3 py-2 rounded-md border bg-background text-sm font-mono resize-none focus:outline-none focus:ring-2 focus:ring-ring"
+                      rows={5}
+                      placeholder={
+                        snippet.language === "python" ? "print('Hello')" : "console.log('Hello')"
+                      }
+                      value={snippet.initialCode}
+                      onChange={(e) =>
+                        updateCodeSnippet(snippet.id, { initialCode: e.target.value })
+                      }
+                    />
+                  </div>
+                ))}
+              </div>
+
+              <button
+                onClick={addCodeSnippet}
+                className="text-sm text-muted-foreground hover:text-foreground transition-colors"
+              >
+                ＋ コード例を追加
+              </button>
+            </>
+          )}
         </div>
 
         {/* 保存ボタン */}

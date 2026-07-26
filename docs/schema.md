@@ -8,10 +8,12 @@ subjects
         └── lessons
               ├── questions
               ├── memos ──→ posts
-              └── quizzes
-                    ├── quiz_questions
-                    └── quiz_attempts
-                          └── quiz_attempt_answers
+              ├── quizzes
+              │     ├── quiz_questions
+              │     └── quiz_attempts
+              │           └── quiz_attempt_answers
+              └── code_snippets
+                    └── student_code_states
 ```
 
 ---
@@ -55,6 +57,7 @@ subjects
 | title | text | |
 | youtube_url | text | |
 | order | int | 表示順 |
+| enable_playground | bool | default false。コーディングプレイグラウンド（Phase 21）の有効/無効 |
 | created_at | timestamptz | |
 
 ### questions（発問）
@@ -131,3 +134,25 @@ subjects
 - 選択式：`{"type": "multiple_choice", "selectedText": "..."}`
 - 記述式：`{"type": "short_answer", "text": "..."}`
 - 並び替え：`{"type": "ordering", "items": [...]}`
+
+### code_snippets（教師が登録する初期コード。Phase 21）
+| カラム | 型 | 備考 |
+|---|---|---|
+| id | uuid | PK |
+| lesson_id | uuid | FK → lessons |
+| title | text | 例:「例1」 |
+| language | enum | 'python' / 'javascript' |
+| initial_code | text | 初期コード |
+| order | int | 表示順 |
+| created_at | timestamptz | |
+
+### student_code_states（生徒ごとのコード編集内容の保存。Phase 21）
+| カラム | 型 | 備考 |
+|---|---|---|
+| id | uuid | PK |
+| snippet_id | uuid | FK → code_snippets |
+| user_id | uuid | FK → profiles |
+| code | text | 生徒が編集した現在のコード |
+| updated_at | timestamptz | |
+
+`unique(snippet_id, user_id)`。本人のみ読み書き可（RLS）。

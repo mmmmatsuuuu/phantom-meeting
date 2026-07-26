@@ -127,13 +127,15 @@ export async function deleteLesson(id: string): Promise<boolean> {
 }
 
 /**
- * レッスンと発問を一括作成する（teacher/admin のみ）
+ * レッスンと発問・初期コードを一括作成する（teacher/admin のみ）
  */
 export async function createLesson(params: {
   unitId: string;
   title: string;
   youtubeUrl: string;
   questions: string[];
+  enablePlayground?: boolean;
+  codeSnippets?: { title: string; language: "python" | "javascript"; initialCode: string }[];
 }): Promise<Lesson | null> {
   const supabase = await createClient();
 
@@ -150,6 +152,7 @@ export async function createLesson(params: {
       title: params.title,
       youtube_url: params.youtubeUrl,
       order: count ?? 0,
+      enable_playground: params.enablePlayground ?? false,
     })
     .select()
     .single();
@@ -170,6 +173,24 @@ export async function createLesson(params: {
       .insert(questionRows);
 
     if (questionsError) return null;
+  }
+
+  const snippetRows = (params.codeSnippets ?? [])
+    .filter((s) => s.initialCode.trim() !== "")
+    .map((s, i) => ({
+      lesson_id: lesson.id,
+      title: s.title || `例${i + 1}`,
+      language: s.language,
+      initial_code: s.initialCode,
+      order: i,
+    }));
+
+  if (snippetRows.length > 0) {
+    const { error: snippetsError } = await supabase
+      .from("code_snippets")
+      .insert(snippetRows);
+
+    if (snippetsError) return null;
   }
 
   return lesson;

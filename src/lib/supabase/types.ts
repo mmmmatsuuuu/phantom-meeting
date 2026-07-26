@@ -34,9 +34,48 @@ export type Database = {
   }
   public: {
     Tables: {
+      code_snippets: {
+        Row: {
+          created_at: string
+          id: string
+          initial_code: string
+          language: Database["public"]["Enums"]["code_language"]
+          lesson_id: string
+          order: number
+          title: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          initial_code: string
+          language: Database["public"]["Enums"]["code_language"]
+          lesson_id: string
+          order: number
+          title: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          initial_code?: string
+          language?: Database["public"]["Enums"]["code_language"]
+          lesson_id?: string
+          order?: number
+          title?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "code_snippets_lesson_id_fkey"
+            columns: ["lesson_id"]
+            isOneToOne: false
+            referencedRelation: "lessons"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       lessons: {
         Row: {
           created_at: string
+          enable_playground: boolean
           id: string
           order: number
           title: string
@@ -45,6 +84,7 @@ export type Database = {
         }
         Insert: {
           created_at?: string
+          enable_playground?: boolean
           id?: string
           order?: number
           title: string
@@ -53,6 +93,7 @@ export type Database = {
         }
         Update: {
           created_at?: string
+          enable_playground?: boolean
           id?: string
           order?: number
           title?: string
@@ -121,6 +162,7 @@ export type Database = {
           id: string
           lesson_id: string
           memo_id: string
+          timestamp_seconds: number | null
           user_id: string
         }
         Insert: {
@@ -129,6 +171,7 @@ export type Database = {
           id?: string
           lesson_id: string
           memo_id: string
+          timestamp_seconds?: number | null
           user_id: string
         }
         Update: {
@@ -137,6 +180,7 @@ export type Database = {
           id?: string
           lesson_id?: string
           memo_id?: string
+          timestamp_seconds?: number | null
           user_id?: string
         }
         Relationships: [
@@ -152,6 +196,13 @@ export type Database = {
             columns: ["memo_id"]
             isOneToOne: false
             referencedRelation: "memos"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "posts_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
             referencedColumns: ["id"]
           },
         ]
@@ -185,6 +236,38 @@ export type Database = {
           student_number?: number | null
         }
         Relationships: []
+      }
+      questions: {
+        Row: {
+          content: string
+          created_at: string
+          id: string
+          lesson_id: string
+          order: number
+        }
+        Insert: {
+          content: string
+          created_at?: string
+          id?: string
+          lesson_id: string
+          order?: number
+        }
+        Update: {
+          content?: string
+          created_at?: string
+          id?: string
+          lesson_id?: string
+          order?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "questions_lesson_id_fkey"
+            columns: ["lesson_id"]
+            isOneToOne: false
+            referencedRelation: "lessons"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       quiz_attempt_answers: {
         Row: {
@@ -267,38 +350,6 @@ export type Database = {
           },
         ]
       }
-      questions: {
-        Row: {
-          content: string
-          created_at: string
-          id: string
-          lesson_id: string
-          order: number
-        }
-        Insert: {
-          content: string
-          created_at?: string
-          id?: string
-          lesson_id: string
-          order?: number
-        }
-        Update: {
-          content?: string
-          created_at?: string
-          id?: string
-          lesson_id?: string
-          order?: number
-        }
-        Relationships: [
-          {
-            foreignKeyName: "questions_lesson_id_fkey"
-            columns: ["lesson_id"]
-            isOneToOne: false
-            referencedRelation: "lessons"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
       quiz_questions: {
         Row: {
           content: Json
@@ -365,6 +416,45 @@ export type Database = {
             columns: ["lesson_id"]
             isOneToOne: false
             referencedRelation: "lessons"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      student_code_states: {
+        Row: {
+          code: string
+          id: string
+          snippet_id: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          code: string
+          id?: string
+          snippet_id: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          code?: string
+          id?: string
+          snippet_id?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "student_code_states_snippet_id_fkey"
+            columns: ["snippet_id"]
+            isOneToOne: false
+            referencedRelation: "code_snippets"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "student_code_states_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
             referencedColumns: ["id"]
           },
         ]
@@ -441,6 +531,7 @@ export type Database = {
       my_role: { Args: never; Returns: Database["public"]["Enums"]["role"] }
     }
     Enums: {
+      code_language: "python" | "javascript"
       quiz_question_type: "multiple_choice" | "short_answer" | "ordering"
       role: "admin" | "teacher" | "student"
     }
@@ -573,6 +664,7 @@ export const Constants = {
   },
   public: {
     Enums: {
+      code_language: ["python", "javascript"],
       quiz_question_type: ["multiple_choice", "short_answer", "ordering"],
       role: ["admin", "teacher", "student"],
     },
