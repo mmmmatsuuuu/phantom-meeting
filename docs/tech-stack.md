@@ -12,6 +12,8 @@
 | 動画 | YouTube埋め込み |
 | UIコンポーネント | shadcn/ui + Tailwind CSS |
 | リッチテキスト | tiptap |
+| コードエディタ | CodeMirror 6（コーディングプレイグラウンド） |
+| コード実行 | Pyodide（Python、jsDelivr CDN配信）/ サンドボックスiframe（JavaScript）※いずれもブラウザ内完結、サーバー実行なし |
 | ドラッグ&ドロップ | @dnd-kit（小テスト並び替え問題） |
 | 画像ホスティング | ImageKit（小テスト問題文・解説の画像） |
 | Markdown変換 | tiptap-markdown（メモの Markdown エクスポート） |
@@ -26,3 +28,4 @@
 - **Next.js**：React 5年以上の経験があり学習コストゼロ、AI補助の情報量が最大
 - **Claude API**：将来の発問生成時のみ呼び出すため、最上位モデルでもコストは無視できる水準
 - **ImageKit**：無料枠でも画像変換・CDN配信が使えるため画像最適化を別途実装不要
+- **Pyodide / サンドボックスiframe**：コード実行をサーバーに頼らずブラウザ内で完結させることで、任意コード実行のセキュリティリスクとサーバーコストの両方を回避

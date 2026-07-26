@@ -30,6 +30,9 @@ export default function Playground({
       snippets.map((s) => [s.id, initialCodeStates[s.id] ?? s.initial_code])
     )
   );
+  const [running, setRunning] = useState(false);
+  const [output, setOutput] = useState("");
+  const [runError, setRunError] = useState<string | null>(null);
   const saveTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   useEffect(() => {
@@ -51,6 +54,30 @@ export default function Playground({
         body: JSON.stringify({ code: value }),
       }).catch(() => {});
     }, AUTOSAVE_DELAY_MS);
+  };
+
+  const handleRun = async () => {
+    if (!activeSnippet || running) return;
+    const code = codeBySnippet[activeSnippet.id] ?? "";
+    setRunning(true);
+    setOutput("");
+    setRunError(null);
+
+    const onOutput = (text: string) => setOutput((prev) => prev + text);
+
+    try {
+      if (activeSnippet.language === "python") {
+        const { runPythonCode } = await import("@/lib/pyodide-runner");
+        const result = await runPythonCode(code, onOutput);
+        setRunError(result.error);
+      } else {
+        const { runJavaScriptCode } = await import("@/lib/js-runner");
+        const result = await runJavaScriptCode(code, onOutput);
+        setRunError(result.error);
+      }
+    } finally {
+      setRunning(false);
+    }
   };
 
   const handleSaveToMemo = () => {
@@ -96,7 +123,11 @@ export default function Playground({
             {snippets.map((s) => (
               <button
                 key={s.id}
-                onClick={() => setActiveId(s.id)}
+                onClick={() => {
+                  setActiveId(s.id);
+                  setOutput("");
+                  setRunError(null);
+                }}
                 className={`px-3 py-1 rounded text-xs font-medium transition-colors ${
                   activeId === s.id
                     ? "bg-primary text-primary-foreground"
@@ -121,11 +152,11 @@ export default function Playground({
 
           <div className="flex gap-2">
             <button
-              disabled
-              className="flex-1 py-2 text-sm rounded-md bg-primary text-primary-foreground opacity-50 cursor-not-allowed"
-              title="実行機能は準備中です"
+              onClick={handleRun}
+              disabled={running}
+              className="flex-1 py-2 text-sm rounded-md bg-primary text-primary-foreground hover:opacity-90 transition-opacity disabled:opacity-50 disabled:cursor-not-allowed"
             >
-              ▶ 実行（準備中）
+              {running ? "実行中..." : "▶ 実行"}
             </button>
             <button
               onClick={handleSaveToMemo}
@@ -135,9 +166,19 @@ export default function Playground({
             </button>
           </div>
 
-          {/* コンソール（出力は 21c/21d で実装） */}
-          <div className="rounded-md border bg-muted/40 p-3 text-xs font-mono text-muted-foreground min-h-[72px] whitespace-pre-wrap">
-            実行結果はここに表示されます（実行機能は準備中）
+          {/* コンソール */}
+          <div
+            className={`rounded-md border p-3 text-xs font-mono min-h-[72px] whitespace-pre-wrap ${
+              runError
+                ? "border-red-300 bg-red-50 dark:bg-red-950/20 text-red-700 dark:text-red-400"
+                : "bg-muted/40 text-foreground"
+            }`}
+          >
+            {output || (
+              <span className="text-muted-foreground">
+                「実行」を押すと結果がここに表示されます
+              </span>
+            )}
           </div>
         </>
       )}
