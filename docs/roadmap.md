@@ -1040,14 +1040,93 @@ teacher ロール以外がエクスポートできないこと、出力データ
 
 ---
 
+## Phase 21: コーディングプレイグラウンド（Python / JavaScript）
+
+> プログラミング単元で「PRIMM」方式の授業を支援する。動画視聴中に、動画内で登場したコード例をその場で実行・改変できるプレイグラウンドをメモ欄の隣に追加する。
+> ゼロベースでコードを書く用途ではなく、教師があらかじめ用意したコード例を Predict（予想）→ Run（実行）→ Investigate（調査）→ Modify（改造）→ Make（作成）する PRIMM の流れを想定する。
+> ロールバックしやすいよう 21a〜21d を独立したブランチ / PR で実装する。
+
+### 設計方針
+
+- **実行環境はブラウザ内完結**とする（サーバー側での任意コード実行は無料枠方針・セキュリティの両面でコストが高いため採用しない）
+  - **Python**: [Pyodide](https://pyodide.org/)（WebAssembly版CPython）をメインスレッドで動作させ `runPythonAsync` で実行
+  - **JavaScript**: サンドボックス化した `<iframe>` 内で実行
+  - Web Worker + SharedArrayBuffer による同期入力方式は採用しない。COEPヘッダーが必要になり、同一ページに埋め込むYouTube動画と衝突するリスクが高いため
+- **`input()` / `prompt()` 対応**：組み込み関数をフックし、呼び出された時点でコンソール内に入力欄を表示 → 生徒の入力送信でPromiseが解決され実行再開する非同期方式（メインスレッドをブロックしない）
+- **エディタ**：CodeMirror 6を採用（Monaco Editorより軽量で、生徒の端末（Chromebook等）でも動作が軽い）
+- **MVPでの割り切り**：標準ライブラリの範囲のみ（pip install不可）、無限ループ等の強制中断機能はなし（暴走時はページ再読み込みで対応）
+
+#### DBスキーマ（追加分）
+
+```sql
+-- lessons に列追加（NOT NULL DEFAULT false のため既存レッスンは自動的に無効のまま）
+ALTER TABLE public.lessons
+  ADD COLUMN enable_playground boolean NOT NULL DEFAULT false;
+
+-- 教師が登録する初期コード
+CREATE TABLE public.code_snippets (
+  id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+  lesson_id uuid NOT NULL REFERENCES public.lessons(id) ON DELETE CASCADE,
+  title text NOT NULL,              -- 例:「例1」「例2」
+  language text NOT NULL,           -- 'python' | 'javascript'
+  initial_code text NOT NULL,
+  "order" int NOT NULL,
+  created_at timestamptz NOT NULL DEFAULT now()
+);
+
+-- 生徒ごとの編集内容の保存（memos と同様、本人のみ読み書き可）
+CREATE TABLE public.student_code_states (
+  id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+  snippet_id uuid NOT NULL REFERENCES public.code_snippets(id) ON DELETE CASCADE,
+  user_id uuid NOT NULL REFERENCES public.profiles(id) ON DELETE CASCADE,
+  code text NOT NULL,
+  updated_at timestamptz NOT NULL DEFAULT now(),
+  UNIQUE (snippet_id, user_id)
+);
+```
+
+#### UI統合ポイント
+
+- レッスンページ：メモ欄の上に「📝 メモ ⇄ 💻 コード」の切り替えタブを追加（`enable_playground` が true のレッスンのみ表示）
+- プレイグラウンド内：「例1」「例2」のタブ、それぞれにエディタ＋実行ボタン＋コンソール（出力・入力欄）
+- 教師側：レッスン登録・編集画面に「プレイグラウンドを有効にする」チェックボックスと、初期コードの追加・編集・削除・並び替えUI
+
+### 21a: データ基盤
+
+- [ ] マイグレーション追加（`lessons.enable_playground`・`code_snippets`・`student_code_states`、RLS含む）
+- [ ] `lib/db/` にコードスニペットCRUD関数を追加
+- [ ] レッスン登録・編集画面に「プレイグラウンドを有効にする」チェックボックスと初期コード管理UI（追加・編集・削除・並び替え）を追加
+- この時点ではコード実行機能は含まない（データモデルとteacher側UIの確定が目的）
+
+### 21b: プレイグラウンドUIの土台
+
+- [ ] CodeMirror 6 を導入
+- [ ] レッスンページのメモ/コード切り替えタブを実装
+- [ ] スニペットタブ（「例1」「例2」…）とエディタ表示
+- [ ] 生徒の編集内容を `student_code_states` に自動保存（実行ボタンはまだ動作しない）
+
+### 21c: Python実行
+
+- [ ] Pyodide統合（メインスレッド・`runPythonAsync`）
+- [ ] `print()` 出力・エラー表示のコンソール実装
+- [ ] `input()` の非同期フック対応（コンソール内入力欄）
+
+### 21d: JavaScript実行
+
+- [ ] サンドボックス化 `<iframe>` 内での実行
+- [ ] `console.log()` 出力・エラー表示（`postMessage` で親ページのコンソールUIに転送）
+- [ ] `prompt()` の非同期フック対応（Python側と統一されたUI）
+
+---
+
 ## ウェイトリスト
 
 > 実装予定はあるが、時期未定のタスク。優先度が上がった時点でフェーズに組み込む。
 
 - teacher 申請フロー：student がUI上で教師申請を出せる機能（現状は admin が DB を直接操作して role を変更）
-- **Python / JavaScript でコーディングできる機能**：生徒向けの学習機能として追加予定。詳細（対象範囲・実行環境・採点方法など）は今後詰める。要件が固まり次第フェーズに組み込む
 
 ※「小テスト分析・生徒ビュー」は Phase 20d（生徒別分析＝生徒リスト→個人詳細）で回収したためウェイトリストから削除
+※「Python / JavaScript でコーディングできる機能」は詳細が固まったため Phase 21 として組み込み、ウェイトリストから削除
 
 ---
 
@@ -1086,6 +1165,10 @@ teacher ロール以外がエクスポートできないこと、出力データ
 [✅] Phase 20b: 教師ハブ・メニュー整理
 [✅] Phase 20c: 分析タブ統合＋レッスン別分析
 [✅] Phase 20d: 生徒別分析
+[ ] Phase 21a:  コーディングプレイグラウンド - データ基盤
+[ ] Phase 21b:  コーディングプレイグラウンド - UIの土台
+[ ] Phase 21c:  コーディングプレイグラウンド - Python実行
+[ ] Phase 21d:  コーディングプレイグラウンド - JavaScript実行
 ```
 
-Phase 20（導線改善と分析拡充）は完了。次の候補は Phase 16 / 17 / 19。
+Phase 20（導線改善と分析拡充）は完了。次の着手は **Phase 21a: コーディングプレイグラウンド - データ基盤**。
