@@ -56,13 +56,45 @@ export type RunPythonResult = {
   error: string | null;
 };
 
+// 生徒のコードを実行前に変換するブートストラップ。
+// input(...) の呼び出しをすべて await input(...) に自動書き換えし（ast モジュールで
+// 構文木を操作）、input 自体をカスタム入力欄からの入力を待つ非同期関数に差し替える。
+// メインスレッドをブロックせず、window.prompt() の代わりにコンソール内のテキスト
+// ボックスで入力を受け付けられるようにするための仕組み（Worker を使わずに実現できる）。
+const INPUT_BOOTSTRAP = `
+import ast
+import builtins
+
+class __InputAwaiter(ast.NodeTransformer):
+    def visit_Call(self, node):
+        self.generic_visit(node)
+        if isinstance(node.func, ast.Name) and node.func.id == "input":
+            return ast.copy_location(ast.Await(value=node), node)
+        return node
+
+async def __input(prompt=""):
+    return await _request_input(prompt)
+
+builtins.input = __input
+
+def __transform(source):
+    tree = ast.parse(source)
+    tree = __InputAwaiter().visit(tree)
+    ast.fix_missing_locations(tree)
+    return ast.unparse(tree)
+
+__transformed_source__ = __transform(__source__)
+`;
+
 /**
  * Python コードを実行する。print() 等の出力は onOutput に逐次渡される。
- * input() はブラウザ標準の window.prompt() にフックする（同期的に値が返るまで待機する）。
+ * input() の呼び出しは自動的に await input() へ変換され、onInputRequest で
+ * 渡されたコールバック（テキストボックスでの入力待ち）に非同期でつながる。
  */
 export async function runPythonCode(
   code: string,
-  onOutput: (text: string) => void
+  onOutput: (text: string) => void,
+  onInputRequest: (prompt: string) => Promise<string>
 ): Promise<RunPythonResult> {
   const pyodide = await loadPyodideOnce();
 
@@ -71,16 +103,17 @@ export async function runPythonCode(
 
   // 実行ごとに空のグローバル辞書を用意し、前回実行の変数が引き継がれないようにする
   const namespace = pyodide.runPython("{}");
-  namespace.set("_browser_input", (promptText: string) => {
-    const value = window.prompt(promptText ?? "");
-    return value === null ? "" : value;
+  namespace.set("_request_input", (promptText: string) => {
+    // プロンプト文言を改行なしでコンソールに反映し、その場に入力欄が続く見た目にする
+    onOutput(promptText ?? "");
+    return onInputRequest(promptText ?? "");
   });
-
-  const bootstrap =
-    "import builtins\nbuiltins.input = lambda prompt='': _browser_input(prompt)\n";
+  namespace.set("__source__", code);
 
   try {
-    await pyodide.runPythonAsync(bootstrap + code, { globals: namespace });
+    await pyodide.runPythonAsync(INPUT_BOOTSTRAP, { globals: namespace });
+    const transformedSource = namespace.get("__transformed_source__") as string;
+    await pyodide.runPythonAsync(transformedSource, { globals: namespace });
     return { error: null };
   } catch (e) {
     return { error: e instanceof Error ? e.message : String(e) };

@@ -37,6 +37,11 @@ export default function Playground({
   );
   const [running, setRunning] = useState(false);
   const [runError, setRunError] = useState<string | null>(null);
+  const [pendingInput, setPendingInput] = useState<{
+    prompt: string;
+    resolve: (value: string) => void;
+  } | null>(null);
+  const [inputDraft, setInputDraft] = useState("");
   const saveTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   useEffect(() => {
@@ -65,6 +70,21 @@ export default function Playground({
     }, AUTOSAVE_DELAY_MS);
   };
 
+  // Python の input() 呼び出しに応答する。コンソール内のテキストボックスに
+  // 入力・送信されるまで解決しない Promise を返す（メインスレッドはブロックしない）
+  const requestInput = (prompt: string): Promise<string> => {
+    return new Promise((resolve) => {
+      setInputDraft("");
+      setPendingInput({ prompt, resolve });
+    });
+  };
+
+  const submitPendingInput = () => {
+    if (!pendingInput) return;
+    pendingInput.resolve(inputDraft);
+    setPendingInput(null);
+  };
+
   const handleRun = async () => {
     if (!activeSnippet || running) return;
     const snippetId = activeSnippet.id;
@@ -72,6 +92,7 @@ export default function Playground({
     setRunning(true);
     setOutputBySnippet((prev) => ({ ...prev, [snippetId]: "" }));
     setRunError(null);
+    setPendingInput(null);
 
     // React state の更新は非同期のため、実行終了後にDBへ保存する値は
     // ローカル変数に直接蓄積して確定させる
@@ -84,7 +105,7 @@ export default function Playground({
     try {
       if (activeSnippet.language === "python") {
         const { runPythonCode } = await import("@/lib/pyodide-runner");
-        const result = await runPythonCode(code, onOutput);
+        const result = await runPythonCode(code, onOutput, requestInput);
         setRunError(result.error);
       } else {
         const { runJavaScriptCode } = await import("@/lib/js-runner");
@@ -93,6 +114,7 @@ export default function Playground({
       }
     } finally {
       setRunning(false);
+      setPendingInput(null);
       // コード自体は自動保存済みの可能性が高いが、実行結果と一致させるため
       // 直近のコードと合わせて確定保存する（デバウンス待ちをキャンセル）
       if (saveTimerRef.current) clearTimeout(saveTimerRef.current);
@@ -205,10 +227,33 @@ export default function Playground({
                 : "bg-muted/40 text-foreground"
             }`}
           >
-            {output || (
+            {output || (!pendingInput && (
               <span className="text-muted-foreground">
                 「実行」を押すと結果がここに表示されます
               </span>
+            ))}
+            {pendingInput && (
+              <form
+                onSubmit={(e) => {
+                  e.preventDefault();
+                  submitPendingInput();
+                }}
+                className="flex items-center gap-2 mt-1"
+              >
+                <input
+                  autoFocus
+                  value={inputDraft}
+                  onChange={(e) => setInputDraft(e.target.value)}
+                  className="flex-1 min-w-0 px-2 py-1 text-xs font-mono rounded border bg-background focus:outline-none focus:ring-2 focus:ring-ring"
+                  placeholder="入力してEnter"
+                />
+                <button
+                  type="submit"
+                  className="px-2.5 py-1 text-xs rounded-md bg-primary text-primary-foreground hover:opacity-90 transition-opacity shrink-0"
+                >
+                  送信
+                </button>
+              </form>
             )}
           </div>
         </>

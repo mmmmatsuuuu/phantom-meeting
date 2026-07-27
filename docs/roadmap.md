@@ -1052,10 +1052,15 @@ teacher ロール以外がエクスポートできないこと、出力データ
   - **Python**: [Pyodide](https://pyodide.org/)（WebAssembly版CPython）をメインスレッドで動作させ `runPythonAsync` で実行。WASM本体・標準ライブラリは jsDelivr の公式CDNから取得（バージョンは pyodide パッケージの `version` export から動的に取得しCDNとの不一致を防ぐ）
   - **JavaScript**: サンドボックス化した `<iframe>` 内で実行
   - Web Worker + SharedArrayBuffer による同期入力方式は採用しない。COEPヘッダーが必要になり、同一ページに埋め込むYouTube動画と衝突するリスクが高いため
-- **`input()` / `prompt()` 対応**：ブラウザ標準の `window.prompt()` に委譲する
-  - 実装時に判明：Web Worker を使わない場合、カスタムUI（コンソール内入力欄）で「非同期・ノンブロッキング」に一時停止する手段は存在しない（`window.prompt/confirm/alert` のみブラウザが特別扱いする同期停止API）。そのため見た目は素朴なネイティブダイアログになるが、実装は大幅に単純化される
-  - Python: `input()` を `window.prompt()` を呼ぶ関数に差し替えて実行（`builtins.input` を上書き）
-  - JavaScript: サンドボックスiframeの `sandbox` 属性に `allow-modals` を付与し、ユーザーコードの `prompt()` 呼び出しをそのまま許可（`allow-same-origin` は付与しないため親ページのCookie・DOMには到達できない）
+- **`input()` / `prompt()` 対応**：PythonとJavaScriptで異なる方式を採用する
+  - **Python**：コンソール内のテキストボックスで入力できる（カスタムUI・ノンブロッキング）
+    - 生徒のコードを実行前に Python の `ast` モジュールで構文木ごと自動変換し、`input(...)` の呼び出しをすべて `await input(...)` に書き換える。`input` 自体はテキストボックスの送信を待つ非同期関数に差し替える
+    - Worker + SharedArrayBuffer を使わずに実現できる（`await` はPythonの言語機能として呼び出しスタックを一時的に手放すため、メインスレッドをブロックしない。Trinket等の教育向けブラウザPython実行環境で使われる手法と同様）
+    - 生徒が書くコードは通常どおりの `input(...)` のままでよい（自動変換されるため書き方を変える必要はない）
+  - **JavaScript**：`window.prompt()` に委譲する（現状維持）
+    - サンドボックスiframeの `sandbox` 属性に `allow-modals` を付与し、ユーザーコードの `prompt()` 呼び出しをそのまま許可（`allow-same-origin` は付与しないため親ページのCookie・DOMには到達できない）
+    - JavaScriptにはPythonの `ast` に相当する構文解析がブラウザ標準搭載されておらず、同様の自動変換には外部パーサーの追加が必要になるため、素朴なネイティブダイアログのままとした
+  - 参考：Web Worker + SharedArrayBuffer による同期入力方式はいずれの言語でも不採用。COEPヘッダーが必要になり、同一ページに埋め込むYouTube動画と衝突するリスクが高いため
 - **エディタ**：CodeMirror 6を採用（Monaco Editorより軽量で、生徒の端末（Chromebook等）でも動作が軽い）
 - **MVPでの割り切り**：標準ライブラリの範囲のみ（pip install不可）、無限ループ等の強制中断機能はなし（暴走時はページ再読み込みで対応）
 
@@ -1121,9 +1126,9 @@ CREATE TABLE public.code_states (
 
 ### 21c: Python実行
 
-- [x] Pyodide統合（メインスレッド・`runPythonAsync`、jsDelivr CDNから読み込み）
+- [x] Pyodide統合（メインスレッド・`runPythonAsync`、jsDelivr CDNから`<script>`タグ経由で読み込み。npmパッケージ本体はバンドラー非対応のため）
 - [x] `print()` 出力・エラー表示のコンソール実装（`setStdout`/`setStderr`）
-- [x] `input()` 対応（`window.prompt()` へ委譲、実行ごとに空のグローバル辞書で変数の引き継ぎを防止）
+- [x] `input()` 対応：`ast`モジュールによる自動変換（`input()`→`await input()`）＋コンソール内テキストボックスでの入力（実行ごとに空のグローバル辞書で変数の引き継ぎを防止）
 
 ### 21d: JavaScript実行
 
