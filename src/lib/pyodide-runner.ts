@@ -1,18 +1,51 @@
 import type { PyodideInterface } from "pyodide";
+import { version as pyodideVersion } from "pyodide/package.json";
+
+declare global {
+  interface Window {
+    loadPyodide?: (options: { indexURL: string }) => Promise<PyodideInterface>;
+  }
+}
 
 let pyodidePromise: Promise<PyodideInterface> | null = null;
+let scriptPromise: Promise<void> | null = null;
+
+// pyodide npm パッケージ本体（pyodide.js/.mjs）は Node.js 検出用の動的 require を
+// 内部に含んでおり、Next.js のバンドラーで `import("pyodide")` すると
+// "Cannot find module as expression is too dynamic" で失敗する。
+// そのためバンドルせず、CDN上のスクリプトを <script> タグで読み込み、
+// window.loadPyodide をブラウザから直接呼び出す方式にする。
+// バージョン文字列だけは package.json（純粋なJSONで動的requireを含まない）
+// から静的に取得し、CDN URLとのバージョン不一致を防ぐ。
+function loadScriptOnce(): Promise<void> {
+  if (typeof window !== "undefined" && window.loadPyodide) {
+    return Promise.resolve();
+  }
+  if (!scriptPromise) {
+    scriptPromise = new Promise((resolve, reject) => {
+      const script = document.createElement("script");
+      script.src = `https://cdn.jsdelivr.net/pyodide/v${pyodideVersion}/full/pyodide.js`;
+      script.onload = () => resolve();
+      script.onerror = () => reject(new Error("Pyodideスクリプトの読み込みに失敗しました"));
+      document.head.appendChild(script);
+    });
+  }
+  return scriptPromise;
+}
 
 /**
  * Pyodide をブラウザにロードする（初回のみ、以降はキャッシュを再利用）。
  * WASM 本体・標準ライブラリは jsDelivr の公式CDNから取得する（無料枠方針・自前ホスティング不要のため）。
- * バージョンは pyodide npm パッケージの export から取得し、CDN側との不一致を防ぐ。
  */
 function loadPyodideOnce(): Promise<PyodideInterface> {
   if (!pyodidePromise) {
     pyodidePromise = (async () => {
-      const { loadPyodide, version } = await import("pyodide");
-      return loadPyodide({
-        indexURL: `https://cdn.jsdelivr.net/pyodide/v${version}/full/`,
+      await loadScriptOnce();
+      if (!window.loadPyodide) {
+        throw new Error("Pyodideの読み込みに失敗しました");
+      }
+      return window.loadPyodide({
+        indexURL: `https://cdn.jsdelivr.net/pyodide/v${pyodideVersion}/full/`,
       });
     })();
   }
