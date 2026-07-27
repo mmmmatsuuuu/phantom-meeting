@@ -1,9 +1,20 @@
 "use client";
 
 import { useState } from "react";
+import dynamic from "next/dynamic";
 import type { CodeSnippet } from "@/lib/db/code-snippets";
 import MemoSection from "@/components/lesson/memo-section";
-import Playground from "@/components/lesson/playground";
+
+// CodeMirror・Pyodide連携を含むため、プレイグラウンドが無効なレッスンの
+// バンドルには含めない（プレイグラウンド有効レッスンでタブを開いたときのみ読み込む）
+const Playground = dynamic(() => import("@/components/lesson/playground"), {
+  ssr: false,
+  loading: () => (
+    <div className="rounded-md border bg-card p-4 text-sm text-muted-foreground">
+      読み込み中...
+    </div>
+  ),
+});
 
 type Tab = "memo" | "code";
 
