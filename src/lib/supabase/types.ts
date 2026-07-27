@@ -72,6 +72,48 @@ export type Database = {
           },
         ]
       }
+      code_states: {
+        Row: {
+          code: string
+          id: string
+          last_output: string | null
+          snippet_id: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          code: string
+          id?: string
+          last_output?: string | null
+          snippet_id: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          code?: string
+          id?: string
+          last_output?: string | null
+          snippet_id?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "code_states_snippet_id_fkey"
+            columns: ["snippet_id"]
+            isOneToOne: false
+            referencedRelation: "code_snippets"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "code_states_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       lessons: {
         Row: {
           created_at: string
@@ -416,48 +458,6 @@ export type Database = {
             columns: ["lesson_id"]
             isOneToOne: false
             referencedRelation: "lessons"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
-      student_code_states: {
-        Row: {
-          code: string
-          id: string
-          last_output: string | null
-          snippet_id: string
-          updated_at: string
-          user_id: string
-        }
-        Insert: {
-          code: string
-          id?: string
-          last_output?: string | null
-          snippet_id: string
-          updated_at?: string
-          user_id: string
-        }
-        Update: {
-          code?: string
-          id?: string
-          last_output?: string | null
-          snippet_id?: string
-          updated_at?: string
-          user_id?: string
-        }
-        Relationships: [
-          {
-            foreignKeyName: "student_code_states_snippet_id_fkey"
-            columns: ["snippet_id"]
-            isOneToOne: false
-            referencedRelation: "code_snippets"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "student_code_states_user_id_fkey"
-            columns: ["user_id"]
-            isOneToOne: false
-            referencedRelation: "profiles"
             referencedColumns: ["id"]
           },
         ]

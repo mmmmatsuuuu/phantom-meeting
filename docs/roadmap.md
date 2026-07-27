@@ -1080,7 +1080,7 @@ CREATE TABLE public.code_snippets (
 );
 
 -- 生徒ごとの編集内容の保存（memos と同様、本人のみ読み書き可）
-CREATE TABLE public.student_code_states (
+CREATE TABLE public.code_states (
   id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
   snippet_id uuid NOT NULL REFERENCES public.code_snippets(id) ON DELETE CASCADE,
   user_id uuid NOT NULL REFERENCES public.profiles(id) ON DELETE CASCADE,
@@ -1103,7 +1103,7 @@ CREATE TABLE public.student_code_states (
 
 ### 21a: データ基盤
 
-- [x] マイグレーション追加（`lessons.enable_playground`・`code_snippets`・`student_code_states`、RLS含む）
+- [x] マイグレーション追加（`lessons.enable_playground`・`code_snippets`・`code_states`、RLS含む）
 - [x] `lib/db/` にコードスニペットCRUD関数を追加
 - [x] レッスン登録・編集画面に「プレイグラウンドを有効にする」チェックボックスと初期コード管理UI（追加・編集・削除・並び替え）を追加
 - この時点ではコード実行機能は含まない（データモデルとteacher側UIの確定が目的）
@@ -1113,8 +1113,8 @@ CREATE TABLE public.student_code_states (
 - [x] CodeMirror 6 を導入
 - [x] レッスンページのメモ/コード切り替えタブを実装
 - [x] スニペットタブ（「例1」「例2」…）とエディタ表示
-- [x] 生徒の編集内容を `student_code_states` に自動保存（デバウンス1秒）
-- [x] 直近の実行結果を `student_code_states.last_output` に保存（実行完了時に上書き。履歴は持たないため行数は増えない）
+- [x] 生徒の編集内容を `code_states` に自動保存（デバウンス1秒）
+- [x] 直近の実行結果を `code_states.last_output` に保存（実行完了時に上書き。履歴は持たないため行数は増えない）
 - [x] 「コードをメモに保存」ボタンを実装
   - 押下時：メモタブに切り替え、現在のコードをコードブロックとして挿入済みの状態でtiptapエディタを開く
   - 生徒はそのまま保存 / コメントを追記してから保存 のどちらかを選べる

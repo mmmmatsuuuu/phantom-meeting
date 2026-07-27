@@ -13,7 +13,7 @@ subjects
               │     └── quiz_attempts
               │           └── quiz_attempt_answers
               └── code_snippets
-                    └── student_code_states
+                    └── code_states
 ```
 
 ---
@@ -146,7 +146,7 @@ subjects
 | order | int | 表示順 |
 | created_at | timestamptz | |
 
-### student_code_states（生徒ごとのコード編集内容の保存。Phase 21）
+### code_states（生徒ごとのコード編集内容の保存。Phase 21）
 | カラム | 型 | 備考 |
 |---|---|---|
 | id | uuid | PK |

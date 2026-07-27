@@ -134,7 +134,7 @@ export async function setLessonPlaygroundEnabled(
 
 // ─── 生徒の編集内容の保存 ────────────────────────────────────────────
 
-export type StudentCodeState = Database["public"]["Tables"]["student_code_states"]["Row"];
+export type StudentCodeState = Database["public"]["Tables"]["code_states"]["Row"];
 
 export type StudentCodeStateEntry = {
   code: string;
@@ -150,7 +150,7 @@ export async function getStudentCodeStatesByLesson(
 ): Promise<Record<string, StudentCodeStateEntry>> {
   const supabase = await createClient();
   const { data, error } = await supabase
-    .from("student_code_states")
+    .from("code_states")
     .select("snippet_id, code, last_output, code_snippets!inner(lesson_id)")
     .eq("user_id", userId)
     .eq("code_snippets.lesson_id", lessonId);
@@ -172,7 +172,7 @@ export async function saveStudentCodeState(
 ): Promise<boolean> {
   const supabase = await createClient();
   const { error } = await supabase
-    .from("student_code_states")
+    .from("code_states")
     .upsert(
       {
         snippet_id: snippetId,

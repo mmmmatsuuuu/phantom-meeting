@@ -457,7 +457,7 @@ begin
       12);
 
   -- プレイグラウンドの編集内容（保存済みコード・直近の実行結果）
-  insert into public.student_code_states (snippet_id, user_id, code, last_output) values
+  insert into public.code_states (snippet_id, user_id, code, last_output) values
     ('00000000-0000-0000-0000-000000005001', s1, $code$name = "わたしの名前"
 age = 15
 print(name, "さんは", age, "歳です")
