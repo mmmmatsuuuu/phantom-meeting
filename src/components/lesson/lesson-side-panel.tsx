@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import dynamic from "next/dynamic";
-import type { CodeSnippet } from "@/lib/db/code-snippets";
+import type { CodeSnippet, StudentCodeStateEntry } from "@/lib/db/code-snippets";
 import MemoSection from "@/components/lesson/memo-section";
 
 // CodeMirror・Pyodide連携を含むため、プレイグラウンドが無効なレッスンの
@@ -22,7 +22,7 @@ type Props = {
   lessonId: string;
   enablePlayground: boolean;
   snippets: CodeSnippet[];
-  initialCodeStates: Record<string, string>;
+  initialCodeStates: Record<string, StudentCodeStateEntry>;
   getCurrentTime: () => number | null;
   seekTo: (seconds: number) => void;
   onClose?: () => void;

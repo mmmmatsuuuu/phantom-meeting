@@ -424,6 +424,7 @@ export type Database = {
         Row: {
           code: string
           id: string
+          last_output: string | null
           snippet_id: string
           updated_at: string
           user_id: string
@@ -431,6 +432,7 @@ export type Database = {
         Insert: {
           code: string
           id?: string
+          last_output?: string | null
           snippet_id: string
           updated_at?: string
           user_id: string
@@ -438,6 +440,7 @@ export type Database = {
         Update: {
           code?: string
           id?: string
+          last_output?: string | null
           snippet_id?: string
           updated_at?: string
           user_id?: string

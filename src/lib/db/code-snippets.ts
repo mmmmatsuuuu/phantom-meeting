@@ -136,37 +136,51 @@ export async function setLessonPlaygroundEnabled(
 
 export type StudentCodeState = Database["public"]["Tables"]["student_code_states"]["Row"];
 
+export type StudentCodeStateEntry = {
+  code: string;
+  lastOutput: string | null;
+};
+
 /**
- * ログインユーザーの、指定レッスンの全スニペットの保存済みコードを取得する
+ * ログインユーザーの、指定レッスンの全スニペットの保存済みコード・直近の実行結果を取得する
  */
 export async function getStudentCodeStatesByLesson(
   lessonId: string,
   userId: string
-): Promise<Record<string, string>> {
+): Promise<Record<string, StudentCodeStateEntry>> {
   const supabase = await createClient();
   const { data, error } = await supabase
     .from("student_code_states")
-    .select("snippet_id, code, code_snippets!inner(lesson_id)")
+    .select("snippet_id, code, last_output, code_snippets!inner(lesson_id)")
     .eq("user_id", userId)
     .eq("code_snippets.lesson_id", lessonId);
 
   if (error || !data) return {};
-  return Object.fromEntries(data.map((row) => [row.snippet_id, row.code]));
+  return Object.fromEntries(
+    data.map((row) => [row.snippet_id, { code: row.code, lastOutput: row.last_output }])
+  );
 }
 
 /**
- * 生徒の編集内容を保存する（本人のみ）。存在すれば更新、なければ新規作成
+ * 生徒の編集内容・直近の実行結果を保存する（本人のみ）。存在すれば更新、なければ新規作成
  */
 export async function saveStudentCodeState(
   snippetId: string,
   userId: string,
-  code: string
+  code: string,
+  lastOutput: string | null
 ): Promise<boolean> {
   const supabase = await createClient();
   const { error } = await supabase
     .from("student_code_states")
     .upsert(
-      { snippet_id: snippetId, user_id: userId, code, updated_at: new Date().toISOString() },
+      {
+        snippet_id: snippetId,
+        user_id: userId,
+        code,
+        last_output: lastOutput,
+        updated_at: new Date().toISOString(),
+      },
       { onConflict: "snippet_id,user_id" }
     );
   return !error;

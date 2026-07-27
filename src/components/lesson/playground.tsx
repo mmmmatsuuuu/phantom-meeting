@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useRef, useEffect } from "react";
-import type { CodeSnippet } from "@/lib/db/code-snippets";
+import type { CodeSnippet, StudentCodeStateEntry } from "@/lib/db/code-snippets";
 import CodeEditor from "@/components/lesson/code-editor";
 
 const LANGUAGE_LABELS: Record<CodeSnippet["language"], string> = {
@@ -13,7 +13,7 @@ const AUTOSAVE_DELAY_MS = 1000;
 
 type Props = {
   snippets: CodeSnippet[];
-  initialCodeStates: Record<string, string>;
+  initialCodeStates: Record<string, StudentCodeStateEntry>;
   onSaveToMemo: (content: Record<string, unknown>) => void;
   onClose?: () => void;
 };
@@ -27,11 +27,15 @@ export default function Playground({
   const [activeId, setActiveId] = useState<string | null>(snippets[0]?.id ?? null);
   const [codeBySnippet, setCodeBySnippet] = useState<Record<string, string>>(() =>
     Object.fromEntries(
-      snippets.map((s) => [s.id, initialCodeStates[s.id] ?? s.initial_code])
+      snippets.map((s) => [s.id, initialCodeStates[s.id]?.code ?? s.initial_code])
+    )
+  );
+  const [outputBySnippet, setOutputBySnippet] = useState<Record<string, string>>(() =>
+    Object.fromEntries(
+      snippets.map((s) => [s.id, initialCodeStates[s.id]?.lastOutput ?? ""])
     )
   );
   const [running, setRunning] = useState(false);
-  const [output, setOutput] = useState("");
   const [runError, setRunError] = useState<string | null>(null);
   const saveTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
@@ -42,28 +46,40 @@ export default function Playground({
   }, []);
 
   const activeSnippet = snippets.find((s) => s.id === activeId) ?? null;
+  const output = activeId ? (outputBySnippet[activeId] ?? "") : "";
+
+  const persistState = (snippetId: string, code: string, lastOutput: string) => {
+    fetch(`/api/code-snippets/${snippetId}/state`, {
+      method: "PUT",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ code, lastOutput: lastOutput || null }),
+    }).catch(() => {});
+  };
 
   const handleChange = (snippetId: string, value: string) => {
     setCodeBySnippet((prev) => ({ ...prev, [snippetId]: value }));
 
     if (saveTimerRef.current) clearTimeout(saveTimerRef.current);
     saveTimerRef.current = setTimeout(() => {
-      fetch(`/api/code-snippets/${snippetId}/state`, {
-        method: "PUT",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ code: value }),
-      }).catch(() => {});
+      persistState(snippetId, value, outputBySnippet[snippetId] ?? "");
     }, AUTOSAVE_DELAY_MS);
   };
 
   const handleRun = async () => {
     if (!activeSnippet || running) return;
-    const code = codeBySnippet[activeSnippet.id] ?? "";
+    const snippetId = activeSnippet.id;
+    const code = codeBySnippet[snippetId] ?? "";
     setRunning(true);
-    setOutput("");
+    setOutputBySnippet((prev) => ({ ...prev, [snippetId]: "" }));
     setRunError(null);
 
-    const onOutput = (text: string) => setOutput((prev) => prev + text);
+    // React state の更新は非同期のため、実行終了後にDBへ保存する値は
+    // ローカル変数に直接蓄積して確定させる
+    let fullOutput = "";
+    const onOutput = (text: string) => {
+      fullOutput += text;
+      setOutputBySnippet((prev) => ({ ...prev, [snippetId]: fullOutput }));
+    };
 
     try {
       if (activeSnippet.language === "python") {
@@ -77,23 +93,39 @@ export default function Playground({
       }
     } finally {
       setRunning(false);
+      // コード自体は自動保存済みの可能性が高いが、実行結果と一致させるため
+      // 直近のコードと合わせて確定保存する（デバウンス待ちをキャンセル）
+      if (saveTimerRef.current) clearTimeout(saveTimerRef.current);
+      persistState(snippetId, code, fullOutput);
     }
   };
 
   const handleSaveToMemo = () => {
     if (!activeSnippet) return;
     const code = codeBySnippet[activeSnippet.id] ?? "";
-    const doc = {
-      type: "doc",
-      content: [
-        {
-          type: "codeBlock",
-          attrs: { language: activeSnippet.language },
-          content: code ? [{ type: "text", text: code }] : [],
-        },
-      ],
-    };
-    onSaveToMemo(doc);
+    const result = outputBySnippet[activeSnippet.id] ?? "";
+
+    const content: Record<string, unknown>[] = [
+      {
+        type: "codeBlock",
+        attrs: { language: activeSnippet.language },
+        content: code ? [{ type: "text", text: code }] : [],
+      },
+    ];
+
+    if (result.trim()) {
+      content.push({
+        type: "paragraph",
+        content: [{ type: "text", text: "実行結果:" }],
+      });
+      content.push({
+        type: "codeBlock",
+        attrs: { language: null },
+        content: [{ type: "text", text: result.trim() }],
+      });
+    }
+
+    onSaveToMemo({ type: "doc", content });
   };
 
   return (
@@ -125,7 +157,6 @@ export default function Playground({
                 key={s.id}
                 onClick={() => {
                   setActiveId(s.id);
-                  setOutput("");
                   setRunError(null);
                 }}
                 className={`px-3 py-1 rounded text-xs font-medium transition-colors ${

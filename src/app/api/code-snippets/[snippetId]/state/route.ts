@@ -10,12 +10,12 @@ export async function PUT(req: NextRequest, { params }: Params) {
   const { user, errorResponse } = await requireUser();
   if (errorResponse) return errorResponse;
 
-  const body = (await req.json()) as { code?: string };
+  const body = (await req.json()) as { code?: string; lastOutput?: string | null };
   if (typeof body.code !== "string") {
     return NextResponse.json({ data: null, error: "code is required" }, { status: 400 });
   }
 
-  const ok = await saveStudentCodeState(snippetId, user.id, body.code);
+  const ok = await saveStudentCodeState(snippetId, user.id, body.code, body.lastOutput ?? null);
   if (!ok) {
     return NextResponse.json(
       { data: null, error: "Failed to save code" },

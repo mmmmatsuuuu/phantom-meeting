@@ -153,6 +153,7 @@ subjects
 | snippet_id | uuid | FK → code_snippets |
 | user_id | uuid | FK → profiles |
 | code | text | 生徒が編集した現在のコード |
+| last_output | text | nullable、直近の実行結果（出力・エラーを含む）。実行のたびに上書き |
 | updated_at | timestamptz | |
 
 `unique(snippet_id, user_id)`。本人のみ読み書き可（RLS）。

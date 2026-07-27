@@ -137,12 +137,12 @@
 - **目的**：プログラミング単元の「PRIMM」方式授業を支援。動画内で登場したコード例をその場で実行・改変できる
 - レッスンページのメモ欄に「📝 メモ ⇄ 💻 コード」の切り替えタブ（`lessons.enable_playground` が有効なレッスンのみ表示）
 - 教師は `/teacher/lessons/[lessonId]/code-snippets` で初期コード（複数・タイトル/言語/コード）を追加・編集・削除・並び替え。レッスン登録時にもまとめて登録可能
-- 生徒側：CodeMirror 6 エディタでスニペットごとにタブ切り替え、編集内容は自動保存（`student_code_states`）
+- 生徒側：CodeMirror 6 エディタでスニペットごとにタブ切り替え、編集内容・直近の実行結果は自動保存（`student_code_states.code` / `.last_output`）しページ再訪時も復元される
 - **実行**：ブラウザ内完結
-  - Python: Pyodide（jsDelivr CDNから読み込み）。`input()` は `window.prompt()` に委譲
+  - Python: Pyodide（jsDelivr CDNから読み込み。npmパッケージ本体はNode.js向けの動的requireを含みバンドル不可なため、CDN上の `pyodide.js` を `<script>` タグで読み込み `window.loadPyodide` を呼び出す方式。バージョンは `pyodide/package.json` から取得しCDN URLと同期）。`input()` は `window.prompt()` に委譲
   - JavaScript: サンドボックス化 `<iframe>`（`allow-scripts allow-modals`）内で実行。`prompt()` はそのまま利用可能
   - 標準ライブラリの範囲のみ（pip install不可）、無限ループ等の強制中断機能はなし
-- **コードをメモに保存**：プレイグラウンドのボタンからメモタブに切り替え、コードブロック挿入済みのtiptapエディタを開く。追記して保存 / そのまま保存を選べる
+- **コードをメモに保存**：プレイグラウンドのボタンからメモタブに切り替え、コード＋直近の実行結果（あれば）をコードブロックとして挿入済みのtiptapエディタを開く。追記して保存 / そのまま保存を選べる
 
 ## 18. いいね機能（見送り）
 - 検討の結果、現時点では導入しない方針

@@ -4,7 +4,7 @@ import { useState, useRef } from "react";
 import type { YouTubePlayer } from "react-youtube";
 import type { Question } from "@/lib/db/contents";
 import type { QuizWithQuestions } from "@/lib/db/quizzes";
-import type { CodeSnippet } from "@/lib/db/code-snippets";
+import type { CodeSnippet, StudentCodeStateEntry } from "@/lib/db/code-snippets";
 import LessonTabs from "@/components/lesson/lesson-tabs";
 import LessonSidePanel from "@/components/lesson/lesson-side-panel";
 import PostList from "@/components/lesson/post-list";
@@ -21,7 +21,7 @@ type Props = {
   otherReviewCount?: number;
   enablePlayground?: boolean;
   codeSnippets?: CodeSnippet[];
-  initialCodeStates?: Record<string, string>;
+  initialCodeStates?: Record<string, StudentCodeStateEntry>;
 };
 
 export default function LessonContent({

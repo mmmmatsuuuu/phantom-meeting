@@ -456,16 +456,22 @@ begin
       '{"type":"doc","content":[{"type":"codeBlock","attrs":{"language":"python"},"content":[{"type":"text","text":"name = \"わたし\"\nprint(name, \"です\")"}]},{"type":"paragraph","content":[{"type":"text","text":"変数の中身をprintで確認できるのが便利。"}]}]}'::jsonb,
       12);
 
-  -- プレイグラウンドの編集内容（保存済みコード）
-  insert into public.student_code_states (snippet_id, user_id, code) values
+  -- プレイグラウンドの編集内容（保存済みコード・直近の実行結果）
+  insert into public.student_code_states (snippet_id, user_id, code, last_output) values
     ('00000000-0000-0000-0000-000000005001', s1, $code$name = "わたしの名前"
 age = 15
 print(name, "さんは", age, "歳です")
 print("よろしくお願いします")
-$code$),
+$code$,
+$out$わたしの名前さんは15歳です
+よろしくお願いします
+$out$),
     ('00000000-0000-0000-0000-000000005002', s2, $code$const name = "テスト太郎";
 const age = 16;
 console.log(name + "さんは" + age + "歳です");
 console.log("プログラミング楽しい！");
-$code$);
+$code$,
+$out$テスト太郎さんは16歳です
+プログラミング楽しい！
+$out$);
 end $$;
