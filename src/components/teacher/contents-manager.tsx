@@ -334,6 +334,12 @@ export default function ContentsManager({ initialSubjects }: Props) {
                       >
                         📝 小テスト
                       </Link>
+                      <Link
+                        href={`/teacher/lessons/${lesson.id}/code-snippets`}
+                        className="text-xs px-2 py-1 rounded border hover:bg-muted transition-colors"
+                      >
+                        💻 コード
+                      </Link>
                       <button
                         onClick={() =>
                           handleDeleteLesson(lesson.id, unit.id, subject.id)

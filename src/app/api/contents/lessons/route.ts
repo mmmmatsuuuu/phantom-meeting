@@ -11,6 +11,8 @@ export async function POST(request: NextRequest) {
     title: string;
     youtubeUrl: string;
     questions: string[];
+    enablePlayground?: boolean;
+    codeSnippets?: { title: string; language: "python" | "javascript"; initialCode: string }[];
   };
 
   if (!body.unitId || !body.title || !body.youtubeUrl) {
@@ -25,6 +27,8 @@ export async function POST(request: NextRequest) {
     title: body.title,
     youtubeUrl: body.youtubeUrl,
     questions: body.questions ?? [],
+    enablePlayground: body.enablePlayground ?? false,
+    codeSnippets: body.codeSnippets ?? [],
   });
 
   if (!data) {

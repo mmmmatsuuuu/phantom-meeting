@@ -60,7 +60,7 @@ Supabase 無料枠の Auth API 呼び出し回数を抑えるため、認証確�
 ```
 
 - 左：動画・小テストをタブで切り替え
-- 右：自分のメモ（常時表示、タブ切り替えで消えない）
+- 右：自分のメモ（常時表示、タブ切り替えで消えない）。`lessons.enable_playground` が有効なレッスンでは「📝 メモ ⇄ 💻 コード」の切り替えタブが上部に表示される（コーディングプレイグラウンド、Phase 21）
 - 左下：クラスに共有されたメモの一覧（小テスト完了後にアンロック）
 - タイトル直下に生徒本人の学習状況ステータスバー（直近得点率・受験回数・メモ件数）を表示
 
@@ -85,7 +85,8 @@ src/
 │   │       │   ├── new/page.tsx                         # レッスン登録
 │   │       │   └── [lessonId]/
 │   │       │       ├── memos/page.tsx                   # 生徒メモ閲覧
-│   │       │       └── quiz/new/page.tsx                # 小テスト作成
+│   │       │       ├── quiz/new/page.tsx                # 小テスト作成
+│   │       │       └── code-snippets/page.tsx           # コーディングプレイグラウンド管理（有効化・初期コード）
 │   │       ├── analytics/                                # 分析（タブ統合）
 │   │       │   ├── layout.tsx                            # タブ切り替えUI（単元別／レッスン別／生徒別）
 │   │       │   ├── page.tsx                               # /analytics/units へリダイレクト
@@ -105,6 +106,9 @@ src/
 │   │   ├── quiz-results/page.tsx                        # 小テスト受験履歴一覧
 │   │   └── profile/page.tsx                             # プロフィール編集
 │   ├── api/
+│   │   ├── code-snippets/[snippetId]/
+│   │   │   ├── route.ts                                 # 初期コード更新・削除（teacher/admin）
+│   │   │   └── state/route.ts                           # 生徒の編集内容の保存（本人のみ）
 │   │   ├── contents/
 │   │   │   ├── lessons/route.ts                         # レッスン一覧・作成
 │   │   │   ├── lessons/[lessonId]/route.ts              # レッスン更新・削除
@@ -115,6 +119,9 @@ src/
 │   │   ├── images/
 │   │   │   ├── upload/route.ts                          # ImageKit アップロード（認証済みのみ）
 │   │   │   └── [fileId]/route.ts                        # ImageKit 削除
+│   │   ├── lessons/[lessonId]/code-snippets/
+│   │   │   ├── route.ts                                 # 初期コード追加（teacher/admin）
+│   │   │   └── [snippetId]/move/route.ts                # 初期コードの並び替え（teacher/admin）
 │   │   ├── memos/
 │   │   │   ├── route.ts                                 # メモ一覧・作成
 │   │   │   └── [memoId]/route.ts                        # メモ削除
@@ -147,7 +154,10 @@ src/
 │   │   ├── lesson-content.tsx
 │   │   ├── lesson-tabs.tsx
 │   │   ├── lesson-status-bar.tsx                        # 生徒本人の学習状況バー
-│   │   ├── memo-section.tsx                             # tiptap メモエディタ
+│   │   ├── lesson-side-panel.tsx                        # メモ/コード切り替えタブ（enable_playgroundで出し分け）
+│   │   ├── playground.tsx                               # コーディングプレイグラウンド本体（実行・コンソール・メモに保存）
+│   │   ├── code-editor.tsx                              # CodeMirror 6 ラッパー
+│   │   ├── memo-section.tsx                             # tiptap メモエディタ（prefillContentでコード事前入力に対応）
 │   │   ├── memo-toolbar.tsx
 │   │   ├── post-list.tsx                                # 共有投稿一覧（Realtime）
 │   │   ├── question-section.tsx                         # 発問
@@ -182,6 +192,7 @@ src/
 │       ├── student-picker.tsx                           # 生徒別分析：検索付き生徒リスト
 │       ├── student-memo-viewer.tsx                      # 生徒メモ閲覧（アコーディオン）
 │       ├── students-table.tsx                           # 生徒一覧テーブル
+│       ├── code-snippets-manager.tsx                     # コーディングプレイグラウンド管理（有効化・初期コードCRUD）
 │       └── data-export.tsx                              # CSV エクスポートUI
 ├── lib/
 │   ├── supabase/
@@ -192,12 +203,15 @@ src/
 │   ├── api/
 │   │   └── auth.ts                                      # requireUser / requireTeacher（API Route 用認証ガード）
 │   ├── db/                                              # データアクセス層
+│   │   ├── code-snippets.ts                             # 初期コードCRUD・並び替え・生徒の編集内容の保存
 │   │   ├── contents.ts                                  # 科目・単元・レッスン・発問
 │   │   ├── memos.ts                                     # メモ CRUD（生徒・教師向け）・メモ件数集計
 │   │   ├── posts.ts                                     # 共有投稿 CRUD
 │   │   ├── quizzes.ts                                   # 小テスト・提出記録・分析・エクスポート集計
 │   │   └── users.ts                                     # プロフィール・生徒一覧
 │   ├── student-dashboard.ts                             # 生徒ダッシュボード・個人詳細の集計ロジック（純粋関数）
+│   ├── pyodide-runner.ts                                # Pyodide による Python 実行（jsDelivr CDNから読み込み）
+│   ├── js-runner.ts                                     # サンドボックスiframeによる JavaScript 実行
 │   ├── tiptap/
 │   │   └── resizable-image-extension.ts                 # 画像リサイズ拡張
 │   ├── tiptap-utils.ts                                  # tiptap JSON ⇔ プレーンテキスト変換

@@ -4,8 +4,9 @@ import { useState, useRef } from "react";
 import type { YouTubePlayer } from "react-youtube";
 import type { Question } from "@/lib/db/contents";
 import type { QuizWithQuestions } from "@/lib/db/quizzes";
+import type { CodeSnippet, StudentCodeStateEntry } from "@/lib/db/code-snippets";
 import LessonTabs from "@/components/lesson/lesson-tabs";
-import MemoSection from "@/components/lesson/memo-section";
+import LessonSidePanel from "@/components/lesson/lesson-side-panel";
 import PostList from "@/components/lesson/post-list";
 
 type Props = {
@@ -18,6 +19,9 @@ type Props = {
   initialIsCompleted: boolean;
   /** このレッスン以外で要復習のレッスン数（提出後ナッジ用） */
   otherReviewCount?: number;
+  enablePlayground?: boolean;
+  codeSnippets?: CodeSnippet[];
+  initialCodeStates?: Record<string, StudentCodeStateEntry>;
 };
 
 export default function LessonContent({
@@ -29,6 +33,9 @@ export default function LessonContent({
   currentUserRole,
   initialIsCompleted,
   otherReviewCount = 0,
+  enablePlayground = false,
+  codeSnippets = [],
+  initialCodeStates = {},
 }: Props) {
   const [memoVisible, setMemoVisible] = useState(true);
   const isTeacherOrAdmin = currentUserRole === "teacher" || currentUserRole === "admin";
@@ -88,8 +95,11 @@ export default function LessonContent({
 
         {memoVisible && (
           <div className="col-span-2">
-            <MemoSection
+            <LessonSidePanel
               lessonId={lessonId}
+              enablePlayground={enablePlayground}
+              snippets={codeSnippets}
+              initialCodeStates={initialCodeStates}
               getCurrentTime={getCurrentTime}
               seekTo={seekTo}
               onClose={() => setMemoVisible(false)}

@@ -35,6 +35,8 @@ type Props = {
   getCurrentTime: () => number | null;
   seekTo: (seconds: number) => void;
   onClose?: () => void;
+  /** プレイグラウンドの「メモに保存」から渡される事前入力コンテンツ */
+  prefillContent?: { content: Record<string, unknown>; key: number } | null;
 };
 
 function formatTimestamp(seconds: number): string {
@@ -52,7 +54,13 @@ function formatDate(dateString: string): string {
   });
 }
 
-export default function MemoSection({ lessonId, getCurrentTime, seekTo, onClose }: Props) {
+export default function MemoSection({
+  lessonId,
+  getCurrentTime,
+  seekTo,
+  onClose,
+  prefillContent,
+}: Props) {
   const [timestamp, setTimestamp] = useState<number | null>(null);
   const [memos, setMemos] = useState<Memo[]>([]);
   const [saveState, setSaveState] = useState<"idle" | "saving" | "saved">("idle");
@@ -109,6 +117,16 @@ export default function MemoSection({ lessonId, getCurrentTime, seekTo, onClose 
       })
       .catch(() => {});
   }, [lessonId]);
+
+  // プレイグラウンドの「メモに保存」から渡された内容をエディタに反映する
+  useEffect(() => {
+    if (editor && prefillContent) {
+      editor.commands.setContent(prefillContent.content);
+      editor.commands.focus("end");
+      syncEditorState(editor);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [editor, prefillContent?.key]);
 
   const handleTimestamp = () => {
     const t = getCurrentTime();

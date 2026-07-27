@@ -1049,10 +1049,18 @@ teacher ロール以外がエクスポートできないこと、出力データ
 ### 設計方針
 
 - **実行環境はブラウザ内完結**とする（サーバー側での任意コード実行は無料枠方針・セキュリティの両面でコストが高いため採用しない）
-  - **Python**: [Pyodide](https://pyodide.org/)（WebAssembly版CPython）をメインスレッドで動作させ `runPythonAsync` で実行
+  - **Python**: [Pyodide](https://pyodide.org/)（WebAssembly版CPython）をメインスレッドで動作させ `runPythonAsync` で実行。WASM本体・標準ライブラリは jsDelivr の公式CDNから取得（バージョンは pyodide パッケージの `version` export から動的に取得しCDNとの不一致を防ぐ）
   - **JavaScript**: サンドボックス化した `<iframe>` 内で実行
   - Web Worker + SharedArrayBuffer による同期入力方式は採用しない。COEPヘッダーが必要になり、同一ページに埋め込むYouTube動画と衝突するリスクが高いため
-- **`input()` / `prompt()` 対応**：組み込み関数をフックし、呼び出された時点でコンソール内に入力欄を表示 → 生徒の入力送信でPromiseが解決され実行再開する非同期方式（メインスレッドをブロックしない）
+- **`input()` / `prompt()` 対応**：PythonとJavaScriptで異なる方式を採用する
+  - **Python**：コンソール内のテキストボックスで入力できる（カスタムUI・ノンブロッキング）
+    - 生徒のコードを実行前に Python の `ast` モジュールで構文木ごと自動変換し、`input(...)` の呼び出しをすべて `await input(...)` に書き換える。`input` 自体はテキストボックスの送信を待つ非同期関数に差し替える
+    - Worker + SharedArrayBuffer を使わずに実現できる（`await` はPythonの言語機能として呼び出しスタックを一時的に手放すため、メインスレッドをブロックしない。Trinket等の教育向けブラウザPython実行環境で使われる手法と同様）
+    - 生徒が書くコードは通常どおりの `input(...)` のままでよい（自動変換されるため書き方を変える必要はない）
+  - **JavaScript**：`window.prompt()` に委譲する（現状維持）
+    - サンドボックスiframeの `sandbox` 属性に `allow-modals` を付与し、ユーザーコードの `prompt()` 呼び出しをそのまま許可（`allow-same-origin` は付与しないため親ページのCookie・DOMには到達できない）
+    - JavaScriptにはPythonの `ast` に相当する構文解析がブラウザ標準搭載されておらず、同様の自動変換には外部パーサーの追加が必要になるため、素朴なネイティブダイアログのままとした
+  - 参考：Web Worker + SharedArrayBuffer による同期入力方式はいずれの言語でも不採用。COEPヘッダーが必要になり、同一ページに埋め込むYouTube動画と衝突するリスクが高いため
 - **エディタ**：CodeMirror 6を採用（Monaco Editorより軽量で、生徒の端末（Chromebook等）でも動作が軽い）
 - **MVPでの割り切り**：標準ライブラリの範囲のみ（pip install不可）、無限ループ等の強制中断機能はなし（暴走時はページ再読み込みで対応）
 
@@ -1063,19 +1071,21 @@ teacher ロール以外がエクスポートできないこと、出力データ
 ALTER TABLE public.lessons
   ADD COLUMN enable_playground boolean NOT NULL DEFAULT false;
 
--- 教師が登録する初期コード
+-- 教師が登録する初期コード（language は既存の enum 命名慣習に合わせ Postgres enum 型で定義）
+CREATE TYPE public.code_language AS ENUM ('python', 'javascript');
+
 CREATE TABLE public.code_snippets (
   id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
   lesson_id uuid NOT NULL REFERENCES public.lessons(id) ON DELETE CASCADE,
-  title text NOT NULL,              -- 例:「例1」「例2」
-  language text NOT NULL,           -- 'python' | 'javascript'
+  title text NOT NULL,                       -- 例:「例1」「例2」
+  language public.code_language NOT NULL,
   initial_code text NOT NULL,
   "order" int NOT NULL,
   created_at timestamptz NOT NULL DEFAULT now()
 );
 
 -- 生徒ごとの編集内容の保存（memos と同様、本人のみ読み書き可）
-CREATE TABLE public.student_code_states (
+CREATE TABLE public.code_states (
   id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
   snippet_id uuid NOT NULL REFERENCES public.code_snippets(id) ON DELETE CASCADE,
   user_id uuid NOT NULL REFERENCES public.profiles(id) ON DELETE CASCADE,
@@ -1089,39 +1099,42 @@ CREATE TABLE public.student_code_states (
 
 - レッスンページ：メモ欄の上に「📝 メモ ⇄ 💻 コード」の切り替えタブを追加（`enable_playground` が true のレッスンのみ表示）
 - プレイグラウンド内：「例1」「例2」のタブ、それぞれにエディタ＋実行ボタン＋コンソール（出力・入力欄）
-- **コードをメモに保存するボタン**：プレイグラウンド内に設置。押すと自動的にメモタブへ切り替わり、現在のコードをコードブロックとして挿入済みのtiptapエディタが開く
+- **コードをメモに保存するボタン**：プレイグラウンド内に設置。押すと自動的にメモタブへ切り替わり、現在のコード＋直近の実行結果（あれば）をコードブロックとして挿入済みのtiptapエディタが開く
   - 生徒はそのまま追記せず保存するか、コメントを追記してから保存するかを選べる（既存の `POST /api/memos` をそのまま利用、新規APIは不要）
-  - コード → tiptap JSON への変換は既存の `lib/tiptap-utils.ts` の変換ロジックを拡張して対応（コードブロックノードとして挿入）
+  - コード・実行結果 → tiptap JSON への変換はPlayground側で直接組み立てる（コードブロックノード2つ：コード／実行結果として挿入）
 - 教師側：レッスン登録・編集画面に「プレイグラウンドを有効にする」チェックボックスと、初期コードの追加・編集・削除・並び替えUI
+
+> 実装は完了。**開発環境での動作確認（ブラウザでの手動テスト）はこれから** — 確認が取れてから main にマージする。
 
 ### 21a: データ基盤
 
-- [ ] マイグレーション追加（`lessons.enable_playground`・`code_snippets`・`student_code_states`、RLS含む）
-- [ ] `lib/db/` にコードスニペットCRUD関数を追加
-- [ ] レッスン登録・編集画面に「プレイグラウンドを有効にする」チェックボックスと初期コード管理UI（追加・編集・削除・並び替え）を追加
+- [x] マイグレーション追加（`lessons.enable_playground`・`code_snippets`・`code_states`、RLS含む）
+- [x] `lib/db/` にコードスニペットCRUD関数を追加
+- [x] レッスン登録・編集画面に「プレイグラウンドを有効にする」チェックボックスと初期コード管理UI（追加・編集・削除・並び替え）を追加
 - この時点ではコード実行機能は含まない（データモデルとteacher側UIの確定が目的）
 
 ### 21b: プレイグラウンドUIの土台
 
-- [ ] CodeMirror 6 を導入
-- [ ] レッスンページのメモ/コード切り替えタブを実装
-- [ ] スニペットタブ（「例1」「例2」…）とエディタ表示
-- [ ] 生徒の編集内容を `student_code_states` に自動保存（実行ボタンはまだ動作しない）
-- [ ] 「コードをメモに保存」ボタンを実装
+- [x] CodeMirror 6 を導入
+- [x] レッスンページのメモ/コード切り替えタブを実装
+- [x] スニペットタブ（「例1」「例2」…）とエディタ表示
+- [x] 生徒の編集内容を `code_states` に自動保存（デバウンス1秒）
+- [x] 直近の実行結果を `code_states.last_output` に保存（実行完了時に上書き。履歴は持たないため行数は増えない）
+- [x] 「コードをメモに保存」ボタンを実装
   - 押下時：メモタブに切り替え、現在のコードをコードブロックとして挿入済みの状態でtiptapエディタを開く
   - 生徒はそのまま保存 / コメントを追記してから保存 のどちらかを選べる
 
 ### 21c: Python実行
 
-- [ ] Pyodide統合（メインスレッド・`runPythonAsync`）
-- [ ] `print()` 出力・エラー表示のコンソール実装
-- [ ] `input()` の非同期フック対応（コンソール内入力欄）
+- [x] Pyodide統合（メインスレッド・`runPythonAsync`、jsDelivr CDNから`<script>`タグ経由で読み込み。npmパッケージ本体はバンドラー非対応のため）
+- [x] `print()` 出力・エラー表示のコンソール実装（`setStdout`/`setStderr`）
+- [x] `input()` 対応：`ast`モジュールによる自動変換（`input()`→`await input()`）＋コンソール内テキストボックスでの入力（実行ごとに空のグローバル辞書で変数の引き継ぎを防止）
 
 ### 21d: JavaScript実行
 
-- [ ] サンドボックス化 `<iframe>` 内での実行
-- [ ] `console.log()` 出力・エラー表示（`postMessage` で親ページのコンソールUIに転送）
-- [ ] `prompt()` の非同期フック対応（Python側と統一されたUI）
+- [x] サンドボックス化 `<iframe>`（`sandbox="allow-scripts allow-modals"`）内での実行
+- [x] `console.log()`/`console.error()` 出力・実行時エラーの表示（`postMessage` で親ページのコンソールUIに転送、10秒タイムアウト付き）
+- [x] `prompt()` 対応（iframeに `allow-modals` を付与しユーザーコードの `prompt()` 呼び出しをそのまま許可）
 
 ---
 
@@ -1171,10 +1184,11 @@ CREATE TABLE public.student_code_states (
 [✅] Phase 20b: 教師ハブ・メニュー整理
 [✅] Phase 20c: 分析タブ統合＋レッスン別分析
 [✅] Phase 20d: 生徒別分析
-[ ] Phase 21a:  コーディングプレイグラウンド - データ基盤
-[ ] Phase 21b:  コーディングプレイグラウンド - UIの土台
-[ ] Phase 21c:  コーディングプレイグラウンド - Python実行
-[ ] Phase 21d:  コーディングプレイグラウンド - JavaScript実行
+[--] Phase 21a:  コーディングプレイグラウンド - データ基盤（実装済み・開発環境で確認中）
+[--] Phase 21b:  コーディングプレイグラウンド - UIの土台（実装済み・開発環境で確認中）
+[--] Phase 21c:  コーディングプレイグラウンド - Python実行（実装済み・開発環境で確認中）
+[--] Phase 21d:  コーディングプレイグラウンド - JavaScript実行（実装済み・開発環境で確認中）
 ```
 
-Phase 20（導線改善と分析拡充）は完了。次の着手は **Phase 21a: コーディングプレイグラウンド - データ基盤**。
+Phase 20（導線改善と分析拡充）は完了。
+Phase 21（コーディングプレイグラウンド）は 21a〜21d すべて実装済み。1つのブランチにまとめ、開発環境での動作確認が取れてから main に一括マージする方針（フェーズ途中の中途半端な状態を本番に出さないため）。
