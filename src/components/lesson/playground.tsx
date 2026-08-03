@@ -3,6 +3,16 @@
 import { useState, useRef, useEffect } from "react";
 import type { CodeSnippet, StudentCodeStateEntry } from "@/lib/db/code-snippets";
 import CodeEditor from "@/components/lesson/code-editor";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 
 const LANGUAGE_LABELS: Record<CodeSnippet["language"], string> = {
   python: "Python",
@@ -35,6 +45,9 @@ export default function Playground({
       snippets.map((s) => [s.id, initialCodeStates[s.id]?.lastOutput ?? ""])
     )
   );
+  // 初期コードへのリセット時にエディタを強制再マウントさせるためのバージョンカウンタ（key に含める）
+  const [resetVersionBySnippet, setResetVersionBySnippet] = useState<Record<string, number>>({});
+  const [resetConfirmOpen, setResetConfirmOpen] = useState(false);
   const [running, setRunning] = useState(false);
   const [runError, setRunError] = useState<string | null>(null);
   const [pendingInput, setPendingInput] = useState<{
@@ -122,6 +135,20 @@ export default function Playground({
     }
   };
 
+  const confirmReset = () => {
+    if (!activeSnippet) return;
+
+    const snippetId = activeSnippet.id;
+    const initialCode = activeSnippet.initial_code;
+
+    if (saveTimerRef.current) clearTimeout(saveTimerRef.current);
+    setCodeBySnippet((prev) => ({ ...prev, [snippetId]: initialCode }));
+    setOutputBySnippet((prev) => ({ ...prev, [snippetId]: "" }));
+    setRunError(null);
+    setResetVersionBySnippet((prev) => ({ ...prev, [snippetId]: (prev[snippetId] ?? 0) + 1 }));
+    persistState(snippetId, initialCode, "");
+  };
+
   const handleSaveToMemo = () => {
     if (!activeSnippet) return;
     const code = codeBySnippet[activeSnippet.id] ?? "";
@@ -197,7 +224,7 @@ export default function Playground({
           </p>
 
           <CodeEditor
-            key={activeSnippet.id}
+            key={`${activeSnippet.id}-${resetVersionBySnippet[activeSnippet.id] ?? 0}`}
             language={activeSnippet.language}
             initialValue={codeBySnippet[activeSnippet.id] ?? ""}
             onChange={(value) => handleChange(activeSnippet.id, value)}
@@ -216,6 +243,13 @@ export default function Playground({
               className="px-3 py-2 text-sm rounded-md border hover:bg-muted transition-colors"
             >
               📝 メモに保存
+            </button>
+            <button
+              onClick={() => setResetConfirmOpen(true)}
+              className="px-3 py-2 text-sm rounded-md border hover:bg-muted transition-colors"
+              title="教師が配信した初期コードに戻す"
+            >
+              🔄 初期コードにリセット
             </button>
           </div>
 
@@ -258,6 +292,21 @@ export default function Playground({
           </div>
         </>
       )}
+
+      <AlertDialog open={resetConfirmOpen} onOpenChange={setResetConfirmOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>初期コードにリセットしますか？</AlertDialogTitle>
+            <AlertDialogDescription>
+              このスニペットのコードを、教師が配信した初期コードに戻します。現在の編集内容と実行結果は失われます。この操作は取り消せません。
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>キャンセル</AlertDialogCancel>
+            <AlertDialogAction onClick={confirmReset}>リセットする</AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }
