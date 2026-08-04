@@ -1154,8 +1154,11 @@ CREATE TABLE public.code_states (
 
 ### 22b: input()に入力した値がトランスクリプトに残らない問題
 
-- [ ] `src/components/lesson/playground.tsx` の `requestInput`/`submitPendingInput` は、プロンプト文字列は出力に追記するが生徒が実際に入力した値自体は出力ストリームに反映されない
-- [ ] 「メモに保存」時に何を入力したか分からなくなり、メモの価値が下がるため対応が必要
+- [x] 課題：`src/components/lesson/playground.tsx` の `requestInput`/`submitPendingInput` は、プロンプト文字列は出力に追記するが生徒が実際に入力した値自体は出力ストリームに反映されず、「メモに保存」時に何を入力したか分からなくなっていた
+- [x] 対応：`submitPendingInput` で送信した入力値を、実行中の `onOutput`（ref経由で参照）にエコーしてからPromiseを解決するよう修正。プロンプト文言＋入力値がそのままコンソール（＝メモ保存内容）に残るようにした
+- [x] ついでに、Cmd/Ctrl + Enter でコード実行できるショートカットを追加（CodeMirrorの `keymap` に `Mod-Enter` を割り当て。Macは⌘、Windows/LinuxはCtrlに自動対応）
+  - 注意点：`basicSetup` の `defaultKeymap` が元々 `Mod-Enter` を「空行を挿入」に割り当てており、後から追加しただけでは呼ばれない。`Prec.highest()` で明示的に優先させる必要がある
+  - ついでに `indentWithTab`（`@codemirror/commands`）も追加。CodeMirrorはアクセシビリティ上の理由でTabキーを既定でバインドしておらず（フォーカス移動に委ねる設計）、コード編集用途では明示的な追加が必要
 
 ### 22c: 教師から生徒のプレイグラウンド利用状況が見えない問題
 
@@ -1215,7 +1218,7 @@ CREATE TABLE public.code_states (
 [✅] Phase 21c:  コーディングプレイグラウンド - Python実行
 [✅] Phase 21d:  コーディングプレイグラウンド - JavaScript実行
 [✅] Phase 22a:   コーディングプレイグラウンド - Python無限ループ対策
-[ ] Phase 22b:   コーディングプレイグラウンド - input()入力値のトランスクリプト反映
+[✅] Phase 22b:   コーディングプレイグラウンド - input()入力値のトランスクリプト反映
 [ ] Phase 22c:   コーディングプレイグラウンド - 教師向け利用状況可視化
 ```
 
