@@ -20,6 +20,15 @@ const LANGUAGE_LABELS: Record<CodeSnippet["language"], string> = {
 };
 
 const AUTOSAVE_DELAY_MS = 1000;
+// 無限ループ等で大量出力された場合に文字列肥大化・描画負荷を防ぐための上限
+const MAX_OUTPUT_CHARS = 8000;
+
+// Pythonの例外はTraceback（内部の変換処理由来のフレームを含む）付きで返ってくるため、
+// 生徒に伝わりやすいよう最後の行（例外の型とメッセージ）だけを抜き出す
+function formatRunError(message: string): string {
+  const lines = message.trim().split("\n").filter((line) => line.trim() !== "");
+  return lines.length > 0 ? lines[lines.length - 1] : message;
+}
 
 type Props = {
   snippets: CodeSnippet[];
@@ -112,6 +121,10 @@ export default function Playground({
     let fullOutput = "";
     const onOutput = (text: string) => {
       fullOutput += text;
+      // 無限ループのprint連発などで際限なく肥大化しないよう、直近分のみ保持する
+      if (fullOutput.length > MAX_OUTPUT_CHARS) {
+        fullOutput = "…（出力が多いため一部省略）\n" + fullOutput.slice(-MAX_OUTPUT_CHARS);
+      }
       setOutputBySnippet((prev) => ({ ...prev, [snippetId]: fullOutput }));
     };
 
@@ -261,11 +274,15 @@ export default function Playground({
                 : "bg-muted/40 text-foreground"
             }`}
           >
-            {output || (!pendingInput && (
+            {output}
+            {runError && (
+              <p className="mt-1 font-semibold">⚠ {formatRunError(runError)}</p>
+            )}
+            {!output && !runError && !pendingInput && (
               <span className="text-muted-foreground">
                 「実行」を押すと結果がここに表示されます
               </span>
-            ))}
+            )}
             {pendingInput && (
               <form
                 onSubmit={(e) => {
