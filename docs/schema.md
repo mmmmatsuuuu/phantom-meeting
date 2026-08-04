@@ -156,4 +156,4 @@ subjects
 | last_output | text | nullable、直近の実行結果（出力・エラーを含む）。実行のたびに上書き |
 | updated_at | timestamptz | |
 
-`unique(snippet_id, user_id)`。本人のみ読み書き可（RLS）。
+`unique(snippet_id, user_id)`。書き込みは本人のみ（RLS）。閲覧は本人に加えteacher/adminも可（Phase 22c、`20260804000001_code_states_teacher_select.sql`）。

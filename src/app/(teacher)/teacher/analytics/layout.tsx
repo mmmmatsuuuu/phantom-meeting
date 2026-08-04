@@ -10,7 +10,7 @@ export default function AnalyticsLayout({
       <div className="mb-6">
         <h1 className="text-2xl font-bold">分析</h1>
         <p className="text-muted-foreground text-sm mt-1">
-          小テストの結果から生徒の理解状況を多角的に分析します
+          小テストの結果やコーディングプレイグラウンドの取り組み、メモから生徒の理解状況を多角的に分析します
         </p>
       </div>
       <div className="mb-6">

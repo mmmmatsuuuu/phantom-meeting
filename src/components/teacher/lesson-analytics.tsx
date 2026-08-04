@@ -15,6 +15,8 @@ import {
   TooltipProvider,
   TooltipTrigger,
 } from "@/components/ui/tooltip";
+import LessonCodeCards from "@/components/teacher/lesson-code-cards";
+import LessonMemoCards from "@/components/teacher/lesson-memo-cards";
 
 const GRADES = [1, 2, 3];
 const CLASSES = [1, 2, 3, 4, 5, 6, 7, 8, 9];
@@ -83,6 +85,8 @@ function AnswerCell({
   );
 }
 
+type Tab = "quiz" | "code" | "memo";
+
 export default function LessonAnalytics({ subjects }: Props) {
   const [grade, setGrade] = useState<number | null>(null);
   const [classNum, setClassNum] = useState<number | "all" | null>(null);
@@ -91,8 +95,19 @@ export default function LessonAnalytics({ subjects }: Props) {
   const [data, setData] = useState<LessonQuizStudentResults | null>(null);
   const [loading, setLoading] = useState(false);
   const [fetchError, setFetchError] = useState<string | null>(null);
+  const [activeTab, setActiveTab] = useState<Tab>("quiz");
 
   const selectedSubject = subjects.find((s) => s.id === subjectId);
+  const selectedLesson = selectedSubject?.units
+    .flatMap((u) => u.lessons)
+    .find((l) => l.id === lessonId);
+  const playgroundEnabled = selectedLesson?.enable_playground ?? false;
+
+  useEffect(() => {
+    if (!playgroundEnabled && activeTab === "code") {
+      setActiveTab("quiz");
+    }
+  }, [playgroundEnabled, activeTab]);
 
   useEffect(() => {
     if (grade === null || classNum === null || !lessonId) {
@@ -218,8 +233,43 @@ export default function LessonAnalytics({ subjects }: Props) {
         </div>
       </div>
 
-      {/* ローディング */}
-      {loading && (
+      {grade !== null && classNum !== null && lessonId && (
+        <>
+          {/* サブタブ */}
+          <div className="flex gap-1 border-b">
+            {(
+              [
+                { key: "quiz", label: "📝 小テスト" },
+                ...(playgroundEnabled ? [{ key: "code", label: "💻 コード" } as const] : []),
+                { key: "memo", label: "📋 メモ" },
+              ] as { key: Tab; label: string }[]
+            ).map((tab) => (
+              <button
+                key={tab.key}
+                onClick={() => setActiveTab(tab.key)}
+                className={`px-4 py-2 text-sm font-medium border-b-2 -mb-px transition-colors ${
+                  activeTab === tab.key
+                    ? "border-primary text-foreground"
+                    : "border-transparent text-muted-foreground hover:text-foreground"
+                }`}
+              >
+                {tab.label}
+              </button>
+            ))}
+          </div>
+
+          {activeTab === "code" && playgroundEnabled && (
+            <LessonCodeCards lessonId={lessonId} grade={grade} classNum={classNum} />
+          )}
+
+          {activeTab === "memo" && (
+            <LessonMemoCards lessonId={lessonId} grade={grade} classNum={classNum} />
+          )}
+        </>
+      )}
+
+      {/* ローディング（小テスト） */}
+      {activeTab === "quiz" && loading && (
         <div className="rounded-md border overflow-hidden">
           <div className="animate-pulse space-y-px">
             {Array.from({ length: 8 }).map((_, i) => (
@@ -230,14 +280,14 @@ export default function LessonAnalytics({ subjects }: Props) {
       )}
 
       {/* エラー */}
-      {!loading && fetchError && (
+      {activeTab === "quiz" && !loading && fetchError && (
         <div className="p-4 rounded-md bg-destructive/10 text-destructive text-sm">
           {fetchError}
         </div>
       )}
 
       {/* 結果 */}
-      {!loading && !fetchError && data && (
+      {activeTab === "quiz" && !loading && !fetchError && data && (
         <>
           {/* サマリー */}
           <div className="flex flex-wrap items-center gap-x-6 gap-y-2 p-4 rounded-md border bg-card text-sm">
@@ -251,12 +301,6 @@ export default function LessonAnalytics({ subjects }: Props) {
             <span>
               メモ記入 <span className="font-bold">{memoStudentCount}</span> 人
             </span>
-            <Link
-              href={`/teacher/lessons/${data.lessonId}/memos`}
-              className="text-indigo-600 hover:underline"
-            >
-              📝 生徒のメモを見る →
-            </Link>
           </div>
 
           {data.students.length === 0 ? (
@@ -386,7 +430,7 @@ export default function LessonAnalytics({ subjects }: Props) {
       )}
 
       {/* フィルタ未選択時のヒント */}
-      {!loading && !data && !fetchError && (
+      {!(grade !== null && classNum !== null && lessonId) && (
         <div className="p-8 text-center text-muted-foreground text-sm border rounded-md border-dashed">
           学年・クラス・科目・レッスンを選択すると生徒ごとの回答一覧が表示されます
         </div>
