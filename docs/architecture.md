@@ -84,14 +84,13 @@ src/
 │   │       ├── lessons/
 │   │       │   ├── new/page.tsx                         # レッスン登録
 │   │       │   └── [lessonId]/
-│   │       │       ├── memos/page.tsx                   # 生徒メモ閲覧
 │   │       │       ├── quiz/new/page.tsx                # 小テスト作成
 │   │       │       └── code-snippets/page.tsx           # コーディングプレイグラウンド管理（有効化・初期コード）
 │   │       ├── analytics/                                # 分析（タブ統合）
 │   │       │   ├── layout.tsx                            # タブ切り替えUI（単元別／レッスン別／生徒別）
 │   │       │   ├── page.tsx                               # /analytics/units へリダイレクト
 │   │       │   ├── units/page.tsx                         # 単元別：授業×設問の正答率ヒートマップ
-│   │       │   ├── lessons/page.tsx                       # レッスン別：生徒×設問の回答一覧テーブル
+│   │       │   ├── lessons/page.tsx                       # レッスン別：📝小テスト/💻コード/📋メモのサブタブ
 │   │       │   └── students/page.tsx                      # 生徒別：検索付き生徒リスト→個人詳細へ
 │   │       ├── quiz-analytics/page.tsx                    # 旧URL。/analytics/units へリダイレクト
 │   │       ├── students/
@@ -141,7 +140,8 @@ src/
 │   │       ├── lessons/[lessonId]/
 │   │       │   ├── memo-students/route.ts                # 生徒メタデータ一覧（クラス絞り込み）
 │   │       │   ├── memo-students/[userId]/route.ts       # 特定生徒のメモ一覧
-│   │       │   └── quiz-analytics/route.ts                # レッスン別：生徒×設問の回答一覧
+│   │       │   ├── quiz-analytics/route.ts                # レッスン別：生徒×設問の回答一覧
+│   │       │   └── code-analytics/route.ts                # レッスン別：生徒×コードスニペットの実行状況
 │   │       └── units/[unitId]/
 │   │           ├── memo-export/route.ts                   # メモ CSV エクスポート
 │   │           └── quiz-export/route.ts                   # 小テスト結果 CSV エクスポート
@@ -187,10 +187,11 @@ src/
 │       ├── quiz-form.tsx                                # 小テスト作成フォーム（JSONインポート対応）
 │       ├── quiz-question-editor.tsx                     # 問題エディタ（tiptap・画像ペースト対応）
 │       ├── quiz-analytics.tsx                           # 単元別ヒートマップ
-│       ├── lesson-analytics.tsx                         # レッスン別：生徒×設問の回答一覧テーブル
+│       ├── lesson-analytics.tsx                         # レッスン別：📝小テスト/💻コード/📋メモのサブタブ切り替え
+│       ├── lesson-code-cards.tsx                        # レッスン別「コード」タブ：生徒ごとのカード表示
+│       ├── lesson-memo-cards.tsx                        # レッスン別「メモ」タブ：生徒ごとのカード表示
 │       ├── analytics-tabs.tsx                           # 分析ページのタブ切り替えUI
 │       ├── student-picker.tsx                           # 生徒別分析：検索付き生徒リスト
-│       ├── student-memo-viewer.tsx                      # 生徒メモ閲覧（アコーディオン）
 │       ├── students-table.tsx                           # 生徒一覧テーブル
 │       ├── code-snippets-manager.tsx                     # コーディングプレイグラウンド管理（有効化・初期コードCRUD）
 │       └── data-export.tsx                              # CSV エクスポートUI

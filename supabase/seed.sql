@@ -427,6 +427,7 @@ declare
   s2 uuid := ('00000000-0000-0000-0000-' || lpad('1102', 12, '0'))::uuid;
   s3 uuid := ('00000000-0000-0000-0000-' || lpad('1201', 12, '0'))::uuid;
   s4 uuid := ('00000000-0000-0000-0000-' || lpad('2101', 12, '0'))::uuid;
+  s5 uuid := ('00000000-0000-0000-0000-' || lpad('1103', 12, '0'))::uuid;
   memo1 uuid := gen_random_uuid();
   memo2 uuid := gen_random_uuid();
   memo3 uuid := gen_random_uuid();
@@ -456,8 +457,12 @@ begin
       '{"type":"doc","content":[{"type":"codeBlock","attrs":{"language":"python"},"content":[{"type":"text","text":"name = \"わたし\"\nprint(name, \"です\")"}]},{"type":"paragraph","content":[{"type":"text","text":"変数の中身をprintで確認できるのが便利。"}]}]}'::jsonb,
       12);
 
-  -- プレイグラウンドの編集内容（保存済みコード・直近の実行結果）
+  -- プレイグラウンドの編集内容（保存済みコード・直近の実行結果）。
+  -- 教師向け「コード実行状況」テーブル（Phase 22c）の確認用に、複数レッスン・
+  -- 複数生徒・複数クラスにまたがるデータと、あえて未実行（last_outputなし）の
+  -- ケースも含める。データを入れていない生徒は「未編集」表示の確認用。
   insert into public.code_states (snippet_id, user_id, code, last_output) values
+    -- 変数と出力（1101・1103・1201）
     ('00000000-0000-0000-0000-000000005001', s1, $code$name = "わたしの名前"
 age = 15
 print(name, "さんは", age, "歳です")
@@ -473,5 +478,51 @@ console.log("プログラミング楽しい！");
 $code$,
 $out$テスト太郎さんは16歳です
 プログラミング楽しい！
+$out$),
+    ('00000000-0000-0000-0000-000000005001', s5, $code$name = "情報花子"
+age = 14
+print(name, "さんは", age, "歳です")
+$code$,
+$out$情報花子さんは14歳です
+$out$),
+    ('00000000-0000-0000-0000-000000005001', s3, $code$name = "花子"
+print(name)
+$code$,
+$out$花子
+$out$),
+    -- 条件分岐：input()に答えた値がコンソールにエコーされることの確認用
+    ('00000000-0000-0000-0000-000000005003', s1, $code$age = int(input("年齢を入力してください: "))
+if age >= 18:
+    print("成人です")
+else:
+    print("未成年です")
+$code$,
+$out$年齢を入力してください: 20
+成人です
+$out$),
+    -- 編集はしたが未実行（last_outputなし）のケース
+    ('00000000-0000-0000-0000-000000005003', s5, $code$age = int(input("年齢を入力してください: "))
+if age >= 20:
+    print("成人です")
+else:
+    print("未成年です")
+$code$,
+    null),
+    -- 繰り返し処理：prompt()を使うJavaScript
+    ('00000000-0000-0000-0000-000000005004', s2, $code$const name = prompt("お名前を入力してください");
+for (let i = 1; i <= 3; i++) {
+  console.log(i + "回目: " + name + "さん、こんにちは！");
+}
+$code$,
+$out$1回目: 太郎さん、こんにちは！
+2回目: 太郎さん、こんにちは！
+3回目: 太郎さん、こんにちは！
+$out$),
+    -- 2年生（grade=2）でのクラス確認用
+    ('00000000-0000-0000-0000-000000005002', s4, $code$const name = "次郎";
+const age = 15;
+console.log(name + "さんは" + age + "歳です");
+$code$,
+$out$次郎さんは15歳です
 $out$);
 end $$;

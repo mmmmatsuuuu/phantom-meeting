@@ -18,6 +18,12 @@ const nextConfig: NextConfig = {
         destination: "/teacher/analytics/units",
         permanent: false,
       },
+      {
+        // メモ閲覧はレッスン別分析タブに統合（Phase 22c）
+        source: "/teacher/lessons/:lessonId/memos",
+        destination: "/teacher/analytics/lessons",
+        permanent: false,
+      },
     ];
   },
 };

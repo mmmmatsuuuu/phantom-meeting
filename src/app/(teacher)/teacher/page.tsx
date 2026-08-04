@@ -21,7 +21,7 @@ const OBSERVE_CARDS: HubCard[] = [
     href: "/teacher/analytics",
     emoji: "📈",
     title: "分析",
-    description: "単元別・レッスン別の正答率から生徒のつまずきを把握する",
+    description: "小テストの正答率・コーディングの取り組み・メモから生徒のつまずきを把握する",
   },
   {
     href: "/teacher/students",

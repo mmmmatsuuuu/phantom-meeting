@@ -1162,8 +1162,15 @@ CREATE TABLE public.code_states (
 
 ### 22c: 教師から生徒のプレイグラウンド利用状況が見えない問題
 
-- [ ] `code_states` テーブルのRLSは本人のみ閲覧・書き込み可（`supabase/migrations/20260707000001_coding_playground.sql`）で、教師向けの閲覧ポリシー・UIが存在しない
-- [ ] 次の授業を組み立てる際のフィードバックとして重要なため、教師向けの可視化機能を実装する
+- [x] 課題：`code_states` テーブルのRLSは本人のみ閲覧・書き込み可（`supabase/migrations/20260707000001_coding_playground.sql`）で、教師向けの閲覧ポリシー・UIが存在しなかった
+- [x] 対応：`code_states` に teacher/admin 向けSELECTポリシーを追加（`20260804000001_code_states_teacher_select.sql`。本人のみ閲覧ポリシーはそのまま残し、additiveに許可を広げる方式）
+- [x] 既存の `/teacher/analytics` レッスン別タブに統合
+  - `getLessonQuizResultsByStudent` と同じ学年・クラス絞り込みパターンで `getLessonCodeStatesByStudent` を実装（`src/lib/db/code-snippets.ts`）。新規APIルート：`GET /api/teacher/lessons/[lessonId]/code-analytics`
+  - 初期実装はテーブル+ホバーTooltipで表示していたが、コードは読む・スクロールする・コピーするといった操作が必要でTooltipと相性が悪いとのレビュー指摘を受け、生徒ごとのカード表示（`LessonCodeCards`）に変更
+  - さらに「レッスン別タブの中で小テスト/コードをサブタブ切り替えできるとよい」「メモ閲覧ページ（`/teacher/lessons/[lessonId]/memos`）もレッスン別タブに統合すると機能がまとまる」という提案を受け、レッスン別タブを「📝 小テスト」「💻 コード」「📋 メモ」のサブタブ構成に再設計
+    - 学年・クラスの絞り込みフィルタを3タブで共通化（メモ閲覧が独自に持っていたセレクト・「読み込む」ボタンは廃止し、他タブと同様に選択時に自動取得）
+    - 独立ページ `/teacher/lessons/[lessonId]/memos` は削除し `/teacher/analytics/lessons` へリダイレクト（`next.config.ts`。Phase 20cで `/teacher/quiz-analytics` を統合した際と同じパターン）。コンテンツ管理の「📋 メモ閲覧」リンクも削除
+    - `StudentMemoViewer` は `LessonMemoCards` に置き換え（ロジックは踏襲、フィルタ部分のみ親コンポーネント共通化）
 
 ---
 
@@ -1219,7 +1226,7 @@ CREATE TABLE public.code_states (
 [✅] Phase 21d:  コーディングプレイグラウンド - JavaScript実行
 [✅] Phase 22a:   コーディングプレイグラウンド - Python無限ループ対策
 [✅] Phase 22b:   コーディングプレイグラウンド - input()入力値のトランスクリプト反映
-[ ] Phase 22c:   コーディングプレイグラウンド - 教師向け利用状況可視化
+[✅] Phase 22c:   コーディングプレイグラウンド - 教師向け利用状況可視化
 ```
 
 Phase 20（導線改善と分析拡充）は完了。
