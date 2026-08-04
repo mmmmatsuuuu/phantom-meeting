@@ -65,6 +65,8 @@ export default function Playground({
   } | null>(null);
   const [inputDraft, setInputDraft] = useState("");
   const saveTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  // input() に答えた値をコンソールへエコーするため、実行中のonOutputを参照できるようにする
+  const onOutputRef = useRef<(text: string) => void>(() => {});
 
   useEffect(() => {
     return () => {
@@ -103,6 +105,9 @@ export default function Playground({
 
   const submitPendingInput = () => {
     if (!pendingInput) return;
+    // 生徒が入力した値自体もコンソール（＝メモに保存される内容）に残す。
+    // これが無いとプロンプト文言だけが残り、後で見返した時に何を入力したか分からなくなる
+    onOutputRef.current(inputDraft + "\n");
     pendingInput.resolve(inputDraft);
     setPendingInput(null);
   };
@@ -127,6 +132,7 @@ export default function Playground({
       }
       setOutputBySnippet((prev) => ({ ...prev, [snippetId]: fullOutput }));
     };
+    onOutputRef.current = onOutput;
 
     try {
       if (activeSnippet.language === "python") {
@@ -241,7 +247,11 @@ export default function Playground({
             language={activeSnippet.language}
             initialValue={codeBySnippet[activeSnippet.id] ?? ""}
             onChange={(value) => handleChange(activeSnippet.id, value)}
+            onRun={handleRun}
           />
+          <p className="text-[11px] text-muted-foreground -mt-2">
+            💡 エディタ内で Cmd/Ctrl + Enter でも実行できます
+          </p>
 
           <div className="flex gap-2">
             <button
