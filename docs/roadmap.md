@@ -1145,8 +1145,12 @@ CREATE TABLE public.code_states (
 
 ### 22a: Pythonの無限ループ対策（最優先）
 
-- [ ] `src/lib/pyodide-runner.ts` はWorkerもタイムアウトも無く、メインスレッド同期実行のため `while True: pass` 等でタブごとフリーズする
-- [ ] JavaScript（`src/lib/js-runner.ts`）は10秒タイムアウト付きiframeで対策済みだが、Pythonだけ非対称に無防備なため対応が必要
+- [x] 課題：`src/lib/pyodide-runner.ts` はWorkerもタイムアウトも無く、メインスレッド同期実行のため `while True: pass` 等でタブごとフリーズする。JavaScript（`src/lib/js-runner.ts`）は10秒タイムアウト付きiframeで対策済みだが、Pythonだけ非対称に無防備だった
+- [x] 対応方式：Worker化ではなく、既存のinput() AST変換の仕組みを拡張し、`while`/`for` ループ本体の先頭に経過時間チェック（`__check_loop_timeout()`）を自動挿入。10秒（JS側と同じ）を超えたら `InfiniteLoopError` を送出し、通常のPython例外と同じ経路でコンソールに表示される
+  - Worker+SharedArrayBufferによる強制終了は本物の強制中断ができる一方、実装コストが高く、当初の設計方針（COEPヘッダーがYouTube埋め込みと衝突するリスクを避ける）とも矛盾するため見送り。ベストエフォート（内包表記など明示的なループ構文を伴わない重い処理は検知できない）と明記した上で採用
+  - `input()` 待機中の時間はタイムアウトに含めない（入力を受け取るたびに締切を延長し、生徒の入力待ちを無限ループと誤検知しないようにした）
+- [x] 副次対応：エラーメッセージがコンソールに描画されていなかった表示バグを修正（`runError` は背景色の切り替えにしか使われておらず、メッセージ本文が表示されていなかった）。Pythonの生のTracebackではなく最後の行（例外の型とメッセージ）のみを抽出して表示
+- [x] 副次対応：無限ループでの`print()`連発による出力の際限ない肥大化・画面の重さを緩和するため、出力を直近8000文字に制限
 
 ### 22b: input()に入力した値がトランスクリプトに残らない問題
 
@@ -1210,7 +1214,7 @@ CREATE TABLE public.code_states (
 [✅] Phase 21b:  コーディングプレイグラウンド - UIの土台
 [✅] Phase 21c:  コーディングプレイグラウンド - Python実行
 [✅] Phase 21d:  コーディングプレイグラウンド - JavaScript実行
-[ ] Phase 22a:   コーディングプレイグラウンド - Python無限ループ対策
+[✅] Phase 22a:   コーディングプレイグラウンド - Python無限ループ対策
 [ ] Phase 22b:   コーディングプレイグラウンド - input()入力値のトランスクリプト反映
 [ ] Phase 22c:   コーディングプレイグラウンド - 教師向け利用状況可視化
 ```

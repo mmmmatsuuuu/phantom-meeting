@@ -56,30 +56,71 @@ export type RunPythonResult = {
   error: string | null;
 };
 
+// JavaScript側（js-runner.ts）のiframeタイムアウトと揃え、体感を統一する
+const LOOP_TIMEOUT_SECONDS = 10;
+
 // 生徒のコードを実行前に変換するブートストラップ。
-// input(...) の呼び出しをすべて await input(...) に自動書き換えし（ast モジュールで
-// 構文木を操作）、input 自体をカスタム入力欄からの入力を待つ非同期関数に差し替える。
-// メインスレッドをブロックせず、window.prompt() の代わりにコンソール内のテキスト
-// ボックスで入力を受け付けられるようにするための仕組み（Worker を使わずに実現できる）。
+// (1) input(...) の呼び出しをすべて await input(...) に自動書き換えし、input 自体を
+//     カスタム入力欄からの入力を待つ非同期関数に差し替える。メインスレッドをブロック
+//     せず、window.prompt() の代わりにコンソール内のテキストボックスで入力を受け付け
+//     られるようにするための仕組み（Worker を使わずに実現できる）。
+// (2) while/for ループの本体先頭に経過時間チェックを自動挿入し、一定時間を超えたら
+//     InfiniteLoopError を送出する。Pyodideはメインスレッド同期実行のため外部から
+//     強制中断はできない（Workerを使わない設計上の制約）。あくまで生徒が書きがちな
+//     単純な無限ループ（while True: pass 等）を検知して分かりやすいエラーメッセージ
+//     を返すための仕組みであり、内包表記など明示的なループ構文を伴わない重い処理は
+//     検知できない（ベストエフォート）。
+// input() 待機中に経過した時間はループのタイムアウトに含めない（生徒の入力待ちを
+// 無限ループと誤検知しないよう、入力を受け取るたびに締切を延長する）。
 const INPUT_BOOTSTRAP = `
 import ast
 import builtins
+import time
 
-class __InputAwaiter(ast.NodeTransformer):
+class InfiniteLoopError(Exception):
+    pass
+
+__loop_deadline__ = None
+
+def __check_loop_timeout():
+    if __loop_deadline__ is not None and time.time() > __loop_deadline__:
+        raise InfiniteLoopError(
+            f"無限ループを検知しました（{__loop_timeout_seconds__}秒以上経過）。ループの終了条件を見直してください。"
+        )
+
+class __LoopGuardTransformer(ast.NodeTransformer):
     def visit_Call(self, node):
         self.generic_visit(node)
         if isinstance(node.func, ast.Name) and node.func.id == "input":
             return ast.copy_location(ast.Await(value=node), node)
         return node
 
+    def __guard(self, node):
+        self.generic_visit(node)
+        guard = ast.parse("__check_loop_timeout()").body[0]
+        ast.copy_location(guard, node)
+        node.body.insert(0, guard)
+        return node
+
+    def visit_While(self, node):
+        return self.__guard(node)
+
+    def visit_For(self, node):
+        return self.__guard(node)
+
 async def __input(prompt=""):
-    return await _request_input(prompt)
+    global __loop_deadline__
+    result = await _request_input(prompt)
+    # 入力待ちの間に経過した時間はタイムアウトに含めない
+    if __loop_deadline__ is not None:
+        __loop_deadline__ = time.time() + __loop_timeout_seconds__
+    return result
 
 builtins.input = __input
 
 def __transform(source):
     tree = ast.parse(source)
-    tree = __InputAwaiter().visit(tree)
+    tree = __LoopGuardTransformer().visit(tree)
     ast.fix_missing_locations(tree)
     return ast.unparse(tree)
 
@@ -109,10 +150,17 @@ export async function runPythonCode(
     return onInputRequest(promptText ?? "");
   });
   namespace.set("__source__", code);
+  namespace.set("__loop_timeout_seconds__", LOOP_TIMEOUT_SECONDS);
 
   try {
     await pyodide.runPythonAsync(INPUT_BOOTSTRAP, { globals: namespace });
     const transformedSource = namespace.get("__transformed_source__") as string;
+    // ループタイムアウトの起点は変換後のコードを実行する直前にする
+    // （AST変換自体にかかった時間を実行時間に含めないため）
+    await pyodide.runPythonAsync(
+      "__loop_deadline__ = time.time() + __loop_timeout_seconds__",
+      { globals: namespace }
+    );
     await pyodide.runPythonAsync(transformedSource, { globals: namespace });
     return { error: null };
   } catch (e) {
