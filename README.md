@@ -34,7 +34,7 @@
 | フロントエンド | Next.js (App Router) |
 | バックエンド | Next.js API Routes（Client からの mutation と秘匿キーが必要な処理のみ） |
 | DB / 認証 | Supabase（Google OAuth） |
-| ホスティング | Vercel |
+| ホスティング | Vercel（Functions は東京リージョン `hnd1` 固定。[理由](docs/tech-stack.md#実行リージョン)） |
 | UI | shadcn/ui + Tailwind CSS |
 | リッチテキスト | tiptap |
 | コードエディタ | CodeMirror 6 |
