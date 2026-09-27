@@ -544,6 +544,31 @@ export type Database = {
           total_count: number
         }[]
       }
+      tiptap_to_text: { Args: { doc: Json }; Returns: string }
+      unit_memo_export_samples: {
+        Args: {
+          p_max_student_number: number
+          p_min_student_number: number
+          p_unit_id: string
+        }
+        Returns: {
+          lesson_id: string
+          memo_text: string
+        }[]
+      }
+      unit_quiz_export_stats: {
+        Args: {
+          p_max_student_number: number
+          p_min_student_number: number
+          p_unit_id: string
+        }
+        Returns: {
+          answer_counts: Json
+          class_stats: Json
+          question_id: string
+          short_answer_samples: string[]
+        }[]
+      }
     }
     Enums: {
       code_language: "python" | "javascript"
