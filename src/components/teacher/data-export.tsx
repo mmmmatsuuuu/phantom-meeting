@@ -234,7 +234,7 @@ export default function DataExport({ subjects }: Props) {
           <h2 className="text-base font-semibold">生徒のメモサンプル</h2>
           <p className="text-sm text-muted-foreground mt-0.5">
             単元内の各レッスンで生徒が残したメモをランダムにサンプリングして CSV でダウンロードします。
-            レッスンごとに最大10人分・複数メモは結合して出力します。
+            レッスンごとに各クラス2人ずつ（合計10人に満たない場合は10人まで追加）・複数メモは結合して出力します。
           </p>
         </div>
 

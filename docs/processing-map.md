@@ -233,8 +233,10 @@
 |---|---|---|
 | フロント | 学年・科目・単元の選択、CSV のダウンロード（Blob）、AI 分析用プロンプトのテンプレート表示とコピー | `components/teacher/data-export.tsx` |
 | API | 教師確認、CSV の生成（エスケープ・ラベル付け）とファイル名の決定 | `api/teacher/units/[unitId]/quiz-export/route.ts`、`memo-export/route.ts` |
-| lib/db | 小テスト：最新受験の特定、設問ごとの正答率（全体・クラス別）、選択肢の回答分布、記述式の回答からランダムに3件を抽出（JS） | `quizzes.ts` `getUnitQuizResultsForExport` |
-| lib/db | メモ：レッスンごとに、メモを書いた生徒からランダムに最大10人を抽出し、1人分のメモを結合して300文字で切り詰め（学籍番号・氏名は含めない）（JS） | `memos.ts` `getUnitMemoSamplesForExport` |
+| lib/db | 小テスト：単元→レッスン→小テスト→設問、学年の生徒（人数・クラス一覧用）、RPC を並列取得し、正答率（全体・クラス別）と回答分布の割合を算出して組み立て | `quizzes.ts` `getUnitQuizResultsForExport` |
+| DB | 小テスト：最新受験を特定し、設問ごとにクラス別の正答数・回答数、選択肢ごとの回答数、記述式の回答からランダムに3件を集計 | RPC `unit_quiz_export_stats` |
+| lib/db | メモ：単元→レッスン、学年の生徒数、RPC を並列取得し、1人分のメモを300文字で切り詰めてレッスン順に組み立て | `memos.ts` `getUnitMemoSamplesForExport` |
+| DB | メモ：レッスンごとに、テキストのあるメモを書いた生徒から各クラス2人ずつ（10人未満なら10人までランダムに追加）を抽出し、1人分のメモのテキストを作成日時順に「／」で結合（学籍番号・氏名は返さない） | RPC `unit_memo_export_samples`、関数 `tiptap_to_text` |
 
 ---
 
@@ -248,6 +250,7 @@
 | `handle_new_user()` | トリガー関数（`security definer`） | `auth.users` への登録時に `profiles` を作成 | `20260308000001_init_schema.sql` |
 | `on_auth_user_created` | トリガー | 上記を `auth.users` の INSERT 後に実行 | 同上 |
 | `set_updated_at()` / `memos_set_updated_at` | トリガー | `memos` 更新時に `updated_at` を更新 | 同上 |
+| `tiptap_to_text(doc)` | 関数 | tiptap の JSON からテキストを取り出す（アプリの `tiptapDocToText` と同じ規則）。`unit_memo_export_samples` で使用 | `20260930000001_unit_export_stats.sql` |
 
 ### アプリから呼び出す SQL 関数（RPC）
 
@@ -256,6 +259,8 @@
 | 名前 | 処理 | 呼び出し元 | 定義 |
 |---|---|---|---|
 | `quiz_question_stats(subject_id, min, max)` | 科目内の小テストについて、学籍番号が範囲内の生徒ごとに最新受験を特定し、設問ごとの正答数・回答数（記述式を除く）を返す | `quizzes.ts` `getQuizAnalytics` | `20260928000001_quiz_question_stats.sql` |
+| `unit_quiz_export_stats(unit_id, min, max)` | 単元内の小テストについて、学籍番号が範囲内の生徒ごとに最新受験を特定し、設問ごとにクラス別の正答数・回答数、選択肢ごとの回答数、記述式の回答のランダム3件を返す | `quizzes.ts` `getUnitQuizResultsForExport` | `20260930000001_unit_export_stats.sql` |
+| `unit_memo_export_samples(unit_id, min, max)` | 単元内のレッスンごとに、各クラス2人ずつ（10人未満なら10人まで追加）の生徒を抽出し、1人分のメモのテキストを結合して返す | `memos.ts` `getUnitMemoSamplesForExport` | 同上 |
 
 ### RLS の概要
 
@@ -288,11 +293,8 @@ Supabase の `max_rows = 1000` により、1リクエストで1000行を超え�
 | 関数 | 取得対象 | 上限に達する条件 |
 |---|---|---|
 | `quizzes.ts` `getLessonQuizResultsByStudent` | 1レッスン×1クラスの受験記録 | 1クラスの受験記録が1000件を超える場合（40人なら1人平均25回以上の再受験）。回答は受験記録にネストしているため対象外 |
-| `quizzes.ts` `getUnitQuizResultsForExport` | 単元内の全クイズ×学年の受験記録 | 単元の小テスト数×学年の生徒数×受験回数が1000を超える場合 |
-| 上記関数の回答取得（100受験ずつ分割） | 受験100件分の回答 | 1つの小テストの設問が10問を超える場合 |
 | `code-snippets.ts` `getLessonCodeStatesByStudent` | 1レッスン×1クラスの保存内容 | 1クラスの生徒数×初期コード数が1000を超える場合（40人なら初期コード25個以上） |
 | `memos.ts` `getLessonMemosByClass` | 1レッスン×1クラスのメモ | 1クラスのメモが1000件を超える場合（40人なら1人平均25件以上） |
-| `memos.ts` `getUnitMemoSamplesForExport` | 生徒100人分×単元内のメモ | 単元のメモが多い場合 |
 | `users.ts` `getAllProfiles` | 全生徒のプロフィール | 生徒数が1000人を超える場合 |
 
 1人分のデータだけを取る関数（`getStudentQuizStatuses`・`getMemoCountsByLesson`・`getAllMemos`・`getQuizResultsByUser`）は、1人の件数が1000を超えない限り影響しない。

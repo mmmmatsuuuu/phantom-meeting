@@ -638,182 +638,62 @@ export async function getUnitQuizResultsForExport(
   grade: number
 ): Promise<UnitExportData | null> {
   const supabase = await createClient();
+  const { min, max } = studentNumberRange(grade, "all");
 
-  // 単元とレッスンをネスト select で1クエリで取得
-  const { data: unit } = await supabase
-    .from("units")
-    .select("name, lessons(id, title, order)")
-    .eq("id", unitId)
-    .single();
+  // 単元→レッスン→小テスト→設問、学年の生徒（人数とクラス一覧用）、設問ごとの集計（RPC）を並列で取得する。
+  // 集計は受験記録・回答が多くても欠けないよう DB 側で行う（unit_quiz_export_stats）
+  const [{ data: unit }, { data: profiles }, { data: statRows }] = await Promise.all([
+    supabase
+      .from("units")
+      .select(
+        "name, lessons(id, title, order, quizzes(id, quiz_questions(id, type, content, correct_answer, options, order)))"
+      )
+      .eq("id", unitId)
+      .single(),
+    supabase
+      .from("profiles")
+      .select("student_number")
+      .eq("role", "student")
+      .gte("student_number", min)
+      .lte("student_number", max),
+    supabase.rpc("unit_quiz_export_stats", {
+      p_unit_id: unitId,
+      p_min_student_number: min,
+      p_max_student_number: max,
+    }),
+  ]);
   if (!unit) return null;
 
   const lessons = [...unit.lessons].sort((a, b) => a.order - b.order);
   if (lessons.length === 0) return null;
-
-  const lessonIds = lessons.map((l) => l.id);
-
-  // クイズと問題をネスト select で1クエリで取得
-  const { data: quizzes } = await supabase
-    .from("quizzes")
-    .select(
-      "id, lesson_id, quiz_questions(id, quiz_id, type, content, correct_answer, options, order)"
-    )
-    .in("lesson_id", lessonIds);
-  if (!quizzes || quizzes.length === 0) return null;
-
-  const quizIds = quizzes.map((q) => q.id);
-  const quizByLesson = new Map(quizzes.map((q) => [q.lesson_id, q.id]));
-
-  const questions = quizzes
-    .flatMap((q) => q.quiz_questions)
-    .sort((a, b) => a.order - b.order);
-
-  // 対象学年の生徒を全員取得
-  const { min, max } = studentNumberRange(grade, "all");
-  const { data: profiles } = await supabase
-    .from("profiles")
-    .select("id, student_number")
-    .eq("role", "student")
-    .not("student_number", "is", null)
-    .gte("student_number", min)
-    .lte("student_number", max)
-    .limit(2000);
+  if (lessons.every((l) => l.quizzes.length === 0)) return null;
 
   const students = profiles ?? [];
-  const studentIds = students.map((p) => p.id);
+  const classes = [
+    ...new Set(
+      students
+        .map((p) => (p.student_number !== null ? classOf(p.student_number) : 0))
+        .filter((cls) => cls > 0)
+    ),
+  ].sort((a, b) => a - b);
 
-  // student_number からクラス番号を判定
-  const classSet = new Set<number>();
-  const userClassMap = new Map<string, number>();
-  for (const p of students) {
-    if (p.student_number !== null) {
-      const cls = classOf(p.student_number);
-      if (cls > 0) {
-        classSet.add(cls);
-        userClassMap.set(p.id, cls);
-      }
-    }
-  }
-  const classes = Array.from(classSet).sort((a, b) => a - b);
+  const statsByQuestion = new Map((statRows ?? []).map((s) => [s.question_id, s]));
 
-  // 各生徒・各クイズの最新受験IDを特定
-  const latestAttemptIds: string[] = [];
-  const attemptUserMap = new Map<string, string>();
-
-  if (studentIds.length > 0) {
-    const { data: attempts } = await supabase
-      .from("quiz_attempts")
-      .select("id, quiz_id, user_id, submitted_at")
-      .in("quiz_id", quizIds)
-      .in("user_id", studentIds)
-      .order("submitted_at", { ascending: false })
-      .limit(20000);
-
-    if (attempts) {
-      const latestMap = new Map<string, string>();
-      for (const att of attempts) {
-        const key = `${att.user_id}_${att.quiz_id}`;
-        if (!latestMap.has(key)) {
-          latestMap.set(key, att.id);
-          attemptUserMap.set(att.id, att.user_id);
-        }
-      }
-      latestAttemptIds.push(...latestMap.values());
-    }
-  }
-
-  // 回答詳細をチャンク分割で取得
-  type AnswerRow = {
-    attempt_id: string;
-    question_id: string;
-    answer: Record<string, unknown>;
-    is_correct: boolean | null;
-  };
-
-  const allAnswers: AnswerRow[] = [];
-  const CHUNK_SIZE = 100;
-  for (let i = 0; i < latestAttemptIds.length; i += CHUNK_SIZE) {
-    const chunk = latestAttemptIds.slice(i, i + CHUNK_SIZE);
-    const { data: chunkAnswers } = await supabase
-      .from("quiz_attempt_answers")
-      .select("attempt_id, question_id, answer, is_correct")
-      .in("attempt_id", chunk)
-      .limit(CHUNK_SIZE * 30);
-    if (chunkAnswers) allAnswers.push(...(chunkAnswers as AnswerRow[]));
-  }
-
-  // 設問ごとに統計を集計
-  type QuestionStats = {
-    overall: { correct: number; total: number };
-    byClass: Map<number, { correct: number; total: number }>;
-    answerCounts: Map<string, number>;
-    shortAnswerTexts: string[];
-  };
-
-  const statsMap = new Map<string, QuestionStats>();
-  const questionLookup = new Map(questions.map((q) => [q.id, q]));
-
-  for (const answer of allAnswers) {
-    const userId = attemptUserMap.get(answer.attempt_id);
-    if (!userId) continue;
-    const q = questionLookup.get(answer.question_id);
-    if (!q) continue;
-
-    const stats = statsMap.get(q.id) ?? {
-      overall: { correct: 0, total: 0 },
-      byClass: new Map<number, { correct: number; total: number }>(),
-      answerCounts: new Map<string, number>(),
-      shortAnswerTexts: [],
-    };
-
-    if (q.type === "short_answer") {
-      const text = String(
-        (answer.answer as { text?: unknown })?.text ?? ""
-      ).trim();
-      if (text) stats.shortAnswerTexts.push(text);
-    } else {
-      stats.overall.total++;
-      if (answer.is_correct) stats.overall.correct++;
-
-      const cls = userClassMap.get(userId);
-      if (cls) {
-        const cs = stats.byClass.get(cls) ?? { correct: 0, total: 0 };
-        cs.total++;
-        if (answer.is_correct) cs.correct++;
-        stats.byClass.set(cls, cs);
-      }
-
-      if (q.type === "multiple_choice") {
-        const selectedText = String(
-          (answer.answer as { selectedText?: unknown })?.selectedText ?? ""
-        );
-        if (selectedText) {
-          stats.answerCounts.set(
-            selectedText,
-            (stats.answerCounts.get(selectedText) ?? 0) + 1
-          );
-        }
-      }
-    }
-
-    statsMap.set(q.id, stats);
-  }
-
-  // 出力データを組み立て
   const lessonExportData: LessonExportData[] = [];
 
   for (const lesson of lessons) {
-    const quizId = quizByLesson.get(lesson.id);
-    if (!quizId) continue;
+    const quiz = lesson.quizzes[0];
+    if (!quiz) continue;
 
-    const lessonQuestions = questions
-      .filter((q) => q.quiz_id === quizId)
-      .sort((a, b) => a.order - b.order);
+    const lessonQuestions = [...quiz.quiz_questions].sort((a, b) => a.order - b.order);
     if (lessonQuestions.length === 0) continue;
 
     const questionExportData: QuestionExportData[] = lessonQuestions.map((q) => {
       const type = q.type as QuizQuestionType;
-      const stats = statsMap.get(q.id);
+      const stat = statsByQuestion.get(q.id);
+      // クラス番号 → [正答数, 回答数]
+      const classStats = (stat?.class_stats ?? {}) as Record<string, [number, number]>;
+      const answerCounts = (stat?.answer_counts ?? {}) as Record<string, number>;
 
       const rawText = tiptapDocToText(q.content as Record<string, unknown>);
       const contentSummary =
@@ -821,48 +701,42 @@ export async function getUnitQuizResultsForExport(
 
       let overallRate: number | null = null;
       const classRates = new Map<number, number | null>();
+      let overallTotal = 0;
 
       if (type !== "short_answer") {
-        if (stats && stats.overall.total > 0) {
-          overallRate = stats.overall.correct / stats.overall.total;
+        let overallCorrect = 0;
+        for (const [correct, total] of Object.values(classStats)) {
+          overallCorrect += correct;
+          overallTotal += total;
         }
+        if (overallTotal > 0) overallRate = overallCorrect / overallTotal;
         for (const cls of classes) {
-          const cs = stats?.byClass.get(cls);
-          classRates.set(cls, cs && cs.total > 0 ? cs.correct / cs.total : null);
+          const cs = classStats[String(cls)];
+          classRates.set(cls, cs && cs[1] > 0 ? cs[0] / cs[1] : null);
         }
       }
 
       // 選択式のみ回答分布を集計（並び替えは正答率のみ）
       let answerDistribution: AnswerDistributionItem[] | null = null;
-      if (type === "multiple_choice" && stats && stats.overall.total > 0) {
+      if (type === "multiple_choice" && overallTotal > 0) {
         const opts = (q.options as string[] | null) ?? [];
         const correctAnswer = q.correct_answer as { index?: number };
         const correctText = opts[correctAnswer?.index ?? -1] ?? "";
-        const total = stats.overall.total;
         answerDistribution = opts.map((opt) => ({
           text: opt,
           isCorrect: opt === correctText,
-          count: stats.answerCounts.get(opt) ?? 0,
-          rate: (stats.answerCounts.get(opt) ?? 0) / total,
+          count: answerCounts[opt] ?? 0,
+          rate: (answerCounts[opt] ?? 0) / overallTotal,
         }));
       }
 
-      // 記述式：正答例を取得
+      // 記述式：正答例と、最新回答からランダム3件（抽出は DB 側）
       let correctAnswerText: string | null = null;
+      let shortAnswerSamples: string[] = [];
       if (type === "short_answer") {
         const ca = q.correct_answer as { text?: string };
         correctAnswerText = ca?.text?.trim() || null;
-      }
-
-      // 記述式：最新回答からランダム3件
-      let shortAnswerSamples: string[] = [];
-      if (type === "short_answer" && stats && stats.shortAnswerTexts.length > 0) {
-        const texts = [...stats.shortAnswerTexts];
-        for (let i = texts.length - 1; i > 0; i--) {
-          const j = Math.floor(Math.random() * (i + 1));
-          [texts[i], texts[j]] = [texts[j], texts[i]];
-        }
-        shortAnswerSamples = texts.slice(0, 3);
+        shortAnswerSamples = stat?.short_answer_samples ?? [];
       }
 
       return {

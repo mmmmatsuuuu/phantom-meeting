@@ -1,6 +1,5 @@
 import { createClient, getUser } from "@/lib/supabase/server";
 import type { Database } from "@/lib/supabase/types";
-import { tiptapDocToText } from "@/lib/tiptap-utils";
 import { studentNumberRange } from "@/lib/student-number";
 
 export type Memo = Database["public"]["Tables"]["memos"]["Row"] & {
@@ -153,7 +152,8 @@ export type UnitMemoExportData = {
 
 /**
  * 単元内の各レッスンで対象学年の生徒が書いたメモをサンプリングして返す（teacher/admin 向け）
- * - レッスンごとにメモを1件以上書いた生徒からランダムに最大10人を抽出
+ * - レッスンごとに、テキストのあるメモを書いた生徒から各クラス2名ずつを抽出し、
+ *   合計が10名に満たない場合は10名になるまでランダムに追加（抽出は DB 側：unit_memo_export_samples）
  * - 同一生徒の複数メモは「／」で結合し300文字で切り詰め
  * - 学籍番号・氏名は含めない
  */
@@ -162,105 +162,51 @@ export async function getUnitMemoSamplesForExport(
   grade: number
 ): Promise<UnitMemoExportData | null> {
   const supabase = await createClient();
+  const { min, max } = studentNumberRange(grade, "all");
 
-  // 単元とレッスンをネスト select で1クエリで取得
-  const { data: unit } = await supabase
-    .from("units")
-    .select("name, lessons(id, title, order)")
-    .eq("id", unitId)
-    .single();
+  // 単元→レッスン、学年の生徒数、抽出したメモ（RPC）を並列で取得する
+  const [{ data: unit }, { count: studentCount }, { data: sampleRows }] = await Promise.all([
+    supabase.from("units").select("name, lessons(id, title, order)").eq("id", unitId).single(),
+    supabase
+      .from("profiles")
+      .select("id", { count: "exact", head: true })
+      .eq("role", "student")
+      .gte("student_number", min)
+      .lte("student_number", max),
+    supabase.rpc("unit_memo_export_samples", {
+      p_unit_id: unitId,
+      p_min_student_number: min,
+      p_max_student_number: max,
+    }),
+  ]);
   if (!unit) return null;
 
   const lessons = [...unit.lessons].sort((a, b) => a.order - b.order);
   if (lessons.length === 0) return null;
 
-  const lessonIds = lessons.map((l) => l.id);
-
-  const { min, max } = studentNumberRange(grade, "all");
-  const { data: profiles } = await supabase
-    .from("profiles")
-    .select("id, student_number")
-    .eq("role", "student")
-    .not("student_number", "is", null)
-    .gte("student_number", min)
-    .lte("student_number", max)
-    .limit(2000);
-
-  const students = profiles ?? [];
-  const studentIds = students.map((p) => p.id);
-
   const exportDate = new Date().toISOString().slice(0, 10);
 
-  if (studentIds.length === 0) {
-    return { unitName: unit.name, grade, studentCount: 0, exportDate, lessons: [] };
-  }
-
-  type MemoRow = {
-    lesson_id: string;
-    user_id: string;
-    content: unknown;
-    created_at: string;
-  };
-
-  const allMemos: MemoRow[] = [];
-  const CHUNK_SIZE = 100;
-  for (let i = 0; i < studentIds.length; i += CHUNK_SIZE) {
-    const chunk = studentIds.slice(i, i + CHUNK_SIZE);
-    const { data: chunkMemos } = await supabase
-      .from("memos")
-      .select("lesson_id, user_id, content, created_at")
-      .in("lesson_id", lessonIds)
-      .in("user_id", chunk)
-      .order("created_at", { ascending: true });
-    if (chunkMemos) allMemos.push(...(chunkMemos as MemoRow[]));
-  }
-
-  // レッスン × ユーザーごとにメモをグループ化
-  const memosByLessonUser = new Map<string, Map<string, MemoRow[]>>();
-  for (const memo of allMemos) {
-    if (!memosByLessonUser.has(memo.lesson_id)) {
-      memosByLessonUser.set(memo.lesson_id, new Map());
-    }
-    const byUser = memosByLessonUser.get(memo.lesson_id)!;
-    const existing = byUser.get(memo.user_id) ?? [];
-    existing.push(memo);
-    byUser.set(memo.user_id, existing);
-  }
-
-  const MAX_SAMPLES = 10;
   const MAX_CHARS = 300;
-
-  const lessonSamples: LessonMemoSample[] = [];
-
-  for (const lesson of lessons) {
-    const byUser = memosByLessonUser.get(lesson.id);
-    if (!byUser || byUser.size === 0) continue;
-
-    const usersWithMemos = Array.from(byUser.keys());
-    // Fisher–Yates シャッフル
-    for (let i = usersWithMemos.length - 1; i > 0; i--) {
-      const j = Math.floor(Math.random() * (i + 1));
-      [usersWithMemos[i], usersWithMemos[j]] = [usersWithMemos[j], usersWithMemos[i]];
-    }
-    const sampled = usersWithMemos.slice(0, MAX_SAMPLES);
-
-    const memoTexts: string[] = [];
-    for (const userId of sampled) {
-      const userMemos = byUser.get(userId) ?? [];
-      const texts = userMemos
-        .map((m) => tiptapDocToText(m.content as Record<string, unknown>).trim())
-        .filter((t) => t.length > 0);
-      if (texts.length === 0) continue;
-      const merged = texts.join("／");
-      const truncated = merged.length > MAX_CHARS ? merged.slice(0, MAX_CHARS) + "…" : merged;
-      memoTexts.push(truncated);
-    }
-
-    if (memoTexts.length === 0) continue;
-    lessonSamples.push({ lessonTitle: lesson.title, memos: memoTexts });
+  const textsByLesson = new Map<string, string[]>();
+  for (const row of sampleRows ?? []) {
+    const merged = row.memo_text;
+    const truncated = merged.length > MAX_CHARS ? merged.slice(0, MAX_CHARS) + "…" : merged;
+    const list = textsByLesson.get(row.lesson_id) ?? [];
+    list.push(truncated);
+    textsByLesson.set(row.lesson_id, list);
   }
 
-  return { unitName: unit.name, grade, studentCount: students.length, exportDate, lessons: lessonSamples };
+  const lessonSamples: LessonMemoSample[] = lessons
+    .filter((lesson) => textsByLesson.has(lesson.id))
+    .map((lesson) => ({ lessonTitle: lesson.title, memos: textsByLesson.get(lesson.id) ?? [] }));
+
+  return {
+    unitName: unit.name,
+    grade,
+    studentCount: studentCount ?? 0,
+    exportDate,
+    lessons: lessonSamples,
+  };
 }
 
 /**

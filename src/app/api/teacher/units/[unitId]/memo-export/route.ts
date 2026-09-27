@@ -21,7 +21,7 @@ function generateCsv(data: UnitMemoExportData): string {
   );
   lines.push("");
 
-  lines.push("## 授業別メモサンプル（ランダム10人分/授業・複数メモは結合）");
+  lines.push("## 授業別メモサンプル（各クラス2人ずつ・10人未満なら10人まで追加/授業・複数メモは結合）");
   lines.push(["レッスン", "メモ内容（結合・要約）"].map(escapeCsv).join(","));
 
   for (const lesson of data.lessons) {
