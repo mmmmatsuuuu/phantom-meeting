@@ -24,7 +24,7 @@ subjects
 | カラム | 型 | 備考 |
 |---|---|---|
 | id | uuid | PK、auth.usersと連携 |
-| role | enum | 'admin' / 'teacher' / 'student' |
+| role | enum | 'admin' / 'teacher' / 'student'。本人・教師は変更不可、変更できるのは admin のみ（RLS、`20260927000001_profiles_role_lock.sql`） |
 | is_approved | bool | default false。**未使用**（teacher承認フローのUIを撤去したため参照箇所なし。列は削除せず残置） |
 | display_name | text | |
 | student_number | int | nullable、学籍番号 |
