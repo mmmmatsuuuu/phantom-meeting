@@ -13,9 +13,10 @@ export async function GET(req: NextRequest, { params }: Params) {
   const gradeRaw = searchParams.get("grade");
   const classRaw = searchParams.get("class");
 
-  if (!gradeRaw) {
+  // レッスン別分析は1クラス単位のみ（学年全体は扱わない）
+  if (!gradeRaw || !classRaw) {
     return NextResponse.json(
-      { data: null, error: "grade は必須です" },
+      { data: null, error: "grade と class は必須です" },
       { status: 400 }
     );
   }
@@ -25,21 +26,15 @@ export async function GET(req: NextRequest, { params }: Params) {
     return NextResponse.json({ data: null, error: "grade が不正です" }, { status: 400 });
   }
 
-  let classNum: number | "all";
-  if (!classRaw || classRaw === "all") {
-    classNum = "all";
-  } else {
-    const parsed = parseInt(classRaw, 10);
-    if (isNaN(parsed)) {
-      return NextResponse.json({ data: null, error: "class が不正です" }, { status: 400 });
-    }
-    classNum = parsed;
+  const classNum = parseInt(classRaw, 10);
+  if (isNaN(classNum)) {
+    return NextResponse.json({ data: null, error: "class が不正です" }, { status: 400 });
   }
 
   const data = await getLessonQuizResultsByStudent(lessonId, grade, classNum);
   if (!data) {
     return NextResponse.json(
-      { data: null, error: "レッスンまたは小テストが見つかりません" },
+      { data: null, error: "レッスンが見つかりません" },
       { status: 404 }
     );
   }

@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import Link from "next/link";
 import type { SubjectWithUnits } from "@/lib/db/contents";
 import type {
@@ -89,39 +89,54 @@ type Tab = "quiz" | "code" | "memo";
 
 export default function LessonAnalytics({ subjects }: Props) {
   const [grade, setGrade] = useState<number | null>(null);
-  const [classNum, setClassNum] = useState<number | "all" | null>(null);
+  const [classNum, setClassNum] = useState<number | null>(null);
   const [subjectId, setSubjectId] = useState<string>("");
   const [lessonId, setLessonId] = useState<string>("");
-  const [data, setData] = useState<LessonQuizStudentResults | null>(null);
-  const [loading, setLoading] = useState(false);
-  const [fetchError, setFetchError] = useState<string | null>(null);
   const [activeTab, setActiveTab] = useState<Tab>("quiz");
+  /** 小テストの取得結果。key（取得時のフィルタ条件）が現在の条件と一致するときだけ表示する */
+  const [quizResult, setQuizResult] = useState<{
+    key: string;
+    data: LessonQuizStudentResults | null;
+    error: string | null;
+  } | null>(null);
+  /** 取得中のフィルタ条件 */
+  const [loadingKey, setLoadingKey] = useState<string | null>(null);
+  /** 最後にリクエストしたフィルタ条件。これと異なる条件のレスポンスは破棄する */
+  const requestedKeyRef = useRef<string | null>(null);
+
+  const filterKey =
+    grade !== null && classNum !== null && lessonId
+      ? `${lessonId}:${grade}:${classNum}`
+      : null;
+  const currentResult = quizResult && quizResult.key === filterKey ? quizResult : null;
+  const quizData = currentResult?.data ?? null;
+  const fetchError = currentResult?.error ?? null;
+  const loading = filterKey !== null && loadingKey === filterKey;
 
   const selectedSubject = subjects.find((s) => s.id === subjectId);
   const selectedLesson = selectedSubject?.units
     .flatMap((u) => u.lessons)
     .find((l) => l.id === lessonId);
   const playgroundEnabled = selectedLesson?.enable_playground ?? false;
+  // コードタブを開いたままプレイグラウンドのないレッスンに切り替えたら、小テストタブを表示する
+  const effectiveTab: Tab = !playgroundEnabled && activeTab === "code" ? "quiz" : activeTab;
 
+  // 小テストタブを開いているときだけ取得する。同じ条件で取得済み・取得中なら再取得しない
   useEffect(() => {
-    if (!playgroundEnabled && activeTab === "code") {
-      setActiveTab("quiz");
-    }
-  }, [playgroundEnabled, activeTab]);
+    if (grade === null || classNum === null || !lessonId || !filterKey) return;
+    if (effectiveTab !== "quiz") return;
+    if (quizResult?.key === filterKey || loadingKey === filterKey) return;
 
-  useEffect(() => {
-    if (grade === null || classNum === null || !lessonId) {
-      setData(null);
-      return;
-    }
+    const key = filterKey;
 
     const fetchData = async () => {
-      setLoading(true);
-      setFetchError(null);
+      requestedKeyRef.current = key;
+      setLoadingKey(key);
       const params = new URLSearchParams({
         grade: String(grade),
-        class: classNum === "all" ? "all" : String(classNum),
+        class: String(classNum),
       });
+      let result: { data: LessonQuizStudentResults | null; error: string | null };
       try {
         const res = await fetch(
           `/api/teacher/lessons/${lessonId}/quiz-analytics?${params.toString()}`
@@ -130,23 +145,21 @@ export default function LessonAnalytics({ subjects }: Props) {
           data: LessonQuizStudentResults | null;
           error: string | null;
         };
-        if (json.error) {
-          setFetchError(json.error);
-        } else {
-          setData(json.data);
-        }
+        result = json.error ? { data: null, error: json.error } : { data: json.data, error: null };
       } catch {
-        setFetchError("データの取得に失敗しました");
-      } finally {
-        setLoading(false);
+        result = { data: null, error: "データの取得に失敗しました" };
       }
+      if (requestedKeyRef.current !== key) return;
+      setQuizResult({ key, ...result });
+      setLoadingKey(null);
     };
 
     fetchData();
-  }, [grade, classNum, lessonId]);
+  }, [grade, classNum, lessonId, filterKey, effectiveTab, quizResult, loadingKey]);
 
-  const attemptedCount = data?.students.filter((s) => s.attempted).length ?? 0;
-  const memoStudentCount = data?.students.filter((s) => s.memoCount > 0).length ?? 0;
+  const hasQuiz = quizData?.quizTitle !== null;
+  const attemptedCount = quizData?.students.filter((s) => s.attempted).length ?? 0;
+  const memoStudentCount = quizData?.students.filter((s) => s.memoCount > 0).length ?? 0;
 
   return (
     <div className="space-y-6">
@@ -178,12 +191,11 @@ export default function LessonAnalytics({ subjects }: Props) {
             value={classNum === null ? "" : String(classNum)}
             onChange={(e) => {
               const v = e.target.value;
-              setClassNum(v === "" ? null : v === "all" ? "all" : Number(v));
+              setClassNum(v === "" ? null : Number(v));
             }}
             disabled={grade === null}
           >
             <option value="">選択してください</option>
-            <option value="all">全クラス</option>
             {CLASSES.map((c) => (
               <option key={c} value={c}>
                 {c}組
@@ -248,7 +260,7 @@ export default function LessonAnalytics({ subjects }: Props) {
                 key={tab.key}
                 onClick={() => setActiveTab(tab.key)}
                 className={`px-4 py-2 text-sm font-medium border-b-2 -mb-px transition-colors ${
-                  activeTab === tab.key
+                  effectiveTab === tab.key
                     ? "border-primary text-foreground"
                     : "border-transparent text-muted-foreground hover:text-foreground"
                 }`}
@@ -258,18 +270,18 @@ export default function LessonAnalytics({ subjects }: Props) {
             ))}
           </div>
 
-          {activeTab === "code" && playgroundEnabled && (
+          {effectiveTab === "code" && (
             <LessonCodeCards lessonId={lessonId} grade={grade} classNum={classNum} />
           )}
 
-          {activeTab === "memo" && (
+          {effectiveTab === "memo" && (
             <LessonMemoCards lessonId={lessonId} grade={grade} classNum={classNum} />
           )}
         </>
       )}
 
       {/* ローディング（小テスト） */}
-      {activeTab === "quiz" && loading && (
+      {effectiveTab === "quiz" && loading && (
         <div className="rounded-md border overflow-hidden">
           <div className="animate-pulse space-y-px">
             {Array.from({ length: 8 }).map((_, i) => (
@@ -280,30 +292,36 @@ export default function LessonAnalytics({ subjects }: Props) {
       )}
 
       {/* エラー */}
-      {activeTab === "quiz" && !loading && fetchError && (
+      {effectiveTab === "quiz" && !loading && fetchError && (
         <div className="p-4 rounded-md bg-destructive/10 text-destructive text-sm">
           {fetchError}
         </div>
       )}
 
       {/* 結果 */}
-      {activeTab === "quiz" && !loading && !fetchError && data && (
+      {effectiveTab === "quiz" && !loading && !fetchError && quizData && (
         <>
           {/* サマリー */}
           <div className="flex flex-wrap items-center gap-x-6 gap-y-2 p-4 rounded-md border bg-card text-sm">
-            <span className="font-semibold">{data.lessonTitle}</span>
+            <span className="font-semibold">{quizData.lessonTitle}</span>
             <span>
-              対象生徒 <span className="font-bold">{data.students.length}</span> 人
+              対象生徒 <span className="font-bold">{quizData.students.length}</span> 人
             </span>
-            <span>
-              受験済み <span className="font-bold">{attemptedCount}</span> 人
-            </span>
+            {hasQuiz && (
+              <span>
+                受験済み <span className="font-bold">{attemptedCount}</span> 人
+              </span>
+            )}
             <span>
               メモ記入 <span className="font-bold">{memoStudentCount}</span> 人
             </span>
           </div>
 
-          {data.students.length === 0 ? (
+          {!hasQuiz ? (
+            <div className="p-8 text-center text-muted-foreground text-sm border rounded-md">
+              このレッスンには小テストがありません
+            </div>
+          ) : quizData.students.length === 0 ? (
             <div className="p-8 text-center text-muted-foreground text-sm border rounded-md">
               対象の生徒がいません
             </div>
@@ -320,7 +338,7 @@ export default function LessonAnalytics({ subjects }: Props) {
                       <th className="px-3 py-2.5 font-medium border-b border-r text-center w-[72px]">
                         得点
                       </th>
-                      {data.questions.map((q, i) => (
+                      {quizData.questions.map((q, i) => (
                         <th
                           key={q.id}
                           className="px-3 py-2.5 font-medium border-b border-r text-center min-w-[80px]"
@@ -353,7 +371,7 @@ export default function LessonAnalytics({ subjects }: Props) {
                     </tr>
                   </thead>
                   <tbody>
-                    {data.students.map((row) => (
+                    {quizData.students.map((row) => (
                       <tr key={row.userId} className="border-b">
                         <td className="px-4 py-2 border-r sticky left-0 bg-background z-10">
                           <Link
@@ -377,7 +395,7 @@ export default function LessonAnalytics({ subjects }: Props) {
                                 <span className="text-xs text-muted-foreground">—</span>
                               )}
                             </td>
-                            {data.questions.map((q) => (
+                            {quizData.questions.map((q) => (
                               <td
                                 key={q.id}
                                 className={`px-3 py-2 border-r text-center ${
@@ -393,7 +411,7 @@ export default function LessonAnalytics({ subjects }: Props) {
                           </>
                         ) : (
                           <td
-                            colSpan={data.questions.length + 1}
+                            colSpan={quizData.questions.length + 1}
                             className="px-3 py-2 border-r text-center text-xs text-muted-foreground bg-muted/20"
                           >
                             未受験
