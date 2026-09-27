@@ -48,7 +48,8 @@
 
 - [設計概要](docs/design.md)
 - [機能設計](docs/features.md)
-- [アーキテクチャ](docs/architecture.md)
+- [アーキテクチャ](docs/architecture.md)（処理の配置方針を含む）
+- [処理の配置一覧](docs/processing-map.md)
 - [技術スタック](docs/tech-stack.md)
 - [DBスキーマ](docs/schema.md)
 - [実装ロードマップ](docs/roadmap.md)
