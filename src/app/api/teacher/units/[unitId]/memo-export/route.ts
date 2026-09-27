@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { requireTeacher } from "@/lib/api/auth";
+import { parseGradeParam } from "@/lib/api/params";
 import {
   getUnitMemoSamplesForExport,
   type UnitMemoExportData,
@@ -40,22 +41,9 @@ export async function GET(
   if (errorResponse) return errorResponse;
 
   const { unitId } = await params;
-  const gradeRaw = req.nextUrl.searchParams.get("grade");
-
-  if (!gradeRaw) {
-    return NextResponse.json(
-      { data: null, error: "grade は必須です" },
-      { status: 400 }
-    );
-  }
-
-  const grade = parseInt(gradeRaw, 10);
-  if (isNaN(grade) || grade < 1 || grade > 3) {
-    return NextResponse.json(
-      { data: null, error: "grade が不正です" },
-      { status: 400 }
-    );
-  }
+  const parsed = parseGradeParam(req.nextUrl.searchParams);
+  if (parsed.errorResponse) return parsed.errorResponse;
+  const { grade } = parsed.params;
 
   const data = await getUnitMemoSamplesForExport(unitId, grade);
 

@@ -13,3 +13,13 @@ export function studentNumberRange(
   const min = grade * 1000 + classNum * 100;
   return { min, max: min + 99 };
 }
+
+/** 学籍番号から学年（G）を取り出す */
+export function gradeOf(studentNumber: number): number {
+  return Math.floor(studentNumber / 1000);
+}
+
+/** 学籍番号からクラス（C）を取り出す */
+export function classOf(studentNumber: number): number {
+  return Math.floor((studentNumber % 1000) / 100);
+}

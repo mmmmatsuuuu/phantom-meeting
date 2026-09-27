@@ -237,7 +237,8 @@ src/
 │   │   ├── middleware.ts                                # updateSession（getClaims による JWT 検証）
 │   │   └── types.ts                                     # Supabase 自動生成型（手動追記あり）
 │   ├── api/
-│   │   └── auth.ts                                      # requireUser / requireTeacher（API Route 用認証ガード）
+│   │   ├── auth.ts                                      # requireUser / requireTeacher（API Route 用認証ガード）
+│   │   └── params.ts                                    # 学年・クラスのクエリ解析（API Route 用。不正なら 400）
 │   ├── db/                                              # データアクセス層
 │   │   ├── code-snippets.ts                             # 初期コードCRUD・並び替え・生徒の編集内容の保存
 │   │   ├── contents.ts                                  # 科目・単元・レッスン・発問
@@ -246,7 +247,7 @@ src/
 │   │   ├── quizzes.ts                                   # 小テスト・提出記録・分析・エクスポート集計
 │   │   └── users.ts                                     # プロフィール・生徒一覧
 │   ├── student-dashboard.ts                             # 生徒ダッシュボード・個人詳細の集計ロジック（純粋関数）
-│   ├── student-number.ts                                # 学籍番号（GCNN 形式）から学年・クラスの範囲を算出
+│   ├── student-number.ts                                # 学籍番号（GCNN 形式）の範囲算出・学年／クラスの取り出し
 │   ├── hooks/
 │   │   └── use-lazy-fetch.ts                            # 必要になったときだけ取得し、同じ URL なら再取得しないフック
 │   ├── pyodide-runner.ts                                # Pyodide による Python 実行（jsDelivr CDNから読み込み）

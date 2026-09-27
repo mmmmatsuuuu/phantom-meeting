@@ -29,6 +29,7 @@
 | ミドルウェア | 全リクエストで JWT を検証し、未ログインなら `/login` へリダイレクト | `proxy.ts` → `lib/supabase/middleware.ts` |
 | SC | ロールによるページの出し分け（教師ページは teacher/admin のみ、管理ページは admin のみ） | `app/(teacher)/layout.tsx`、`app/(admin)/layout.tsx` |
 | API | API ごとのログイン・ロール確認 | `lib/api/auth.ts`（`requireUser` / `requireTeacher`） |
+| API | 学年・クラスのクエリの解析と検証（学年 1〜3、クラス 1〜9。不正なら 400） | `lib/api/params.ts`（`parseGradeParam` / `parseGradeClassParams` / `parseGradeClassOrAllParams`） |
 | ルーティング | 旧 URL から新 URL へのリダイレクト | `next.config.ts` |
 | DB | 新規ユーザー登録時に `profiles` を自動作成（Google の表示名を初期値に） | トリガー `on_auth_user_created` → 関数 `handle_new_user()` |
 | DB | 自分のロールを返す（RLS の条件で使用） | 関数 `my_role()`（`security definer`） |
@@ -199,7 +200,7 @@
 | フロント | 学年・クラス・科目の選択、単元ごとのグループ化、正答率による色分け、設問の Tooltip | `components/teacher/quiz-analytics.tsx` |
 | API | 教師確認、学年・クラスの検証 | `api/teacher/quiz-analytics/route.ts` |
 | lib/db | 科目→単元→レッスン→小テスト→設問をネスト select で取得し、RPC の集計結果から正答率を算出して組み立て | `quizzes.ts` `getQuizAnalytics` |
-| lib | 学年・クラスから学籍番号の範囲を算出 | `lib/student-number.ts` `studentNumberRange` |
+| lib | 学年・クラスから学籍番号の範囲を算出 | `lib/student-number.ts` `studentNumberRange`（学籍番号から学年・クラスを取り出す `gradeOf` / `classOf` も同ファイル） |
 | DB | 対象生徒×小テストごとの最新受験を特定し、設問ごとの正答数・回答数を集計 | RPC `quiz_question_stats` |
 
 ### 分析：レッスン別（`/teacher/analytics/lessons`）

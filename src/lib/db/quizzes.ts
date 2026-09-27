@@ -1,7 +1,7 @@
 import { createClient, getUser } from "@/lib/supabase/server";
 import type { Database } from "@/lib/supabase/types";
 import { tiptapDocToText } from "@/lib/tiptap-utils";
-import { studentNumberRange } from "@/lib/student-number";
+import { classOf, studentNumberRange } from "@/lib/student-number";
 
 export type Quiz = Database["public"]["Tables"]["quizzes"]["Row"];
 export type QuizQuestion = Database["public"]["Tables"]["quiz_questions"]["Row"];
@@ -669,24 +669,25 @@ export async function getUnitQuizResultsForExport(
     .sort((a, b) => a.order - b.order);
 
   // 対象学年の生徒を全員取得
+  const { min, max } = studentNumberRange(grade, "all");
   const { data: profiles } = await supabase
     .from("profiles")
     .select("id, student_number")
     .eq("role", "student")
     .not("student_number", "is", null)
-    .gte("student_number", grade * 1000)
-    .lte("student_number", grade * 1000 + 999)
+    .gte("student_number", min)
+    .lte("student_number", max)
     .limit(2000);
 
   const students = profiles ?? [];
   const studentIds = students.map((p) => p.id);
 
-  // student_number からクラス番号を判定 (GCNN 形式: 百の位 = クラス番号)
+  // student_number からクラス番号を判定
   const classSet = new Set<number>();
   const userClassMap = new Map<string, number>();
   for (const p of students) {
     if (p.student_number !== null) {
-      const cls = Math.floor(p.student_number / 100) % 10;
+      const cls = classOf(p.student_number);
       if (cls > 0) {
         classSet.add(cls);
         userClassMap.set(p.id, cls);
