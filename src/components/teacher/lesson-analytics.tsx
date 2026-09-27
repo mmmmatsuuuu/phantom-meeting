@@ -18,6 +18,8 @@ import {
 import LessonCodeCards from "@/components/teacher/lesson-code-cards";
 import LessonMemoCards from "@/components/teacher/lesson-memo-cards";
 import { useLazyFetch } from "@/lib/hooks/use-lazy-fetch";
+import { NO_DATA_LEVEL, RATE_LEVELS, formatRate, levelOf } from "@/lib/rate-level";
+import RateBar from "@/components/teacher/rate-bar";
 
 const GRADES = [1, 2, 3];
 const CLASSES = [1, 2, 3, 4, 5, 6, 7, 8, 9];
@@ -32,7 +34,10 @@ type Props = {
   subjects: SubjectWithUnits[];
 };
 
-/** 設問セル：正解は○、誤答は誤答内容、記述式は記入内容を表示する */
+/** タイルの共通スタイル */
+const TILE = "h-7 rounded-md flex items-center justify-center px-2 text-xs font-semibold cursor-default";
+
+/** 設問セル：正解は○、誤答は✕（ホバーで生徒の回答と正解）、記述式は記入内容を表示する */
 function AnswerCell({
   question,
   row,
@@ -43,20 +48,22 @@ function AnswerCell({
   const answer = row.answers[question.id];
 
   if (!answer) {
-    return <span className="text-muted-foreground text-xs">—</span>;
+    return <div className={`${TILE} bg-muted/50 text-muted-foreground font-normal`}>—</div>;
   }
 
   // 記述式：記入内容をそのまま表示（ホバーで全文）
   if (question.type === "short_answer") {
     if (!answer.answerText) {
-      return <span className="text-muted-foreground text-xs">未記入</span>;
+      return (
+        <div className={`${TILE} bg-muted/50 text-muted-foreground font-normal`}>未記入</div>
+      );
     }
     return (
       <Tooltip>
         <TooltipTrigger asChild>
-          <span className="block max-w-[180px] truncate text-left text-xs cursor-default">
-            {answer.answerText}
-          </span>
+          <div className={`${TILE} ${NO_DATA_LEVEL.tile} font-normal justify-start max-w-[180px]`}>
+            <span className="truncate">{answer.answerText}</span>
+          </div>
         </TooltipTrigger>
         <TooltipContent side="top" className="max-w-[320px] text-left whitespace-pre-wrap">
           {answer.answerText}
@@ -65,16 +72,14 @@ function AnswerCell({
     );
   }
 
-  // 選択式・並び替え：正解は○、誤答は選んだ内容
+  // 選択式・並び替え：正解は○、誤答は✕（生徒の回答と正解はホバーで表示）
   if (answer.isCorrect) {
-    return <span className="text-green-600 font-bold">○</span>;
+    return <div className={`${TILE} ${RATE_LEVELS[0].tile} text-sm`}>○</div>;
   }
   return (
     <Tooltip>
       <TooltipTrigger asChild>
-        <span className="block max-w-[160px] truncate text-left text-xs text-red-700 dark:text-red-400 cursor-default">
-          ✕ {answer.answerText || "（無回答）"}
-        </span>
+        <div className={`${TILE} ${RATE_LEVELS[RATE_LEVELS.length - 1].tile} text-sm`}>✕</div>
       </TooltipTrigger>
       <TooltipContent side="top" className="max-w-[320px] text-left">
         <p className="text-xs opacity-80 mb-1">生徒の回答:</p>
@@ -119,6 +124,26 @@ export default function LessonAnalytics({ subjects }: Props) {
   const hasQuiz = quizData?.quizTitle !== null;
   const attemptedCount = quizData?.students.filter((s) => s.attempted).length ?? 0;
   const memoStudentCount = quizData?.students.filter((s) => s.memoCount > 0).length ?? 0;
+
+  // クラス平均得点率：受験済みの生徒の最新受験の得点率（得点 ÷ 満点）の平均
+  const scoreRates = (quizData?.students ?? [])
+    .filter((s) => s.attempted && s.maxScore !== null && s.maxScore > 0 && s.score !== null)
+    .map((s) => (s.score as number) / (s.maxScore as number));
+  const avgScoreRate =
+    scoreRates.length > 0 ? scoreRates.reduce((sum, r) => sum + r, 0) / scoreRates.length : null;
+
+  // 設問ごとのクラスの正答率：回答した生徒のうち正解の割合（記述式は対象外）
+  const questionRates = new Map<string, number | null>();
+  for (const q of quizData?.questions ?? []) {
+    if (q.type === "short_answer") continue;
+    const answers = (quizData?.students ?? [])
+      .map((s) => s.answers[q.id])
+      .filter((a) => a !== undefined);
+    questionRates.set(
+      q.id,
+      answers.length > 0 ? answers.filter((a) => a.isCorrect).length / answers.length : null
+    );
+  }
 
   return (
     <div className="space-y-6">
@@ -254,12 +279,9 @@ export default function LessonAnalytics({ subjects }: Props) {
 
       {/* ローディング（小テスト） */}
       {effectiveTab === "quiz" && loading && (
-        <div className="rounded-md border overflow-hidden">
-          <div className="animate-pulse space-y-px">
-            {Array.from({ length: 8 }).map((_, i) => (
-              <div key={i} className="h-10 bg-muted" />
-            ))}
-          </div>
+        <div className="space-y-4 animate-pulse">
+          <div className="h-24 rounded-xl bg-muted" />
+          <div className="h-72 rounded-xl bg-muted" />
         </div>
       )}
 
@@ -272,151 +294,186 @@ export default function LessonAnalytics({ subjects }: Props) {
 
       {/* 結果 */}
       {effectiveTab === "quiz" && !loading && !fetchError && quizData && (
-        <>
-          {/* サマリー */}
-          <div className="flex flex-wrap items-center gap-x-6 gap-y-2 p-4 rounded-md border bg-card text-sm">
-            <span className="font-semibold">{quizData.lessonTitle}</span>
-            <span>
-              対象生徒 <span className="font-bold">{quizData.students.length}</span> 人
-            </span>
+        <TooltipProvider>
+          <div className="space-y-5">
+            {/* 凡例 */}
             {hasQuiz && (
-              <span>
-                受験済み <span className="font-bold">{attemptedCount}</span> 人
-              </span>
+              <div className="flex flex-wrap items-center gap-x-4 gap-y-2 text-xs text-muted-foreground">
+                <span className="inline-flex items-center gap-1.5">
+                  <span className={`inline-block w-3 h-3 rounded-sm ${RATE_LEVELS[0].tile}`} />
+                  ○ 正解
+                </span>
+                <span className="inline-flex items-center gap-1.5">
+                  <span
+                    className={`inline-block w-3 h-3 rounded-sm ${RATE_LEVELS[RATE_LEVELS.length - 1].tile}`}
+                  />
+                  ✕ 誤答（ホバーで回答と正解）
+                </span>
+                <span className="inline-flex items-center gap-1.5">
+                  <span className={`inline-block w-3 h-3 rounded-sm ${NO_DATA_LEVEL.tile}`} />
+                  記述（記入内容・ホバーで全文）／未受験
+                </span>
+                <span className="basis-full sm:basis-auto sm:ml-auto">
+                  直近の受験結果のみ・生徒名クリックで個人詳細へ
+                </span>
+              </div>
             )}
-            <span>
-              メモ記入 <span className="font-bold">{memoStudentCount}</span> 人
-            </span>
-          </div>
 
-          {!hasQuiz ? (
-            <div className="p-8 text-center text-muted-foreground text-sm border rounded-md">
-              このレッスンには小テストがありません
+            {/* サマリー */}
+            <div className="rounded-xl border bg-card p-5 flex flex-wrap items-center gap-x-8 gap-y-3">
+              {hasQuiz && (
+                <div>
+                  <p className="text-xs text-muted-foreground">クラス平均得点率</p>
+                  <p
+                    className={`text-4xl font-bold tabular-nums leading-tight ${levelOf(avgScoreRate).text}`}
+                  >
+                    {formatRate(avgScoreRate)}
+                  </p>
+                </div>
+              )}
+              <div className="flex-1 min-w-[200px] space-y-2">
+                {hasQuiz && <RateBar rate={avgScoreRate} className="h-2.5" />}
+                <p className="text-xs text-muted-foreground">
+                  <span className="font-medium text-foreground">{quizData.lessonTitle}</span>
+                  ・対象生徒 {quizData.students.length}人
+                  {hasQuiz && `・受験済み ${attemptedCount}人`}
+                  ・メモ記入 {memoStudentCount}人
+                </p>
+              </div>
             </div>
-          ) : quizData.students.length === 0 ? (
-            <div className="p-8 text-center text-muted-foreground text-sm border rounded-md">
-              対象の生徒がいません
-            </div>
-          ) : (
-            <TooltipProvider>
-              {/* 生徒×設問テーブル */}
-              <div className="rounded-md border overflow-x-auto">
-                <table className="text-sm border-collapse">
-                  <thead>
-                    <tr className="bg-muted/50">
-                      <th className="text-left px-4 py-2.5 font-medium border-b border-r min-w-[170px] sticky left-0 bg-muted/50 z-10">
-                        生徒
-                      </th>
-                      <th className="px-3 py-2.5 font-medium border-b border-r text-center w-[72px]">
-                        得点
-                      </th>
-                      {quizData.questions.map((q, i) => (
-                        <th
-                          key={q.id}
-                          className="px-3 py-2.5 font-medium border-b border-r text-center min-w-[80px]"
-                        >
-                          <Tooltip>
-                            <TooltipTrigger asChild>
-                              <span className="cursor-default">
-                                Q{i + 1}
-                                <span className="block text-[10px] font-normal text-muted-foreground">
-                                  {TYPE_LABELS[q.type] ?? q.type}
-                                </span>
-                              </span>
-                            </TooltipTrigger>
-                            <TooltipContent side="top" className="max-w-[280px] text-left">
-                              <p className="text-xs opacity-80 line-clamp-4">
-                                {tiptapDocToText(q.content) || "（問題文なし）"}
-                              </p>
-                              {q.correctAnswerText && (
-                                <p className="mt-1.5 text-xs">
-                                  正解: <span className="font-medium">{q.correctAnswerText}</span>
-                                </p>
-                              )}
-                            </TooltipContent>
-                          </Tooltip>
+
+            {!hasQuiz ? (
+              <div className="p-8 text-center text-muted-foreground text-sm border rounded-xl">
+                このレッスンには小テストがありません
+              </div>
+            ) : quizData.students.length === 0 ? (
+              <div className="p-8 text-center text-muted-foreground text-sm border rounded-xl">
+                対象の生徒がいません
+              </div>
+            ) : (
+              /* 生徒×設問テーブル */
+              <section className="rounded-xl border bg-card shadow-sm overflow-hidden">
+                <div className="overflow-x-auto px-3 py-2">
+                  <table className="text-sm border-separate border-spacing-1">
+                    <thead>
+                      <tr className="text-xs text-muted-foreground align-bottom">
+                        <th className="sticky left-0 z-10 bg-card text-left font-medium px-2 py-1.5 min-w-[180px]">
+                          生徒
                         </th>
-                      ))}
-                      <th className="px-3 py-2.5 font-medium border-b text-center w-[64px]">
-                        メモ
-                      </th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {quizData.students.map((row) => (
-                      <tr key={row.userId} className="border-b">
-                        <td className="px-4 py-2 border-r sticky left-0 bg-background z-10">
-                          <Link
-                            href={`/teacher/students/${row.userId}`}
-                            className="hover:text-indigo-600 hover:underline transition-colors"
-                          >
-                            <span className="text-xs text-muted-foreground mr-2 font-mono">
-                              {row.studentNumber ?? "—"}
-                            </span>
-                            <span className="font-medium">{row.displayName}</span>
-                          </Link>
-                        </td>
-                        {row.attempted ? (
-                          <>
-                            <td className="px-3 py-2 border-r text-center">
-                              {row.maxScore !== null && row.maxScore > 0 ? (
-                                <span className="font-medium">
-                                  {row.score}/{row.maxScore}
+                        <th className="font-medium px-2 py-1.5 w-16">得点</th>
+                        <th aria-hidden className="w-2" />
+                        {quizData.questions.map((q, i) => {
+                          const qRate = questionRates.get(q.id) ?? null;
+                          return (
+                            <th key={q.id} className="font-medium px-1 py-1.5 min-w-16">
+                              <Tooltip>
+                                <TooltipTrigger asChild>
+                                  <div className="cursor-default space-y-0.5">
+                                    <div>Q{i + 1}</div>
+                                    <div className="text-[10px] font-normal">
+                                      {TYPE_LABELS[q.type] ?? q.type}
+                                    </div>
+                                    {q.type !== "short_answer" && (
+                                      <div
+                                        className={`text-[11px] font-semibold tabular-nums ${levelOf(qRate).text}`}
+                                      >
+                                        {formatRate(qRate)}
+                                      </div>
+                                    )}
+                                  </div>
+                                </TooltipTrigger>
+                                <TooltipContent side="top" className="max-w-[280px] text-left">
+                                  <p className="text-xs opacity-80 line-clamp-4">
+                                    {tiptapDocToText(q.content) || "（問題文なし）"}
+                                  </p>
+                                  {q.correctAnswerText && (
+                                    <p className="mt-1.5 text-xs">
+                                      正解: <span className="font-medium">{q.correctAnswerText}</span>
+                                    </p>
+                                  )}
+                                  {q.type !== "short_answer" && (
+                                    <p className="mt-1 text-xs">
+                                      クラスの正答率: <span className="font-medium">{formatRate(qRate)}</span>
+                                    </p>
+                                  )}
+                                </TooltipContent>
+                              </Tooltip>
+                            </th>
+                          );
+                        })}
+                        <th aria-hidden className="w-2" />
+                        <th className="font-medium px-2 py-1.5 w-14">メモ</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {quizData.students.map((row) => {
+                        const scoreRate =
+                          row.attempted && row.maxScore !== null && row.maxScore > 0 && row.score !== null
+                            ? row.score / row.maxScore
+                            : null;
+                        return (
+                          <tr key={row.userId} className="group">
+                            <td className="sticky left-0 z-10 bg-card px-2 py-1 rounded-md group-hover:bg-muted/60 transition-colors">
+                              <Link
+                                href={`/teacher/students/${row.userId}`}
+                                className="flex items-baseline gap-2 hover:text-indigo-600 transition-colors"
+                              >
+                                <span className="text-xs text-muted-foreground font-mono tabular-nums">
+                                  {row.studentNumber ?? "—"}
                                 </span>
+                                <span className="font-medium truncate max-w-[160px]">
+                                  {row.displayName}
+                                </span>
+                              </Link>
+                            </td>
+                            {row.attempted ? (
+                              <>
+                                <td className="p-0">
+                                  <div
+                                    className={`${TILE} w-16 text-sm font-bold tabular-nums ring-1 ring-inset ring-black/5 dark:ring-white/10 ${levelOf(scoreRate).tile}`}
+                                  >
+                                    {scoreRate !== null ? `${row.score}/${row.maxScore}` : "—"}
+                                  </div>
+                                </td>
+                                <td aria-hidden className="p-0">
+                                  <div className="mx-auto h-5 w-px bg-border" />
+                                </td>
+                                {quizData.questions.map((q) => (
+                                  <td key={q.id} className="p-0">
+                                    <AnswerCell question={q} row={row} />
+                                  </td>
+                                ))}
+                              </>
+                            ) : (
+                              // 得点・区切り・設問の列をまとめて「未受験」と表示する
+                              <td colSpan={quizData.questions.length + 2} className="p-0">
+                                <div className={`${TILE} ${NO_DATA_LEVEL.tile} font-normal`}>
+                                  未受験
+                                </div>
+                              </td>
+                            )}
+                            <td aria-hidden className="p-0">
+                              <div className="mx-auto h-5 w-px bg-border" />
+                            </td>
+                            <td className="p-0">
+                              {row.memoCount > 0 ? (
+                                <div className={`${TILE} w-14 bg-indigo-50 text-indigo-700 dark:bg-indigo-500/20 dark:text-indigo-300`}>
+                                  📝 {row.memoCount}
+                                </div>
                               ) : (
-                                <span className="text-xs text-muted-foreground">—</span>
+                                <div className={`${TILE} w-14 text-muted-foreground font-normal`}>—</div>
                               )}
                             </td>
-                            {quizData.questions.map((q) => (
-                              <td
-                                key={q.id}
-                                className={`px-3 py-2 border-r text-center ${
-                                  row.answers[q.id] &&
-                                  row.answers[q.id].isCorrect === false
-                                    ? "bg-red-50 dark:bg-red-950/20"
-                                    : ""
-                                }`}
-                              >
-                                <AnswerCell question={q} row={row} />
-                              </td>
-                            ))}
-                          </>
-                        ) : (
-                          <td
-                            colSpan={quizData.questions.length + 1}
-                            className="px-3 py-2 border-r text-center text-xs text-muted-foreground bg-muted/20"
-                          >
-                            未受験
-                          </td>
-                        )}
-                        <td className="px-3 py-2 text-center">
-                          {row.memoCount > 0 ? (
-                            <span className="text-xs">📝 {row.memoCount}件</span>
-                          ) : (
-                            <span className="text-xs text-muted-foreground">—</span>
-                          )}
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
-
-              {/* 凡例 */}
-              <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-xs text-muted-foreground">
-                <span className="font-medium">見方:</span>
-                <span>
-                  <span className="text-green-600 font-bold">○</span> = 正解
-                </span>
-                <span>
-                  <span className="text-red-700 dark:text-red-400">✕ 選択内容</span> = 誤答（ホバーで正解を表示）
-                </span>
-                <span>記述式はそのまま記入内容を表示（ホバーで全文）</span>
-                <span>直近の受験結果のみ・生徒名クリックで個人詳細へ</span>
-              </div>
-            </TooltipProvider>
-          )}
-        </>
+                          </tr>
+                        );
+                      })}
+                    </tbody>
+                  </table>
+                </div>
+              </section>
+            )}
+          </div>
+        </TooltipProvider>
       )}
 
       {/* フィルタ未選択時のヒント */}

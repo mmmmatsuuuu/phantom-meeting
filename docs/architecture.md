@@ -126,7 +126,7 @@ src/
 │   │       │       └── code-snippets/page.tsx           # コーディングプレイグラウンド管理（有効化・初期コード）
 │   │       ├── analytics/                                # 分析（タブ統合。/analytics 自体は next.config.ts で /analytics/units へリダイレクト）
 │   │       │   ├── layout.tsx                            # タブ切り替えUI（単元別／レッスン別／生徒別）
-│   │       │   ├── units/page.tsx                         # 単元別：授業×設問の正答率ヒートマップ
+│   │       │   ├── units/page.tsx                         # 単元別：授業×設問の正答率ヒートマップ（小テスト・単元・科目の平均つき）
 │   │       │   ├── lessons/page.tsx                       # レッスン別：📝小テスト/💻コード/📋メモのサブタブ
 │   │       │   └── students/page.tsx                      # 生徒別：検索付き生徒リスト→個人詳細へ
 │   │       ├── students/
@@ -226,6 +226,7 @@ src/
 │       ├── lesson-code-cards.tsx                        # レッスン別「コード」タブ：生徒ごとのカード表示
 │       ├── lesson-memo-cards.tsx                        # レッスン別「メモ」タブ：生徒ごとのカード表示
 │       ├── analytics-tabs.tsx                           # 分析ページのタブ切り替えUI
+│       ├── rate-bar.tsx                                 # 分析画面共通：正答率・得点率の横棒
 │       ├── student-picker.tsx                           # 生徒別分析：検索付き生徒リスト
 │       ├── students-table.tsx                           # 生徒一覧テーブル
 │       ├── code-snippets-manager.tsx                     # コーディングプレイグラウンド管理（有効化・初期コードCRUD）
@@ -248,6 +249,7 @@ src/
 │   │   └── users.ts                                     # プロフィール・生徒一覧
 │   ├── student-dashboard.ts                             # 生徒ダッシュボード・個人詳細の集計ロジック（純粋関数）
 │   ├── student-number.ts                                # 学籍番号（GCNN 形式）の範囲算出・学年／クラスの取り出し
+│   ├── rate-level.ts                                    # 分析画面共通：正答率の段階（40/70/90%）と色・表示形式
 │   ├── hooks/
 │   │   └── use-lazy-fetch.ts                            # 必要になったときだけ取得し、同じ URL なら再取得しないフック
 │   ├── pyodide-runner.ts                                # Pyodide による Python 実行（jsDelivr CDNから読み込み）

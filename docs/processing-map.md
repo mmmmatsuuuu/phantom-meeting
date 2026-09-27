@@ -197,9 +197,9 @@
 
 | 層 | 処理 | 場所 |
 |---|---|---|
-| フロント | 学年・クラス・科目の選択、単元ごとのグループ化、正答率による色分け、設問の Tooltip | `components/teacher/quiz-analytics.tsx` |
+| フロント | 学年・クラス・科目の選択（`useLazyFetch` で取得）、単元を新しい順（order の降順）に並べ替え、正答率による色分け、設問の Tooltip、小テスト・単元・科目の平均正答率の表示 | `components/teacher/quiz-analytics.tsx` |
 | API | 教師確認、学年・クラスの検証 | `api/teacher/quiz-analytics/route.ts` |
-| lib/db | 科目→単元→レッスン→小テスト→設問をネスト select で取得し、RPC の集計結果から正答率を算出して組み立て | `quizzes.ts` `getQuizAnalytics` |
+| lib/db | 科目→単元→レッスン→小テスト→設問をネスト select で取得し、RPC の集計結果から設問別の正答率と平均正答率を算出して単元→レッスンの入れ子で組み立て（小テスト平均＝記述式を除く全回答の正答率、単元・科目平均＝その中の小テスト平均の単純平均） | `quizzes.ts` `getQuizAnalytics` |
 | lib | 学年・クラスから学籍番号の範囲を算出 | `lib/student-number.ts` `studentNumberRange`（学籍番号から学年・クラスを取り出す `gradeOf` / `classOf` も同ファイル） |
 | DB | 対象生徒×小テストごとの最新受験を特定し、設問ごとの正答数・回答数を集計 | RPC `quiz_question_stats` |
 
@@ -209,13 +209,14 @@
 |---|---|---|
 | フロント | 学年・クラス・科目・レッスンの選択（クラスは必須。学年全体は扱わない）、サブタブ（小テスト／コード／メモ）の切り替え | `components/teacher/lesson-analytics.tsx` |
 | フロント | 各タブ（小テスト・コード・メモ）はタブを開いたときだけ取得し、同じ条件で取得済みなら再取得しない。条件を切り替えた後に届いた古いレスポンスは破棄。コード・メモは非表示にするだけでアンマウントしない | `components/teacher/lesson-analytics.tsx`、`lib/hooks/use-lazy-fetch.ts` |
-| フロント | 小テスト：生徒×設問の表、正誤・誤答内容・記述内容の表示。小テストのないレッスンはその旨を表示 | `components/teacher/lesson-analytics.tsx` |
+| フロント | 小テスト：生徒×設問の表、正誤（○／✕。誤答はホバーで生徒の回答と正解）・記述内容の表示。小テストのないレッスンはその旨を表示 | `components/teacher/lesson-analytics.tsx` |
+| フロント | 小テスト：受け取ったクラス分の結果から、クラス平均得点率（受験者の得点率の平均）と設問ごとのクラスの正答率（記述式を除く）を算出（JS） | `components/teacher/lesson-analytics.tsx` |
 | API | 小テスト：教師確認、学年・クラスの検証（どちらも必須） | `api/teacher/lessons/[lessonId]/quiz-analytics/route.ts` |
 | lib/db | 小テスト：レッスン→小テスト→設問、クラスの生徒、メモ、受験記録（回答をネスト）の4クエリを並列取得し、生徒ごとの最新受験の特定・回答の表示用テキスト化・メモ件数の集計（JS）、正解テキストの組み立て | `quizzes.ts` `getLessonQuizResultsByStudent` |
-| フロント | コード：生徒ごとのカード表示 | `components/teacher/lesson-code-cards.tsx` |
+| フロント | コード：生徒ごとのカード表示、編集した人数（全体・初期コードごと）の表示 | `components/teacher/lesson-code-cards.tsx` |
 | API | コード：教師確認、学年・クラスの検証（どちらも必須） | `api/teacher/lessons/[lessonId]/code-analytics/route.ts` |
 | lib/db | コード：レッスン→初期コード、クラスの生徒、保存内容（初期コードのレッスンと学籍番号で絞り込み）の3クエリを並列取得し、生徒ごとに振り分け（JS） | `code-snippets.ts` `getLessonCodeStatesByStudent` |
-| フロント | メモ：生徒ごとのカード表示（クラス全員分を1リクエストで取得） | `components/teacher/lesson-memo-cards.tsx` |
+| フロント | メモ：生徒ごとのカード表示（クラス全員分を1リクエストで取得）、メモを書いた人数・合計件数の表示 | `components/teacher/lesson-memo-cards.tsx` |
 | API | メモ：教師確認、学年・クラスの検証（どちらも必須） | `api/teacher/lessons/[lessonId]/memos/route.ts` |
 | lib/db | メモ：クラスの生徒と、クラス全員分のメモ（学籍番号で絞り込み）の2クエリを並列取得し、生徒ごとに振り分け（JS） | `memos.ts` `getLessonMemosByClass` |
 | DB | 教師は全生徒の受験記録・メモ・コードを閲覧可 | RLS（`quiz_attempts`・`quiz_attempt_answers`・`memos`・`code_states`） |
@@ -225,7 +226,7 @@
 | 層 | 処理 | 場所 |
 |---|---|---|
 | lib/db | 生徒ロールの全プロフィールを取得 | `users.ts` `getAllProfiles` |
-| フロント | 表示名・学籍番号での絞り込み、生徒個人詳細へのリンク | `components/teacher/student-picker.tsx` |
+| フロント | 表示名・学籍番号での絞り込み、学籍番号の「○年○組○番」表記、生徒個人詳細へのリンク | `components/teacher/student-picker.tsx` |
 
 ### データエクスポート（`/teacher/data-export`）
 
