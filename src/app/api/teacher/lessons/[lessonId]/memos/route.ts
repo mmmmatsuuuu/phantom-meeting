@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { requireTeacher } from "@/lib/api/auth";
-import { getLessonCodeStatesByStudent } from "@/lib/db/code-snippets";
+import { getLessonMemosByClass } from "@/lib/db/memos";
 
 type Params = { params: Promise<{ lessonId: string }> };
 
@@ -31,12 +31,6 @@ export async function GET(req: NextRequest, { params }: Params) {
     return NextResponse.json({ data: null, error: "class が不正です" }, { status: 400 });
   }
 
-  const data = await getLessonCodeStatesByStudent(lessonId, grade, classNum);
-  if (!data) {
-    return NextResponse.json(
-      { data: null, error: "レッスンが見つかりません" },
-      { status: 404 }
-    );
-  }
-  return NextResponse.json({ data, error: null });
+  const students = await getLessonMemosByClass(lessonId, grade, classNum);
+  return NextResponse.json({ data: students, error: null });
 }

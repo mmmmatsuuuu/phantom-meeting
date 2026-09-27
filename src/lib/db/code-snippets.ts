@@ -1,5 +1,6 @@
 import { createClient } from "@/lib/supabase/server";
 import type { Database } from "@/lib/supabase/types";
+import { studentNumberRange } from "@/lib/student-number";
 
 export type CodeSnippet = Database["public"]["Tables"]["code_snippets"]["Row"];
 export type CodeLanguage = Database["public"]["Enums"]["code_language"];
@@ -192,54 +193,51 @@ export type LessonCodeResults = {
 };
 
 /**
- * 指定レッスンのコードプレイグラウンド利用状況を生徒×スニペットのマトリクスで取得する
- * （teacher/admin 向け）。getLessonQuizResultsByStudent と同じ学年・クラス絞り込み方式。
+ * 指定レッスン・クラスのコードプレイグラウンド利用状況を生徒×スニペットのマトリクスで取得する
+ * （teacher/admin 向け）。レッスンが存在しない場合のみ null。
+ *
+ * 1クラス（最大99人）に限定しているため、保存内容は「生徒数×スニペット数」行で max_rows（1000行）に収まる。
  */
 export async function getLessonCodeStatesByStudent(
   lessonId: string,
   grade: number,
-  classNum: number | "all"
+  classNum: number
 ): Promise<LessonCodeResults | null> {
   const supabase = await createClient();
+  const { min, max } = studentNumberRange(grade, classNum);
 
-  const { data: lesson } = await supabase
-    .from("lessons")
-    .select("id, title, code_snippets(id, title, language, order)")
-    .eq("id", lessonId)
-    .single();
+  // 3クエリを並列で取得する。保存内容はスニペットのレッスンと生徒の学籍番号で絞り込む
+  const [{ data: lesson }, { data: profiles }, { data: states }] = await Promise.all([
+    supabase
+      .from("lessons")
+      .select("id, title, code_snippets(id, title, language, order)")
+      .eq("id", lessonId)
+      .single(),
+    supabase
+      .from("profiles")
+      .select("id, display_name, student_number")
+      .eq("role", "student")
+      .gte("student_number", min)
+      .lte("student_number", max)
+      .order("student_number", { ascending: true }),
+    supabase
+      .from("code_states")
+      .select("snippet_id, user_id, code, last_output, updated_at, code_snippets!inner(), profiles!inner()")
+      .eq("code_snippets.lesson_id", lessonId)
+      .gte("profiles.student_number", min)
+      .lte("profiles.student_number", max),
+  ]);
   if (!lesson) return null;
 
   const snippets: LessonCodeSnippetMeta[] = [...lesson.code_snippets]
     .sort((a, b) => a.order - b.order)
     .map((s) => ({ id: s.id, title: s.title, language: s.language, order: s.order }));
 
-  let profilesQuery = supabase
-    .from("profiles")
-    .select("id, display_name, student_number")
-    .eq("role", "student")
-    .not("student_number", "is", null);
-
-  if (classNum === "all") {
-    profilesQuery = profilesQuery
-      .gte("student_number", grade * 1000)
-      .lte("student_number", grade * 1000 + 999);
-  } else {
-    const min = grade * 1000 + classNum * 100;
-    profilesQuery = profilesQuery
-      .gte("student_number", min)
-      .lte("student_number", min + 99);
-  }
-
-  const { data: profiles } = await profilesQuery
-    .order("student_number", { ascending: true })
-    .limit(2000);
-  const studentProfiles = profiles ?? [];
-
   const result: LessonCodeResults = {
     lessonId: lesson.id,
     lessonTitle: lesson.title,
     snippets,
-    students: studentProfiles.map((p) => ({
+    students: (profiles ?? []).map((p) => ({
       userId: p.id,
       displayName: p.display_name,
       studentNumber: p.student_number,
@@ -247,17 +245,7 @@ export async function getLessonCodeStatesByStudent(
     })),
   };
 
-  if (studentProfiles.length === 0 || snippets.length === 0) return result;
-
-  const studentIds = studentProfiles.map((p) => p.id);
-  const snippetIds = snippets.map((s) => s.id);
   const rowByUser = new Map(result.students.map((s) => [s.userId, s]));
-
-  const { data: states } = await supabase
-    .from("code_states")
-    .select("snippet_id, user_id, code, last_output, updated_at")
-    .in("user_id", studentIds)
-    .in("snippet_id", snippetIds);
 
   for (const state of states ?? []) {
     const row = rowByUser.get(state.user_id);

@@ -174,8 +174,7 @@ src/
 │   │   └── teacher/
 │   │       ├── quiz-analytics/route.ts                  # 単元別ヒートマップ用データ
 │   │       ├── lessons/[lessonId]/
-│   │       │   ├── memo-students/route.ts                # 生徒メタデータ一覧（クラス絞り込み）
-│   │       │   ├── memo-students/[userId]/route.ts       # 特定生徒のメモ一覧
+│   │       │   ├── memos/route.ts                         # レッスン別：クラス全員分のメモ（生徒ごと）
 │   │       │   ├── quiz-analytics/route.ts                # レッスン別：生徒×設問の回答一覧
 │   │       │   └── code-analytics/route.ts                # レッスン別：生徒×コードスニペットの実行状況
 │   │       └── units/[unitId]/
@@ -248,6 +247,8 @@ src/
 │   │   └── users.ts                                     # プロフィール・生徒一覧
 │   ├── student-dashboard.ts                             # 生徒ダッシュボード・個人詳細の集計ロジック（純粋関数）
 │   ├── student-number.ts                                # 学籍番号（GCNN 形式）から学年・クラスの範囲を算出
+│   ├── hooks/
+│   │   └── use-lazy-fetch.ts                            # 必要になったときだけ取得し、同じ URL なら再取得しないフック
 │   ├── pyodide-runner.ts                                # Pyodide による Python 実行（jsDelivr CDNから読み込み）
 │   ├── js-runner.ts                                     # サンドボックスiframeによる JavaScript 実行
 │   ├── tiptap/

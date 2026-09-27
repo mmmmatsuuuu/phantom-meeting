@@ -1,13 +1,15 @@
 "use client";
 
-import { useEffect, useState } from "react";
 import Link from "next/link";
 import type { LessonCodeResults, LessonCodeStudentState } from "@/lib/db/code-snippets";
+import { useLazyFetch } from "@/lib/hooks/use-lazy-fetch";
 
 type Props = {
   lessonId: string;
   grade: number;
-  classNum: number | "all";
+  classNum: number;
+  /** タブが開かれているか。開かれているときだけ取得する */
+  active: boolean;
 };
 
 const LANGUAGE_LABELS: Record<string, string> = {
@@ -77,47 +79,17 @@ function SnippetBlock({
  * 以前はテーブル+Tooltipで表示していたが、コードは読む・スクロールする・
  * コピーするといった操作が必要なためTooltipと相性が悪く、常時表示のカードに変更した。
  */
-export default function LessonCodeCards({ lessonId, grade, classNum }: Props) {
-  const [data, setData] = useState<LessonCodeResults | null>(null);
-  const [loading, setLoading] = useState(false);
-  const [fetchError, setFetchError] = useState<string | null>(null);
-
-  useEffect(() => {
-    let cancelled = false;
-
-    const fetchData = async () => {
-      setLoading(true);
-      setFetchError(null);
-      const params = new URLSearchParams({
-        grade: String(grade),
-        class: classNum === "all" ? "all" : String(classNum),
-      });
-      try {
-        const res = await fetch(
-          `/api/teacher/lessons/${lessonId}/code-analytics?${params.toString()}`
-        );
-        const json = (await res.json()) as {
-          data: LessonCodeResults | null;
-          error: string | null;
-        };
-        if (cancelled) return;
-        if (json.error) {
-          setFetchError(json.error);
-        } else {
-          setData(json.data);
-        }
-      } catch {
-        if (!cancelled) setFetchError("コード実行状況の取得に失敗しました");
-      } finally {
-        if (!cancelled) setLoading(false);
-      }
-    };
-
-    fetchData();
-    return () => {
-      cancelled = true;
-    };
-  }, [lessonId, grade, classNum]);
+export default function LessonCodeCards({ lessonId, grade, classNum, active }: Props) {
+  // タブを開いているときだけ取得する（同じ条件で取得済みなら再取得しない）
+  const {
+    data,
+    error: fetchError,
+    loading,
+  } = useLazyFetch<LessonCodeResults>(
+    `/api/teacher/lessons/${lessonId}/code-analytics?grade=${grade}&class=${classNum}`,
+    active,
+    "コード実行状況の取得に失敗しました"
+  );
 
   if (loading) return <SkeletonCards />;
 
