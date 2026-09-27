@@ -532,6 +532,18 @@ export type Database = {
     }
     Functions: {
       my_role: { Args: never; Returns: Database["public"]["Enums"]["role"] }
+      quiz_question_stats: {
+        Args: {
+          p_max_student_number: number
+          p_min_student_number: number
+          p_subject_id: string
+        }
+        Returns: {
+          correct_count: number
+          question_id: string
+          total_count: number
+        }[]
+      }
     }
     Enums: {
       code_language: "python" | "javascript"

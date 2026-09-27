@@ -1,6 +1,7 @@
 import { createClient, getUser } from "@/lib/supabase/server";
 import type { Database } from "@/lib/supabase/types";
 import { tiptapDocToText } from "@/lib/tiptap-utils";
+import { studentNumberRange } from "@/lib/student-number";
 
 export type Quiz = Database["public"]["Tables"]["quizzes"]["Row"];
 export type QuizQuestion = Database["public"]["Tables"]["quiz_questions"]["Row"];
@@ -359,133 +360,43 @@ export async function getQuizAnalytics(
   classNum: number | "all"
 ): Promise<QuizAnalyticsResult | null> {
   const supabase = await createClient();
+  const { min, max } = studentNumberRange(grade, classNum);
 
-  // 科目・単元・レッスンをネスト select で1クエリで取得
-  const { data: subject } = await supabase
-    .from("subjects")
-    .select("name, units(id, name, order, lessons(id, title, order, unit_id))")
-    .eq("id", subjectId)
-    .single();
+  // 科目→単元→レッスン→クイズ→設問のネスト select と、設問別の集計（RPC）を並列で取得する。
+  // 集計は受験記録が1000行を超えても欠けないよう DB 側で行う（quiz_question_stats）
+  const [{ data: subject }, { data: stats }] = await Promise.all([
+    supabase
+      .from("subjects")
+      .select(
+        "name, units(id, name, order, lessons(id, title, order, unit_id, quizzes(id, quiz_questions(id, type, content, order))))"
+      )
+      .eq("id", subjectId)
+      .single(),
+    supabase.rpc("quiz_question_stats", {
+      p_subject_id: subjectId,
+      p_min_student_number: min,
+      p_max_student_number: max,
+    }),
+  ]);
   if (!subject) return null;
 
+  const statsByQuestion = new Map((stats ?? []).map((s) => [s.question_id, s]));
+
   const units = [...subject.units].sort((a, b) => a.order - b.order);
-
-  const emptyResult: QuizAnalyticsResult = {
-    subjectId,
-    subjectName: subject.name,
-    lessons: [],
-  };
-
-  if (units.length === 0) return emptyResult;
-
+  const unitMap = new Map(units.map((u) => [u.id, u.name]));
   const lessons = units
     .flatMap((u) => u.lessons)
     .sort((a, b) => a.order - b.order);
-  if (lessons.length === 0) return emptyResult;
-
-  const lessonIds = lessons.map((l) => l.id);
-
-  // クイズと問題をネスト select で1クエリで取得
-  const { data: quizzes } = await supabase
-    .from("quizzes")
-    .select("id, lesson_id, quiz_questions(id, quiz_id, type, content, order)")
-    .in("lesson_id", lessonIds);
-  if (!quizzes || quizzes.length === 0) return emptyResult;
-
-  const quizIds = quizzes.map((q) => q.id);
-  const questions = quizzes
-    .flatMap((q) => q.quiz_questions)
-    .sort((a, b) => a.order - b.order);
-
-  // フィルタされた生徒IDを取得
-  let profilesQuery = supabase
-    .from("profiles")
-    .select("id")
-    .eq("role", "student")
-    .not("student_number", "is", null);
-
-  if (classNum === "all") {
-    profilesQuery = profilesQuery
-      .gte("student_number", grade * 1000)
-      .lte("student_number", grade * 1000 + 999);
-  } else {
-    const min = grade * 1000 + classNum * 100;
-    profilesQuery = profilesQuery
-      .gte("student_number", min)
-      .lte("student_number", min + 99);
-  }
-
-  const { data: profiles } = await profilesQuery.limit(2000);
-  const studentIds = (profiles ?? []).map((p) => p.id);
-
-  const questionStats = new Map<string, { correct: number; total: number }>();
-
-  if (studentIds.length > 0) {
-    // 各生徒・各クイズの最新受験IDを特定
-    // Supabase デフォルト上限(1000件)を超えないよう limit を明示する
-    const { data: attempts } = await supabase
-      .from("quiz_attempts")
-      .select("id, quiz_id, user_id, submitted_at")
-      .in("quiz_id", quizIds)
-      .in("user_id", studentIds)
-      .order("submitted_at", { ascending: false })
-      .limit(20000);
-
-    if (attempts && attempts.length > 0) {
-      const latestAttemptMap = new Map<string, string>();
-      for (const attempt of attempts) {
-        const key = `${attempt.user_id}_${attempt.quiz_id}`;
-        if (!latestAttemptMap.has(key)) {
-          latestAttemptMap.set(key, attempt.id);
-        }
-      }
-      const latestAttemptIds = Array.from(latestAttemptMap.values());
-
-      // .in() に大量の UUID を渡すと PostgREST の URL 長制限を超えて
-      // クエリが失敗し全問 N/A になるため、チャンクに分割して取得する
-      const CHUNK_SIZE = 100;
-      const allAnswers: Array<{ question_id: string; is_correct: boolean | null }> = [];
-      for (let i = 0; i < latestAttemptIds.length; i += CHUNK_SIZE) {
-        const chunk = latestAttemptIds.slice(i, i + CHUNK_SIZE);
-        const { data: chunkAnswers } = await supabase
-          .from("quiz_attempt_answers")
-          .select("question_id, is_correct")
-          .in("attempt_id", chunk)
-          .limit(CHUNK_SIZE * 30);
-        if (chunkAnswers) {
-          allAnswers.push(...chunkAnswers);
-        }
-      }
-
-      for (const answer of allAnswers) {
-        if (answer.is_correct === null) continue;
-        const stats = questionStats.get(answer.question_id) ?? { correct: 0, total: 0 };
-        stats.total++;
-        if (answer.is_correct) stats.correct++;
-        questionStats.set(answer.question_id, stats);
-      }
-    }
-  }
-
-  // 授業・単元のマッピング
-  const unitMap = new Map(units.map((u) => [u.id, u.name]));
-  const quizByLesson = new Map(quizzes.map((q) => [q.lesson_id, q.id]));
-  const questionsByQuiz = new Map<string, typeof questions>();
-  for (const q of questions) {
-    const list = questionsByQuiz.get(q.quiz_id) ?? [];
-    list.push(q);
-    questionsByQuiz.set(q.quiz_id, list);
-  }
 
   const lessonAnalytics: LessonAnalytics[] = [];
   for (const lesson of lessons) {
-    const quizId = quizByLesson.get(lesson.id);
-    if (!quizId) continue;
-    const qs = questionsByQuiz.get(quizId) ?? [];
+    const quiz = lesson.quizzes[0];
+    if (!quiz) continue;
+    const qs = [...quiz.quiz_questions].sort((a, b) => a.order - b.order);
     if (qs.length === 0) continue;
 
     const questionAnalytics: QuizQuestionAnalytics[] = qs.map((q) => {
-      const stats = questionStats.get(q.id);
+      const stat = statsByQuestion.get(q.id);
       const isShortAnswer = q.type === "short_answer";
       return {
         id: q.id,
@@ -493,10 +404,10 @@ export async function getQuizAnalytics(
         type: q.type as QuizQuestionType,
         content: q.content as Record<string, unknown>,
         avgCorrectRate:
-          isShortAnswer || !stats || stats.total === 0
+          isShortAnswer || !stat || stat.total_count === 0
             ? null
-            : stats.correct / stats.total,
-        answerCount: stats?.total ?? 0,
+            : stat.correct_count / stat.total_count,
+        answerCount: stat?.total_count ?? 0,
       };
     });
 
