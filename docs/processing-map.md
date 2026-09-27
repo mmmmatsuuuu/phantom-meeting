@@ -198,7 +198,9 @@
 |---|---|---|
 | フロント | 学年・クラス・科目の選択、単元ごとのグループ化、正答率による色分け、設問の Tooltip | `components/teacher/quiz-analytics.tsx` |
 | API | 教師確認、学年・クラスの検証 | `api/teacher/quiz-analytics/route.ts` |
-| lib/db | 科目・レッスン・設問の取得、学籍番号の範囲で対象生徒を絞り込み、**最新受験の特定と設問ごとの正答率の集計（JS）** | `quizzes.ts` `getQuizAnalytics` |
+| lib/db | 科目→単元→レッスン→小テスト→設問をネスト select で取得し、RPC の集計結果から正答率を算出して組み立て | `quizzes.ts` `getQuizAnalytics` |
+| lib | 学年・クラスから学籍番号の範囲を算出 | `lib/student-number.ts` `studentNumberRange` |
+| DB | 対象生徒×小テストごとの最新受験を特定し、設問ごとの正答数・回答数を集計 | RPC `quiz_question_stats` |
 
 ### 分析：レッスン別（`/teacher/analytics/lessons`）
 
@@ -243,7 +245,13 @@
 | `on_auth_user_created` | トリガー | 上記を `auth.users` の INSERT 後に実行 | 同上 |
 | `set_updated_at()` / `memos_set_updated_at` | トリガー | `memos` 更新時に `updated_at` を更新 | 同上 |
 
-アプリから呼び出す SQL 関数（RPC）は現在なし。
+### アプリから呼び出す SQL 関数（RPC）
+
+すべて `security invoker`（呼び出したユーザーの RLS が効く）で、未ログイン（anon）からは実行できない。
+
+| 名前 | 処理 | 呼び出し元 | 定義 |
+|---|---|---|---|
+| `quiz_question_stats(subject_id, min, max)` | 科目内の小テストについて、学籍番号が範囲内の生徒ごとに最新受験を特定し、設問ごとの正答数・回答数（記述式を除く）を返す | `quizzes.ts` `getQuizAnalytics` | `20260928000001_quiz_question_stats.sql` |
 
 ### RLS の概要
 
@@ -262,6 +270,7 @@
 
 | テーブル | 列 |
 |---|---|
+| `quiz_attempts` | `(quiz_id, user_id, submitted_at desc)`（最新受験の特定用） |
 | `quiz_attempt_answers` | `attempt_id`、`question_id` |
 | `code_snippets` | `lesson_id` |
 | `code_states` | `snippet_id` |
@@ -274,10 +283,9 @@ Supabase の `max_rows = 1000` により、1リクエストで1000行を超え�
 
 | 関数 | 取得対象 | 上限に達する条件 |
 |---|---|---|
-| `quizzes.ts` `getQuizAnalytics` | 科目内の全クイズ×対象生徒の受験記録 | 受験記録が1000件を超えると、古い単元の結果が欠ける |
 | `quizzes.ts` `getLessonQuizResultsByStudent` | 1クイズ×対象生徒の受験記録、メモ | 学年全体で再受験が多い場合 |
 | `quizzes.ts` `getUnitQuizResultsForExport` | 単元内の全クイズ×学年の受験記録 | 単元の小テスト数×学年の生徒数×受験回数が1000を超える場合 |
-| 上記3関数の回答取得（100受験ずつ分割） | 受験100件分の回答 | 1つの小テストの設問が10問を超える場合 |
+| 上記2関数の回答取得（100受験ずつ分割） | 受験100件分の回答 | 1つの小テストの設問が10問を超える場合 |
 | `code-snippets.ts` `getLessonCodeStatesByStudent` | 対象生徒×初期コードの保存内容 | 学年全体×初期コードが多い場合 |
 | `memos.ts` `getStudentsWithMemoCounts` | 対象生徒のメモ | 学年全体のメモ件数が1000を超える場合 |
 | `memos.ts` `getUnitMemoSamplesForExport` | 生徒100人分×単元内のメモ | 単元のメモが多い場合 |

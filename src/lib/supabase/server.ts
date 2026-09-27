@@ -8,7 +8,7 @@ export async function createClient() {
   const publicUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
   const internalUrl = process.env.SUPABASE_INTERNAL_URL;
 
-  return createServerClient(
+  return createServerClient<Database>(
     publicUrl,
     process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY!,
     {
