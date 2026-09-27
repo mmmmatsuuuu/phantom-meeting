@@ -456,36 +456,65 @@ export type LessonQuizStudentRow = {
 export type LessonQuizStudentResults = {
   lessonId: string;
   lessonTitle: string;
-  quizTitle: string;
+  /** null = このレッスンには小テストがない（questions は空、students はメモ件数のみ） */
+  quizTitle: string | null;
   questions: LessonQuizQuestionMeta[];
   students: LessonQuizStudentRow[];
 };
 
 /**
- * 指定レッスンの小テスト結果を生徒×設問のマトリクスで取得する（teacher/admin 向け）
- * 各生徒の最新受験のみを対象とする。
+ * 指定レッスン・クラスの小テスト結果を生徒×設問のマトリクスで取得する（teacher/admin 向け）
+ * 各生徒の最新受験のみを対象とする。レッスンが存在しない場合のみ null。
+ *
+ * 1クラス（最大99人）に限定しているため、受験記録・メモは通常の select で
+ * max_rows（1000行）に収まる。回答は受験記録にネストして取得する（ネストした行は上限の対象外）。
  */
 export async function getLessonQuizResultsByStudent(
   lessonId: string,
   grade: number,
-  classNum: number | "all"
+  classNum: number
 ): Promise<LessonQuizStudentResults | null> {
   const supabase = await createClient();
+  const { min, max } = studentNumberRange(grade, classNum);
 
-  // レッスン・クイズ・設問をネスト select で1クエリで取得
-  const { data: lesson } = await supabase
-    .from("lessons")
-    .select(
-      "id, title, quizzes(id, title, quiz_questions(id, type, content, correct_answer, options, order))"
-    )
-    .eq("id", lessonId)
-    .single();
+  // 4クエリを並列で取得する。受験記録は小テストのレッスンで絞り込むため、小テストIDを先に知る必要はない
+  const [{ data: lesson }, { data: profiles }, { data: memoRows }, { data: attempts }] =
+    await Promise.all([
+      supabase
+        .from("lessons")
+        .select(
+          "id, title, quizzes(id, title, quiz_questions(id, type, content, correct_answer, options, order))"
+        )
+        .eq("id", lessonId)
+        .single(),
+      supabase
+        .from("profiles")
+        .select("id, display_name, student_number")
+        .eq("role", "student")
+        .gte("student_number", min)
+        .lte("student_number", max)
+        .order("student_number", { ascending: true }),
+      supabase
+        .from("memos")
+        .select("user_id, profiles!inner(student_number)")
+        .eq("lesson_id", lessonId)
+        .gte("profiles.student_number", min)
+        .lte("profiles.student_number", max),
+      supabase
+        .from("quiz_attempts")
+        .select(
+          "id, quiz_id, user_id, score, max_score, quiz_attempt_answers(question_id, answer, is_correct), quizzes!inner(lesson_id), profiles!inner(student_number)"
+        )
+        .eq("quizzes.lesson_id", lessonId)
+        .gte("profiles.student_number", min)
+        .lte("profiles.student_number", max)
+        .order("submitted_at", { ascending: false }),
+    ]);
   if (!lesson) return null;
 
-  const quiz = lesson.quizzes[0];
-  if (!quiz) return null;
+  const quiz = lesson.quizzes[0] ?? null;
 
-  const questions: LessonQuizQuestionMeta[] = [...quiz.quiz_questions]
+  const questions: LessonQuizQuestionMeta[] = [...(quiz?.quiz_questions ?? [])]
     .sort((a, b) => a.order - b.order)
     .map((q) => {
       let correctAnswerText = "";
@@ -507,132 +536,63 @@ export async function getLessonQuizResultsByStudent(
       };
     });
 
-  // 対象生徒を取得
-  let profilesQuery = supabase
-    .from("profiles")
-    .select("id, display_name, student_number")
-    .eq("role", "student")
-    .not("student_number", "is", null);
+  const questionTypeById = new Map(questions.map((q) => [q.id, q.type]));
 
-  if (classNum === "all") {
-    profilesQuery = profilesQuery
-      .gte("student_number", grade * 1000)
-      .lte("student_number", grade * 1000 + 999);
-  } else {
-    const min = grade * 1000 + classNum * 100;
-    profilesQuery = profilesQuery
-      .gte("student_number", min)
-      .lte("student_number", min + 99);
+  // 生徒ごとのメモ件数
+  const memoCountByUser = new Map<string, number>();
+  for (const memo of memoRows ?? []) {
+    memoCountByUser.set(memo.user_id, (memoCountByUser.get(memo.user_id) ?? 0) + 1);
   }
 
-  const { data: profiles } = await profilesQuery
-    .order("student_number", { ascending: true })
-    .limit(2000);
-  const studentProfiles = profiles ?? [];
+  // 生徒ごとの最新受験（submitted_at の降順なので最初に出てきたものが最新）
+  const latestByUser = new Map<string, NonNullable<typeof attempts>[number]>();
+  for (const attempt of attempts ?? []) {
+    if (attempt.quiz_id !== quiz?.id) continue;
+    if (!latestByUser.has(attempt.user_id)) latestByUser.set(attempt.user_id, attempt);
+  }
 
-  const result: LessonQuizStudentResults = {
-    lessonId: lesson.id,
-    lessonTitle: lesson.title,
-    quizTitle: quiz.title,
-    questions,
-    students: studentProfiles.map((p) => ({
+  const students: LessonQuizStudentRow[] = (profiles ?? []).map((p) => {
+    const latest = latestByUser.get(p.id);
+    const answers: Record<string, LessonQuizStudentAnswer> = {};
+    for (const ans of latest?.quiz_attempt_answers ?? []) {
+      const type = questionTypeById.get(ans.question_id);
+      if (!type) continue;
+      answers[ans.question_id] = {
+        isCorrect: ans.is_correct,
+        answerText: toAnswerText(type, ans.answer as Record<string, unknown> | null),
+      };
+    }
+    return {
       userId: p.id,
       displayName: p.display_name,
       studentNumber: p.student_number,
-      attempted: false,
-      score: null,
-      maxScore: null,
-      answers: {},
-      memoCount: 0,
-    })),
-  };
-
-  if (studentProfiles.length === 0) return result;
-
-  const studentIds = studentProfiles.map((p) => p.id);
-  const rowByUser = new Map(result.students.map((s) => [s.userId, s]));
-
-  // レッスンのメモ件数（生徒ごと）
-  const { data: memoRows } = await supabase
-    .from("memos")
-    .select("user_id")
-    .eq("lesson_id", lessonId)
-    .in("user_id", studentIds)
-    .limit(5000);
-  for (const memo of memoRows ?? []) {
-    const row = rowByUser.get(memo.user_id);
-    if (row) row.memoCount++;
-  }
-
-  // 各生徒の最新受験を特定
-  const { data: attempts } = await supabase
-    .from("quiz_attempts")
-    .select("id, user_id, score, max_score, submitted_at")
-    .eq("quiz_id", quiz.id)
-    .in("user_id", studentIds)
-    .order("submitted_at", { ascending: false })
-    .limit(20000);
-
-  if (!attempts || attempts.length === 0) return result;
-
-  const userByAttempt = new Map<string, string>();
-  for (const attempt of attempts) {
-    const row = rowByUser.get(attempt.user_id);
-    if (!row || row.attempted) continue;
-    row.attempted = true;
-    row.score = attempt.score;
-    row.maxScore = attempt.max_score;
-    userByAttempt.set(attempt.id, attempt.user_id);
-  }
-  const latestAttemptIds = [...userByAttempt.keys()];
-
-  // 回答詳細をチャンク分割で取得
-  type AnswerRow = {
-    attempt_id: string;
-    question_id: string;
-    answer: Record<string, unknown>;
-    is_correct: boolean | null;
-  };
-  const allAnswers: AnswerRow[] = [];
-  const CHUNK_SIZE = 100;
-  for (let i = 0; i < latestAttemptIds.length; i += CHUNK_SIZE) {
-    const chunk = latestAttemptIds.slice(i, i + CHUNK_SIZE);
-    const { data: chunkAnswers } = await supabase
-      .from("quiz_attempt_answers")
-      .select("attempt_id, question_id, answer, is_correct")
-      .in("attempt_id", chunk)
-      .limit(CHUNK_SIZE * 30);
-    if (chunkAnswers) allAnswers.push(...(chunkAnswers as AnswerRow[]));
-  }
-
-  const questionTypeById = new Map(questions.map((q) => [q.id, q.type]));
-
-  for (const answer of allAnswers) {
-    const userId = userByAttempt.get(answer.attempt_id);
-    if (!userId) continue;
-    const row = rowByUser.get(userId);
-    const type = questionTypeById.get(answer.question_id);
-    if (!row || !type) continue;
-
-    let answerText = "";
-    if (type === "multiple_choice") {
-      answerText = String(
-        (answer.answer as { selectedText?: unknown })?.selectedText ?? ""
-      );
-    } else if (type === "ordering") {
-      const items = (answer.answer as { items?: unknown })?.items;
-      answerText = Array.isArray(items) ? items.map(String).join(" → ") : "";
-    } else {
-      answerText = String((answer.answer as { text?: unknown })?.text ?? "").trim();
-    }
-
-    row.answers[answer.question_id] = {
-      isCorrect: answer.is_correct,
-      answerText,
+      attempted: latest !== undefined,
+      score: latest?.score ?? null,
+      maxScore: latest?.max_score ?? null,
+      answers,
+      memoCount: memoCountByUser.get(p.id) ?? 0,
     };
-  }
+  });
 
-  return result;
+  return {
+    lessonId: lesson.id,
+    lessonTitle: lesson.title,
+    quizTitle: quiz?.title ?? null,
+    questions,
+    students,
+  };
+}
+
+/** 回答 JSON を表示用テキストにする（選択式: 選んだ選択肢 / 並び替え: 回答順 / 記述式: 記入内容） */
+function toAnswerText(type: QuizQuestionType, answer: Record<string, unknown> | null): string {
+  if (type === "multiple_choice") {
+    return String(answer?.selectedText ?? "");
+  }
+  if (type === "ordering") {
+    const items = answer?.items;
+    return Array.isArray(items) ? items.map(String).join(" → ") : "";
+  }
+  return String(answer?.text ?? "").trim();
 }
 
 // ─── 小テスト結果エクスポート用の型 ──────────────────────────────────

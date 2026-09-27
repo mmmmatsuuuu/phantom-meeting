@@ -206,9 +206,11 @@
 
 | 層 | 処理 | 場所 |
 |---|---|---|
-| フロント | 学年・クラス・科目・レッスンの選択、サブタブ（小テスト／コード／メモ）の切り替え | `components/teacher/lesson-analytics.tsx` |
-| フロント | 小テスト：生徒×設問の表、正誤・誤答内容・記述内容の表示 | `components/teacher/lesson-analytics.tsx` |
-| API / lib/db | 小テスト：対象生徒の取得、**最新受験の特定と回答の振り分け（JS）**、生徒ごとのメモ件数、正解テキストの組み立て | `api/teacher/lessons/[lessonId]/quiz-analytics/route.ts` → `quizzes.ts` `getLessonQuizResultsByStudent` |
+| フロント | 学年・クラス・科目・レッスンの選択（クラスは必須。学年全体は扱わない）、サブタブ（小テスト／コード／メモ）の切り替え | `components/teacher/lesson-analytics.tsx` |
+| フロント | 小テスト：タブを開いたときだけ取得（同じ条件で取得済みなら再取得しない。条件を切り替えた後に届いた古いレスポンスは破棄） | `components/teacher/lesson-analytics.tsx` |
+| フロント | 小テスト：生徒×設問の表、正誤・誤答内容・記述内容の表示。小テストのないレッスンはその旨を表示 | `components/teacher/lesson-analytics.tsx` |
+| API | 小テスト：教師確認、学年・クラスの検証（どちらも必須） | `api/teacher/lessons/[lessonId]/quiz-analytics/route.ts` |
+| lib/db | 小テスト：レッスン→小テスト→設問、クラスの生徒、メモ、受験記録（回答をネスト）の4クエリを並列取得し、生徒ごとの最新受験の特定・回答の表示用テキスト化・メモ件数の集計（JS）、正解テキストの組み立て | `quizzes.ts` `getLessonQuizResultsByStudent` |
 | フロント | コード：生徒ごとのカード表示 | `components/teacher/lesson-code-cards.tsx` |
 | API / lib/db | コード：対象生徒と、その保存済みコード・実行結果の取得 | `api/teacher/lessons/[lessonId]/code-analytics/route.ts` → `code-snippets.ts` `getLessonCodeStatesByStudent` |
 | フロント | メモ：生徒一覧を取得後、**メモのある生徒ごとに個別にメモを取得**してカード表示 | `components/teacher/lesson-memo-cards.tsx` |
@@ -283,9 +285,9 @@ Supabase の `max_rows = 1000` により、1リクエストで1000行を超え�
 
 | 関数 | 取得対象 | 上限に達する条件 |
 |---|---|---|
-| `quizzes.ts` `getLessonQuizResultsByStudent` | 1クイズ×対象生徒の受験記録、メモ | 学年全体で再受験が多い場合 |
+| `quizzes.ts` `getLessonQuizResultsByStudent` | 1レッスン×1クラスの受験記録 | 1クラスの受験記録が1000件を超える場合（40人なら1人平均25回以上の再受験）。回答は受験記録にネストしているため対象外 |
 | `quizzes.ts` `getUnitQuizResultsForExport` | 単元内の全クイズ×学年の受験記録 | 単元の小テスト数×学年の生徒数×受験回数が1000を超える場合 |
-| 上記2関数の回答取得（100受験ずつ分割） | 受験100件分の回答 | 1つの小テストの設問が10問を超える場合 |
+| 上記関数の回答取得（100受験ずつ分割） | 受験100件分の回答 | 1つの小テストの設問が10問を超える場合 |
 | `code-snippets.ts` `getLessonCodeStatesByStudent` | 対象生徒×初期コードの保存内容 | 学年全体×初期コードが多い場合 |
 | `memos.ts` `getStudentsWithMemoCounts` | 対象生徒のメモ | 学年全体のメモ件数が1000を超える場合 |
 | `memos.ts` `getUnitMemoSamplesForExport` | 生徒100人分×単元内のメモ | 単元のメモが多い場合 |
