@@ -5,6 +5,8 @@ import type { SubjectWithUnits } from "@/lib/db/contents";
 import type { QuizAnalyticsResult } from "@/lib/db/quizzes";
 import { tiptapDocToText } from "@/lib/tiptap-utils";
 import { useLazyFetch } from "@/lib/hooks/use-lazy-fetch";
+import { NO_DATA_LEVEL, RATE_LEVELS, formatRate, levelOf } from "@/lib/rate-level";
+import RateBar from "@/components/teacher/rate-bar";
 import {
   Tooltip,
   TooltipContent,
@@ -18,66 +20,6 @@ const CLASSES = [1, 2, 3, 4, 5, 6, 7, 8, 9];
 type Props = {
   subjects: SubjectWithUnits[];
 };
-
-/** 正答率の段階。上から順に判定する（min 以上ならその段階） */
-const RATE_LEVELS = [
-  {
-    min: 0.9,
-    label: "90%以上",
-    tile: "bg-emerald-100 text-emerald-800 dark:bg-emerald-500/20 dark:text-emerald-300",
-    bar: "bg-emerald-500",
-    text: "text-emerald-700 dark:text-emerald-400",
-  },
-  {
-    min: 0.7,
-    label: "70〜90%",
-    tile: "bg-yellow-100 text-yellow-800 dark:bg-yellow-500/20 dark:text-yellow-300",
-    bar: "bg-yellow-400",
-    text: "text-yellow-700 dark:text-yellow-400",
-  },
-  {
-    min: 0.4,
-    label: "40〜70%",
-    tile: "bg-orange-100 text-orange-800 dark:bg-orange-500/20 dark:text-orange-300",
-    bar: "bg-orange-500",
-    text: "text-orange-700 dark:text-orange-400",
-  },
-  {
-    min: 0,
-    label: "40%未満",
-    tile: "bg-red-100 text-red-800 dark:bg-red-500/20 dark:text-red-300",
-    bar: "bg-red-500",
-    text: "text-red-700 dark:text-red-400",
-  },
-] as const;
-
-const NO_DATA_LEVEL = {
-  label: "N/A・未受験",
-  tile: "bg-muted text-muted-foreground",
-  bar: "bg-muted-foreground/30",
-  text: "text-muted-foreground",
-} as const;
-
-function levelOf(rate: number | null) {
-  if (rate === null) return NO_DATA_LEVEL;
-  return RATE_LEVELS.find((l) => rate >= l.min) ?? RATE_LEVELS[RATE_LEVELS.length - 1];
-}
-
-function formatRate(rate: number | null): string {
-  return rate === null ? "N/A" : `${Math.round(rate * 100)}%`;
-}
-
-/** 正答率の横棒 */
-function RateBar({ rate, className = "" }: { rate: number | null; className?: string }) {
-  return (
-    <div className={`h-2 rounded-full bg-muted overflow-hidden ${className}`}>
-      <div
-        className={`h-full rounded-full ${levelOf(rate).bar}`}
-        style={{ width: `${Math.round((rate ?? 0) * 100)}%` }}
-      />
-    </div>
-  );
-}
 
 export default function QuizAnalytics({ subjects }: Props) {
   const [grade, setGrade] = useState<number | null>(null);
