@@ -176,13 +176,14 @@ export async function getUnitMemoSamplesForExport(
 
   const lessonIds = lessons.map((l) => l.id);
 
+  const { min, max } = studentNumberRange(grade, "all");
   const { data: profiles } = await supabase
     .from("profiles")
     .select("id, student_number")
     .eq("role", "student")
     .not("student_number", "is", null)
-    .gte("student_number", grade * 1000)
-    .lte("student_number", grade * 1000 + 999)
+    .gte("student_number", min)
+    .lte("student_number", max)
     .limit(2000);
 
   const students = profiles ?? [];

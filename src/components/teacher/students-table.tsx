@@ -5,6 +5,7 @@ import Link from "next/link";
 import { toast } from "sonner";
 import type { Profile } from "@/lib/db/users";
 import SubmitButton from "@/components/shared/submit-button";
+import { classOf, gradeOf } from "@/lib/student-number";
 
 type SortKey = "student_number" | "display_name";
 type SortOrder = "asc" | "desc";
@@ -14,16 +15,6 @@ type EditingState = {
   studentNumber: string;
   note: string;
 };
-
-/** 学籍番号 YGNN から学年（Y）を取り出す */
-function extractYear(n: number): number {
-  return Math.floor(n / 1000);
-}
-
-/** 学籍番号 YGNN から組（G）を取り出す */
-function extractClass(n: number): number {
-  return Math.floor((n % 1000) / 100);
-}
 
 type Props = {
   initialProfiles: Profile[];
@@ -45,8 +36,8 @@ export default function StudentsTable({ initialProfiles }: Props) {
     const classSet = new Set<number>();
     for (const p of profiles) {
       if (p.student_number !== null && String(p.student_number).length === 4) {
-        yearSet.add(extractYear(p.student_number));
-        classSet.add(extractClass(p.student_number));
+        yearSet.add(gradeOf(p.student_number));
+        classSet.add(classOf(p.student_number));
       }
     }
     return {
@@ -131,14 +122,14 @@ export default function StudentsTable({ initialProfiles }: Props) {
       filterYear === "" ||
       (p.student_number !== null &&
         String(p.student_number).length === 4 &&
-        extractYear(p.student_number) === parseInt(filterYear, 10));
+        gradeOf(p.student_number) === parseInt(filterYear, 10));
 
     // 組フィルタ
     const matchesClass =
       filterClass === "" ||
       (p.student_number !== null &&
         String(p.student_number).length === 4 &&
-        extractClass(p.student_number) === parseInt(filterClass, 10));
+        classOf(p.student_number) === parseInt(filterClass, 10));
 
     return matchesSearch && matchesYear && matchesClass;
   });
