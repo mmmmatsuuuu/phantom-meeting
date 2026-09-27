@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useRef } from "react";
+import { useState } from "react";
 import Link from "next/link";
 import type { SubjectWithUnits } from "@/lib/db/contents";
 import type {
@@ -17,6 +17,7 @@ import {
 } from "@/components/ui/tooltip";
 import LessonCodeCards from "@/components/teacher/lesson-code-cards";
 import LessonMemoCards from "@/components/teacher/lesson-memo-cards";
+import { useLazyFetch } from "@/lib/hooks/use-lazy-fetch";
 
 const GRADES = [1, 2, 3];
 const CLASSES = [1, 2, 3, 4, 5, 6, 7, 8, 9];
@@ -93,25 +94,9 @@ export default function LessonAnalytics({ subjects }: Props) {
   const [subjectId, setSubjectId] = useState<string>("");
   const [lessonId, setLessonId] = useState<string>("");
   const [activeTab, setActiveTab] = useState<Tab>("quiz");
-  /** 小テストの取得結果。key（取得時のフィルタ条件）が現在の条件と一致するときだけ表示する */
-  const [quizResult, setQuizResult] = useState<{
-    key: string;
-    data: LessonQuizStudentResults | null;
-    error: string | null;
-  } | null>(null);
-  /** 取得中のフィルタ条件 */
-  const [loadingKey, setLoadingKey] = useState<string | null>(null);
-  /** 最後にリクエストしたフィルタ条件。これと異なる条件のレスポンスは破棄する */
-  const requestedKeyRef = useRef<string | null>(null);
 
-  const filterKey =
-    grade !== null && classNum !== null && lessonId
-      ? `${lessonId}:${grade}:${classNum}`
-      : null;
-  const currentResult = quizResult && quizResult.key === filterKey ? quizResult : null;
-  const quizData = currentResult?.data ?? null;
-  const fetchError = currentResult?.error ?? null;
-  const loading = filterKey !== null && loadingKey === filterKey;
+  const filterReady = grade !== null && classNum !== null && lessonId !== "";
+  const query = filterReady ? `grade=${grade}&class=${classNum}` : "";
 
   const selectedSubject = subjects.find((s) => s.id === subjectId);
   const selectedLesson = selectedSubject?.units
@@ -121,41 +106,15 @@ export default function LessonAnalytics({ subjects }: Props) {
   // コードタブを開いたままプレイグラウンドのないレッスンに切り替えたら、小テストタブを表示する
   const effectiveTab: Tab = !playgroundEnabled && activeTab === "code" ? "quiz" : activeTab;
 
-  // 小テストタブを開いているときだけ取得する。同じ条件で取得済み・取得中なら再取得しない
-  useEffect(() => {
-    if (grade === null || classNum === null || !lessonId || !filterKey) return;
-    if (effectiveTab !== "quiz") return;
-    if (quizResult?.key === filterKey || loadingKey === filterKey) return;
-
-    const key = filterKey;
-
-    const fetchData = async () => {
-      requestedKeyRef.current = key;
-      setLoadingKey(key);
-      const params = new URLSearchParams({
-        grade: String(grade),
-        class: String(classNum),
-      });
-      let result: { data: LessonQuizStudentResults | null; error: string | null };
-      try {
-        const res = await fetch(
-          `/api/teacher/lessons/${lessonId}/quiz-analytics?${params.toString()}`
-        );
-        const json = (await res.json()) as {
-          data: LessonQuizStudentResults | null;
-          error: string | null;
-        };
-        result = json.error ? { data: null, error: json.error } : { data: json.data, error: null };
-      } catch {
-        result = { data: null, error: "データの取得に失敗しました" };
-      }
-      if (requestedKeyRef.current !== key) return;
-      setQuizResult({ key, ...result });
-      setLoadingKey(null);
-    };
-
-    fetchData();
-  }, [grade, classNum, lessonId, filterKey, effectiveTab, quizResult, loadingKey]);
+  // 小テストタブを開いているときだけ取得する（同じ条件で取得済みなら再取得しない）
+  const {
+    data: quizData,
+    error: fetchError,
+    loading,
+  } = useLazyFetch<LessonQuizStudentResults>(
+    filterReady ? `/api/teacher/lessons/${lessonId}/quiz-analytics?${query}` : null,
+    effectiveTab === "quiz"
+  );
 
   const hasQuiz = quizData?.quizTitle !== null;
   const attemptedCount = quizData?.students.filter((s) => s.attempted).length ?? 0;
@@ -270,13 +229,26 @@ export default function LessonAnalytics({ subjects }: Props) {
             ))}
           </div>
 
-          {effectiveTab === "code" && (
-            <LessonCodeCards lessonId={lessonId} grade={grade} classNum={classNum} />
+          {/* コード・メモは一度開いた結果を保持するため、非表示にするだけでアンマウントしない */}
+          {playgroundEnabled && (
+            <div hidden={effectiveTab !== "code"}>
+              <LessonCodeCards
+                lessonId={lessonId}
+                grade={grade}
+                classNum={classNum}
+                active={effectiveTab === "code"}
+              />
+            </div>
           )}
 
-          {effectiveTab === "memo" && (
-            <LessonMemoCards lessonId={lessonId} grade={grade} classNum={classNum} />
-          )}
+          <div hidden={effectiveTab !== "memo"}>
+            <LessonMemoCards
+              lessonId={lessonId}
+              grade={grade}
+              classNum={classNum}
+              active={effectiveTab === "memo"}
+            />
+          </div>
         </>
       )}
 

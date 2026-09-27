@@ -1,6 +1,7 @@
 import { createClient, getUser } from "@/lib/supabase/server";
 import type { Database } from "@/lib/supabase/types";
 import { tiptapDocToText } from "@/lib/tiptap-utils";
+import { studentNumberRange } from "@/lib/student-number";
 
 export type Memo = Database["public"]["Tables"]["memos"]["Row"] & {
   content: TiptapContent;
@@ -85,95 +86,56 @@ export async function getAllMemos(): Promise<Memo[]> {
   return data as Memo[];
 }
 
-export type StudentWithMemoCount = {
+export type LessonMemoStudent = {
   id: string;
   display_name: string;
   student_number: number | null;
-  memo_count: number;
+  /** このレッスンのメモ（作成日時の昇順） */
+  memos: Memo[];
 };
 
 /**
- * 指定学年・クラスの生徒一覧とメモ件数を取得する（teacher/admin 向け）
- * student_number の桁構造: 1桁目=学年, 2桁目=クラス, 3〜4桁目=出席番号
- * grade / classNum はどちらか一方のみ、または両方を指定できる
+ * 指定レッスン・クラスの生徒一覧と、各生徒のメモを取得する（teacher/admin 向け）
+ *
+ * 生徒一覧とクラス全員分のメモを並列で1回ずつ取得し、生徒ごとに振り分ける。
+ * 1クラス（最大99人）×1レッスンに限定しているため、メモは max_rows（1000行）に収まる。
  */
-export async function getStudentsWithMemoCounts(
+export async function getLessonMemosByClass(
   lessonId: string,
-  grade: number | null,
-  classNum: number | null
-): Promise<StudentWithMemoCount[]> {
+  grade: number,
+  classNum: number
+): Promise<LessonMemoStudent[]> {
   const supabase = await createClient();
+  const { min, max } = studentNumberRange(grade, classNum);
 
-  let query = supabase
-    .from("profiles")
-    .select("id, display_name, student_number")
-    .eq("role", "student")
-    .not("student_number", "is", null);
+  const [{ data: profiles }, { data: memos }] = await Promise.all([
+    supabase
+      .from("profiles")
+      .select("id, display_name, student_number")
+      .eq("role", "student")
+      .gte("student_number", min)
+      .lte("student_number", max)
+      .order("student_number", { ascending: true }),
+    supabase
+      .from("memos")
+      .select("id, user_id, lesson_id, content, timestamp_seconds, created_at, updated_at, profiles!inner()")
+      .eq("lesson_id", lessonId)
+      .gte("profiles.student_number", min)
+      .lte("profiles.student_number", max)
+      .order("created_at", { ascending: true }),
+  ]);
 
-  if (grade !== null && classNum !== null) {
-    const min = grade * 1000 + classNum * 100;
-    query = query.gte("student_number", min).lte("student_number", min + 99);
-  } else if (grade !== null) {
-    query = query.gte("student_number", grade * 1000).lte("student_number", grade * 1000 + 999);
-  }
-  // classNum のみの場合は全件取得して JS でフィルタ
-
-  const { data: rawProfiles, error: profilesError } = await query.order("student_number", {
-    ascending: true,
-    nullsFirst: false,
-  });
-
-  if (profilesError || !rawProfiles) return [];
-
-  const profiles =
-    grade === null && classNum !== null
-      ? rawProfiles.filter(
-          (p) =>
-            p.student_number !== null &&
-            Math.floor((p.student_number % 1000) / 100) === classNum
-        )
-      : rawProfiles;
-
-  if (profiles.length === 0) return [];
-
-  const { data: memos } = await supabase
-    .from("memos")
-    .select("user_id")
-    .eq("lesson_id", lessonId)
-    .in(
-      "user_id",
-      profiles.map((p) => p.id)
-    );
-
-  const memoCounts = new Map<string, number>();
-  for (const memo of memos ?? []) {
-    memoCounts.set(memo.user_id, (memoCounts.get(memo.user_id) ?? 0) + 1);
+  const memosByUser = new Map<string, Memo[]>();
+  for (const memo of (memos ?? []) as Memo[]) {
+    const list = memosByUser.get(memo.user_id) ?? [];
+    list.push(memo);
+    memosByUser.set(memo.user_id, list);
   }
 
-  return profiles.map((p) => ({
+  return (profiles ?? []).map((p) => ({
     ...p,
-    memo_count: memoCounts.get(p.id) ?? 0,
+    memos: memosByUser.get(p.id) ?? [],
   }));
-}
-
-/**
- * 特定生徒の指定レッスンのメモ一覧を取得する（teacher/admin 向け）
- */
-export async function getMemosByStudent(
-  lessonId: string,
-  userId: string
-): Promise<Memo[]> {
-  const supabase = await createClient();
-
-  const { data, error } = await supabase
-    .from("memos")
-    .select("*")
-    .eq("lesson_id", lessonId)
-    .eq("user_id", userId)
-    .order("created_at", { ascending: true });
-
-  if (error || !data) return [];
-  return data as Memo[];
 }
 
 export type LessonMemoSample = {
