@@ -5,13 +5,13 @@
 ```
 [Server Component]  [Client Component]
         |                   |
-        |             [API Route]      ← Client からの mutation のみ
+        |             [API Route]      ← Client からの書き込み・フィルタ操作に応じた読み取り
         |                   |
         +-------+   +-------+
                 |   |
           [src/lib/db/]               ← 全データアクセスロジックを集約
                 |
-          [Supabase]
+          [Supabase]                  ← RLS・SQL関数（RPC）・トリガー・制約
 ```
 
 ### 各層の責務
@@ -20,12 +20,48 @@
 |---|---|
 | `src/lib/db/` | Supabaseクエリを関数として集約。Server Component・API Route 両方から呼ぶ |
 | Server Component | `lib/db/` を直接呼び出してSSRでデータ取得（一覧・詳細の表示） |
-| API Route | Client Component からの mutation（メモ・投稿・レッスン登録）と秘匿キーが必要な処理（画像アップロード等） |
-| Client Component | API Route 経由で mutation、または Server Component から props を受け取る |
+| API Route | Client Component からの mutation（メモ・投稿・レッスン登録）、秘匿キーが必要な処理（画像アップロード等）、Client Component のフィルタ操作に応じた読み取り（分析・エクスポート） |
+| Client Component | API Route 経由で読み書き、または Server Component から props を受け取る |
 
 ### API Route が必要なケース
 - Client Component からの書き込み（POST / PUT / DELETE）
 - サーバー秘匿キーが必要な処理（ImageKit アップロード等）
+- Client Component の操作（学年・クラスの選択など）に応じて読み取り直す必要がある処理（教師向け分析・CSV エクスポート）
+
+---
+
+## 処理の配置方針（フロント／バックエンド／DB）
+
+どの処理をどの層に置くかの判断基準。各機能で実際にどの層が何をしているかは [処理の配置一覧](processing-map.md) にまとめている。
+
+### 各層に置く処理・置かない処理
+
+| 層 | 置く処理 | 置かない処理 |
+|---|---|---|
+| **フロント**（Client Component・`lib/` のブラウザ実行コード） | 入力・選択の状態管理、表示用の整形（色分け・ラベル・並べ替え）、受け取った少量データのグループ化、ブラウザ内で完結する処理（コード実行・ファイル生成） | 権限の判定、正誤判定など結果の確定、大量データの集計 |
+| **バックエンド**（Server Component・API Route・`lib/db/`） | 認証・ロールの確認、入力値の検証、正誤判定・採点、複数クエリの組み立て、少〜中規模データの整形・集計、CSV 生成 | 1000行を超えうる生データの集計 |
+| **DB**（Supabase） | アクセス制御（RLS）、大量の行を集計して小さな結果にする処理（SQL 関数 / RPC）、整合性の保証（外部キー・一意制約・CASCADE）、行の作成・更新に連動する処理（トリガー） | 表示の都合によるロジック |
+
+### 集計をどこでやるか
+
+判断基準は「**DB から返ってくる行数が、上限や通信量の問題になるか**」。
+
+Supabase（PostgREST）は1リクエストで返す行数に上限がある（`supabase/config.toml` の `max_rows = 1000`。本番の既定値も同じ）。この上限はクエリ側の `.limit()` より優先されるため、`.limit(20000)` と書いても1000行で打ち切られる。打ち切りはエラーにならず、**古いデータが静かに欠ける**形で現れる。
+
+| 状況 | 置き場所 | 例 |
+|---|---|---|
+| 返る行数が常に少ない（数十〜数百行） | `lib/db/` でネスト select → JS で整形 | 科目・単元・レッスンのツリー、1生徒分のメモ件数 |
+| 行数が生徒数・受験回数に比例して増え、1000行を超えうる | **DB の SQL 関数（RPC）で集計**し、結果だけ返す | 学年全体の設問別正答率、学年全体のメモ件数 |
+| 集計ではなく中身そのものを表示し、1000行を超えうる | `lib/db/` で `.range()` によるページ取得 | 学年全体のメモ本文 |
+
+複数テーブルを跨ぐ取得は、引き続き可能な限りネスト select（例: `subjects(*, units(*, lessons(*)))`）で1クエリにまとめる。リクエスト数を増やす方法（`.in()` のチャンク分割、生徒ごとの個別 fetch など）は無料枠の制約から避け、行数が多いものは RPC にする。
+
+### SQL 関数（RPC）のルール
+
+- マイグレーション（`supabase/migrations/`）で定義する。ダッシュボードから直接作らない
+- 原則 `security invoker` とし、呼び出したユーザーの権限で実行して RLS を効かせる。`security definer` は `my_role()` のように RLS を越える必要がある場合に限る
+- アプリからの呼び出しは、対応する `lib/db/` の関数1か所にまとめる。`supabase.rpc()` をページやコンポーネントから直接呼ばない
+- 関数を追加・変更したら [処理の配置一覧](processing-map.md) も同じ PR で更新する
 
 ---
 
@@ -42,7 +78,7 @@ Supabase 無料枠の Auth API 呼び出し回数を抑えるため、認証確�
 
 **新しいページ・API Route・`lib/db/` 関数を書く際は `supabase.auth.getUser()` / `getSession()` を直接呼ばないこと。** 上記のヘルパー経由にすることで、1リクエストあたりの Auth 通信・`profiles` クエリを最小限に保つ。
 
-`lib/db/` 側で複数テーブルを跨ぐ集計（分析・エクスポート系）は、可能な限り Supabase のネスト select（例: `subjects(*, units(*, lessons(*)))`）で1クエリにまとめる方針。
+複数テーブルを跨ぐ集計（分析・エクスポート系）をどこで行うかは、上の「処理の配置方針」を参照。
 
 ---
 
@@ -86,13 +122,11 @@ src/
 │   │       │   └── [lessonId]/
 │   │       │       ├── quiz/new/page.tsx                # 小テスト作成
 │   │       │       └── code-snippets/page.tsx           # コーディングプレイグラウンド管理（有効化・初期コード）
-│   │       ├── analytics/                                # 分析（タブ統合）
+│   │       ├── analytics/                                # 分析（タブ統合。/analytics 自体は next.config.ts で /analytics/units へリダイレクト）
 │   │       │   ├── layout.tsx                            # タブ切り替えUI（単元別／レッスン別／生徒別）
-│   │       │   ├── page.tsx                               # /analytics/units へリダイレクト
 │   │       │   ├── units/page.tsx                         # 単元別：授業×設問の正答率ヒートマップ
 │   │       │   ├── lessons/page.tsx                       # レッスン別：📝小テスト/💻コード/📋メモのサブタブ
 │   │       │   └── students/page.tsx                      # 生徒別：検索付き生徒リスト→個人詳細へ
-│   │       ├── quiz-analytics/page.tsx                    # 旧URL。/analytics/units へリダイレクト
 │   │       ├── students/
 │   │       │   ├── page.tsx                               # 生徒一覧（検索・インライン編集）
 │   │       │   └── [userId]/page.tsx                      # 生徒個人詳細（サマリー・単元別・レッスン別）
@@ -109,11 +143,11 @@ src/
 │   │   │   ├── route.ts                                 # 初期コード更新・削除（teacher/admin）
 │   │   │   └── state/route.ts                           # 生徒の編集内容の保存（本人のみ）
 │   │   ├── contents/
-│   │   │   ├── lessons/route.ts                         # レッスン一覧・作成
-│   │   │   ├── lessons/[lessonId]/route.ts              # レッスン更新・削除
-│   │   │   ├── subjects/route.ts                        # 科目一覧・作成
+│   │   │   ├── lessons/route.ts                         # レッスン作成（発問・初期コードも一括）
+│   │   │   ├── lessons/[lessonId]/route.ts              # プレイグラウンド有効/無効の切り替え・レッスン削除
+│   │   │   ├── subjects/route.ts                        # 科目作成
 │   │   │   ├── subjects/[subjectId]/route.ts            # 科目更新・削除
-│   │   │   ├── units/route.ts                           # 単元一覧・作成
+│   │   │   ├── units/route.ts                           # 単元作成
 │   │   │   └── units/[unitId]/route.ts                  # 単元更新・削除
 │   │   ├── images/
 │   │   │   ├── upload/route.ts                          # ImageKit アップロード（認証済みのみ）

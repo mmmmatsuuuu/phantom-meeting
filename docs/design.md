@@ -44,7 +44,8 @@ teacher への昇格は admin が Supabase 上で `profiles.role` を直接書�
 ## ドキュメント一覧
 
 - [機能設計](features.md)
-- [アーキテクチャ](architecture.md)
+- [アーキテクチャ](architecture.md)（処理の配置方針を含む）
+- [処理の配置一覧](processing-map.md)
 - [技術スタック](tech-stack.md)
 - [DBスキーマ](schema.md)
 
