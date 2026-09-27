@@ -339,19 +339,38 @@ export type QuizQuestionAnalytics = {
 export type LessonAnalytics = {
   lessonId: string;
   lessonTitle: string;
+  /** 小テストの平均正答率：記述式を除く全回答の正答数 ÷ 回答数。回答がなければ null */
+  avgCorrectRate: number | null;
+  /** 記述式を除く回答数 */
+  answerCount: number;
+  questions: QuizQuestionAnalytics[];
+};
+
+export type UnitAnalytics = {
   unitId: string;
   unitName: string;
-  questions: QuizQuestionAnalytics[];
+  /** 単元の平均正答率：単元内の小テスト平均（null を除く）の単純平均。なければ null */
+  avgCorrectRate: number | null;
+  lessons: LessonAnalytics[];
 };
 
 export type QuizAnalyticsResult = {
   subjectId: string;
   subjectName: string;
-  lessons: LessonAnalytics[];
+  /** 科目の平均正答率：科目内のすべての小テスト平均（null を除く）の単純平均。なければ null */
+  avgCorrectRate: number | null;
+  /** 小テストのあるレッスンを持つ単元のみ（単元の order 順） */
+  units: UnitAnalytics[];
 };
 
+/** null を除いた単純平均。値がなければ null */
+function averageOf(rates: (number | null)[]): number | null {
+  const values = rates.filter((r): r is number => r !== null);
+  return values.length === 0 ? null : values.reduce((sum, r) => sum + r, 0) / values.length;
+}
+
 /**
- * 指定科目・クラスの全授業×設問の平均正答率を取得する（teacher/admin 向け）
+ * 指定科目・クラスの全授業×設問の平均正答率と、小テスト・単元・科目ごとの平均正答率を取得する（teacher/admin 向け）
  * classNum: 数値でクラス指定、"all" で学年全体
  */
 export async function getQuizAnalytics(
@@ -368,7 +387,7 @@ export async function getQuizAnalytics(
     supabase
       .from("subjects")
       .select(
-        "name, units(id, name, order, lessons(id, title, order, unit_id, quizzes(id, quiz_questions(id, type, content, order))))"
+        "name, units(id, name, order, lessons(id, title, order, quizzes(id, quiz_questions(id, type, content, order))))"
       )
       .eq("id", subjectId)
       .single(),
@@ -382,45 +401,63 @@ export async function getQuizAnalytics(
 
   const statsByQuestion = new Map((stats ?? []).map((s) => [s.question_id, s]));
 
-  const units = [...subject.units].sort((a, b) => a.order - b.order);
-  const unitMap = new Map(units.map((u) => [u.id, u.name]));
-  const lessons = units
-    .flatMap((u) => u.lessons)
-    .sort((a, b) => a.order - b.order);
+  const unitAnalytics: UnitAnalytics[] = [];
+  for (const unit of [...subject.units].sort((a, b) => a.order - b.order)) {
+    const lessonAnalytics: LessonAnalytics[] = [];
+    for (const lesson of [...unit.lessons].sort((a, b) => a.order - b.order)) {
+      const quiz = lesson.quizzes[0];
+      if (!quiz) continue;
+      const qs = [...quiz.quiz_questions].sort((a, b) => a.order - b.order);
+      if (qs.length === 0) continue;
 
-  const lessonAnalytics: LessonAnalytics[] = [];
-  for (const lesson of lessons) {
-    const quiz = lesson.quizzes[0];
-    if (!quiz) continue;
-    const qs = [...quiz.quiz_questions].sort((a, b) => a.order - b.order);
-    if (qs.length === 0) continue;
+      let correctTotal = 0;
+      let answerTotal = 0;
+      const questionAnalytics: QuizQuestionAnalytics[] = qs.map((q) => {
+        const stat = statsByQuestion.get(q.id);
+        const isShortAnswer = q.type === "short_answer";
+        if (!isShortAnswer && stat) {
+          correctTotal += stat.correct_count;
+          answerTotal += stat.total_count;
+        }
+        return {
+          id: q.id,
+          order: q.order,
+          type: q.type as QuizQuestionType,
+          content: q.content as Record<string, unknown>,
+          avgCorrectRate:
+            isShortAnswer || !stat || stat.total_count === 0
+              ? null
+              : stat.correct_count / stat.total_count,
+          answerCount: stat?.total_count ?? 0,
+        };
+      });
 
-    const questionAnalytics: QuizQuestionAnalytics[] = qs.map((q) => {
-      const stat = statsByQuestion.get(q.id);
-      const isShortAnswer = q.type === "short_answer";
-      return {
-        id: q.id,
-        order: q.order,
-        type: q.type as QuizQuestionType,
-        content: q.content as Record<string, unknown>,
-        avgCorrectRate:
-          isShortAnswer || !stat || stat.total_count === 0
-            ? null
-            : stat.correct_count / stat.total_count,
-        answerCount: stat?.total_count ?? 0,
-      };
-    });
+      lessonAnalytics.push({
+        lessonId: lesson.id,
+        lessonTitle: lesson.title,
+        avgCorrectRate: answerTotal > 0 ? correctTotal / answerTotal : null,
+        answerCount: answerTotal,
+        questions: questionAnalytics,
+      });
+    }
+    if (lessonAnalytics.length === 0) continue;
 
-    lessonAnalytics.push({
-      lessonId: lesson.id,
-      lessonTitle: lesson.title,
-      unitId: lesson.unit_id,
-      unitName: unitMap.get(lesson.unit_id) ?? "",
-      questions: questionAnalytics,
+    unitAnalytics.push({
+      unitId: unit.id,
+      unitName: unit.name,
+      avgCorrectRate: averageOf(lessonAnalytics.map((l) => l.avgCorrectRate)),
+      lessons: lessonAnalytics,
     });
   }
 
-  return { subjectId, subjectName: subject.name, lessons: lessonAnalytics };
+  return {
+    subjectId,
+    subjectName: subject.name,
+    avgCorrectRate: averageOf(
+      unitAnalytics.flatMap((u) => u.lessons.map((l) => l.avgCorrectRate))
+    ),
+    units: unitAnalytics,
+  };
 }
 
 // ─── レッスン別分析（教員向け・生徒×設問） ──────────────────────────

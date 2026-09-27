@@ -1,9 +1,10 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import type { SubjectWithUnits } from "@/lib/db/contents";
-import type { QuizAnalyticsResult, LessonAnalytics } from "@/lib/db/quizzes";
+import type { QuizAnalyticsResult } from "@/lib/db/quizzes";
 import { tiptapDocToText } from "@/lib/tiptap-utils";
+import { useLazyFetch } from "@/lib/hooks/use-lazy-fetch";
 import {
   Tooltip,
   TooltipContent,
@@ -18,75 +19,95 @@ type Props = {
   subjects: SubjectWithUnits[];
 };
 
-function getRateColor(rate: number | null): string {
-  if (rate === null) return "#e5e7eb";
-  if (rate < 0.4) return "#ef4444";
-  if (rate < 0.7) return "#f97316";
-  if (rate < 0.9) return "#eab308";
-  return "#22c55e";
-}
-
-function getRateTextColor(rate: number | null): string {
-  if (rate === null) return "#9ca3af";
-  if (rate < 0.9) return "#ffffff";
-  return "#1a1a1a";
-}
-
-const LEGEND = [
-  { color: "#ef4444", label: "0〜40%" },
-  { color: "#f97316", label: "40〜70%" },
-  { color: "#eab308", label: "70〜90%" },
-  { color: "#22c55e", label: "90〜100%" },
-  { color: "#e5e7eb", label: "N/A / 未受験" },
+/** 正答率の段階。上から順に判定する（min 以上ならその段階） */
+const RATE_LEVELS = [
+  {
+    min: 0.9,
+    label: "90%以上",
+    tile: "bg-emerald-100 text-emerald-800 dark:bg-emerald-500/20 dark:text-emerald-300",
+    bar: "bg-emerald-500",
+    text: "text-emerald-700 dark:text-emerald-400",
+  },
+  {
+    min: 0.7,
+    label: "70〜90%",
+    tile: "bg-yellow-100 text-yellow-800 dark:bg-yellow-500/20 dark:text-yellow-300",
+    bar: "bg-yellow-400",
+    text: "text-yellow-700 dark:text-yellow-400",
+  },
+  {
+    min: 0.4,
+    label: "40〜70%",
+    tile: "bg-orange-100 text-orange-800 dark:bg-orange-500/20 dark:text-orange-300",
+    bar: "bg-orange-500",
+    text: "text-orange-700 dark:text-orange-400",
+  },
+  {
+    min: 0,
+    label: "40%未満",
+    tile: "bg-red-100 text-red-800 dark:bg-red-500/20 dark:text-red-300",
+    bar: "bg-red-500",
+    text: "text-red-700 dark:text-red-400",
+  },
 ] as const;
+
+const NO_DATA_LEVEL = {
+  label: "N/A・未受験",
+  tile: "bg-muted text-muted-foreground",
+  bar: "bg-muted-foreground/30",
+  text: "text-muted-foreground",
+} as const;
+
+function levelOf(rate: number | null) {
+  if (rate === null) return NO_DATA_LEVEL;
+  return RATE_LEVELS.find((l) => rate >= l.min) ?? RATE_LEVELS[RATE_LEVELS.length - 1];
+}
+
+function formatRate(rate: number | null): string {
+  return rate === null ? "N/A" : `${Math.round(rate * 100)}%`;
+}
+
+/** 正答率の横棒 */
+function RateBar({ rate, className = "" }: { rate: number | null; className?: string }) {
+  return (
+    <div className={`h-2 rounded-full bg-muted overflow-hidden ${className}`}>
+      <div
+        className={`h-full rounded-full ${levelOf(rate).bar}`}
+        style={{ width: `${Math.round((rate ?? 0) * 100)}%` }}
+      />
+    </div>
+  );
+}
 
 export default function QuizAnalytics({ subjects }: Props) {
   const [grade, setGrade] = useState<number | null>(null);
   const [classNum, setClassNum] = useState<number | "all" | null>(null);
   const [subjectId, setSubjectId] = useState<string>("");
-  const [data, setData] = useState<QuizAnalyticsResult | null>(null);
-  const [loading, setLoading] = useState(false);
-  const [fetchError, setFetchError] = useState<string | null>(null);
 
-  useEffect(() => {
-    if (grade === null || classNum === null || !subjectId) {
-      setData(null);
-      return;
-    }
-
-    const fetchData = async () => {
-      setLoading(true);
-      setFetchError(null);
-      const params = new URLSearchParams({
-        subjectId,
-        grade: String(grade),
-        class: classNum === "all" ? "all" : String(classNum),
-      });
-      try {
-        const res = await fetch(`/api/teacher/quiz-analytics?${params.toString()}`);
-        const json = (await res.json()) as {
-          data: QuizAnalyticsResult | null;
-          error: string | null;
-        };
-        if (json.error) {
-          setFetchError(json.error);
-        } else {
-          setData(json.data);
-        }
-      } catch {
-        setFetchError("データの取得に失敗しました");
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    fetchData();
-  }, [grade, classNum, subjectId]);
+  const filterReady = grade !== null && classNum !== null && subjectId !== "";
+  const {
+    data,
+    error: fetchError,
+    loading,
+  } = useLazyFetch<QuizAnalyticsResult>(
+    filterReady
+      ? `/api/teacher/quiz-analytics?subjectId=${subjectId}&grade=${grade}&class=${classNum}`
+      : null,
+    true
+  );
 
   const handleGradeChange = (value: number | null) => {
     setGrade(value);
     setClassNum(null);
   };
+
+  // 新しい単元（order の大きい順）を上に表示する。単元内のレッスンは授業の順のまま
+  const units = data ? [...data.units].reverse() : [];
+  const quizCount = units.reduce((n, u) => n + u.lessons.length, 0);
+  const targetLabel =
+    grade !== null && classNum !== null
+      ? `${grade}年${classNum === "all" ? "全クラス" : `${classNum}組`}`
+      : "";
 
   return (
     <div className="space-y-6">
@@ -146,23 +167,15 @@ export default function QuizAnalytics({ subjects }: Props) {
             ))}
           </select>
         </div>
-
-        {grade !== null && classNum !== null && subjectId && (
-          <span className="text-xs text-muted-foreground">
-            {grade}年{classNum === "all" ? "全クラス" : `${classNum}組`} /{" "}
-            {subjects.find((s) => s.id === subjectId)?.name}
-          </span>
-        )}
       </div>
 
       {/* ローディング */}
       {loading && (
-        <div className="rounded-md border overflow-hidden">
-          <div className="animate-pulse space-y-px">
-            {Array.from({ length: 6 }).map((_, i) => (
-              <div key={i} className="h-12 bg-muted" />
-            ))}
-          </div>
+        <div className="space-y-4 animate-pulse">
+          <div className="h-24 rounded-xl bg-muted" />
+          {Array.from({ length: 2 }).map((_, i) => (
+            <div key={i} className="h-48 rounded-xl bg-muted" />
+          ))}
         </div>
       )}
 
@@ -174,81 +187,136 @@ export default function QuizAnalytics({ subjects }: Props) {
       )}
 
       {/* データなし */}
-      {!loading && !fetchError && data && data.lessons.length === 0 && (
+      {!loading && !fetchError && data && units.length === 0 && (
         <div className="p-8 text-center text-muted-foreground text-sm border rounded-md">
           この科目にはクイズのある授業がありません
         </div>
       )}
 
-      {/* ヒートマップ */}
-      {!loading && data && data.lessons.length > 0 && (
-        <>
-          <TooltipProvider>
-            <div className="space-y-6">
-              {groupByUnit(data.lessons).map(({ unitId, unitName, lessons }) => {
-                const unitMaxQuestions = Math.max(
-                  0,
-                  ...lessons.map((l) => l.questions.length)
-                );
-                return (
-                  <div key={unitId}>
-                    <h2 className="text-sm font-semibold text-muted-foreground mb-2 px-1">
-                      {unitName}
-                    </h2>
-                    <div className="rounded-md border overflow-x-auto">
-                      <table className="text-sm border-collapse">
-                        <thead>
-                          <tr className="bg-muted/50">
-                            <th className="text-left px-4 py-2.5 font-medium border-b border-r w-[200px] sticky left-0 bg-muted/50">
-                              授業
+      {!loading && data && units.length > 0 && (
+        <TooltipProvider>
+          <div className="space-y-5">
+            {/* 凡例 */}
+            <div className="flex flex-wrap items-center gap-x-4 gap-y-2 text-xs text-muted-foreground">
+              {[...RATE_LEVELS, NO_DATA_LEVEL].map((level) => (
+                <span key={level.label} className="inline-flex items-center gap-1.5">
+                  <span className={`inline-block w-3 h-3 rounded-sm ${level.tile}`} />
+                  {level.label}
+                </span>
+              ))}
+              <span className="basis-full sm:basis-auto sm:ml-auto">
+                平均：小テストは記述式を除く全回答の正答率／単元・科目は小テスト平均の単純平均
+              </span>
+            </div>
+
+            {/* 科目平均 */}
+            <div className="rounded-xl border bg-card p-5 flex flex-wrap items-center gap-x-8 gap-y-3">
+              <div>
+                <p className="text-xs text-muted-foreground">科目平均正答率</p>
+                <p
+                  className={`text-4xl font-bold tabular-nums leading-tight ${levelOf(data.avgCorrectRate).text}`}
+                >
+                  {formatRate(data.avgCorrectRate)}
+                </p>
+              </div>
+              <div className="flex-1 min-w-[200px] space-y-2">
+                <RateBar rate={data.avgCorrectRate} className="h-2.5" />
+                <p className="text-xs text-muted-foreground">
+                  {data.subjectName}・{targetLabel}・{units.length}単元・{quizCount}回の小テスト
+                </p>
+              </div>
+            </div>
+
+            {/* 単元ごとのヒートマップ */}
+            {units.map((unit) => {
+              const maxQuestions = Math.max(0, ...unit.lessons.map((l) => l.questions.length));
+              return (
+                <section
+                  key={unit.unitId}
+                  className="rounded-xl border bg-card shadow-sm overflow-hidden"
+                >
+                  <header className="flex flex-wrap items-center gap-x-4 gap-y-2 px-5 py-3 border-b bg-muted/30">
+                    <h2 className="font-semibold">{unit.unitName}</h2>
+                    <span className="text-xs text-muted-foreground">
+                      小テスト {unit.lessons.length}回
+                    </span>
+                    <div className="ml-auto flex items-center gap-3 w-full sm:w-64">
+                      <span className="text-xs text-muted-foreground shrink-0">単元平均</span>
+                      <RateBar rate={unit.avgCorrectRate} className="flex-1" />
+                      <span
+                        className={`text-sm font-bold tabular-nums w-10 text-right ${levelOf(unit.avgCorrectRate).text}`}
+                      >
+                        {formatRate(unit.avgCorrectRate)}
+                      </span>
+                    </div>
+                  </header>
+
+                  <div className="overflow-x-auto px-3 py-2">
+                    <table className="text-sm border-separate border-spacing-1">
+                      <thead>
+                        <tr className="text-xs text-muted-foreground">
+                          <th className="sticky left-0 z-10 bg-card text-left font-medium px-2 py-1.5 min-w-[180px]">
+                            授業
+                          </th>
+                          <th className="font-medium px-2 py-1.5 w-16">平均</th>
+                          <th aria-hidden className="w-2" />
+                          {Array.from({ length: maxQuestions }).map((_, i) => (
+                            <th key={i} className="font-medium px-2 py-1.5 w-16">
+                              Q{i + 1}
                             </th>
-                            {Array.from({ length: unitMaxQuestions }).map((_, i) => (
-                              <th
-                                key={i}
-                                className="px-3 py-2.5 font-medium border-b border-r text-center w-[72px]"
-                              >
-                                Q{i + 1}
-                              </th>
-                            ))}
-                          </tr>
-                        </thead>
-                        <tbody>
-                          {lessons.map((lesson) => (
-                            <tr key={lesson.lessonId} className="border-b">
-                              <td className="px-4 py-2.5 border-r sticky left-0 bg-background">
-                                <div className="font-medium truncate max-w-[200px]">
+                          ))}
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {unit.lessons.map((lesson) => {
+                          const avgLevel = levelOf(lesson.avgCorrectRate);
+                          return (
+                            <tr key={lesson.lessonId} className="group">
+                              <td className="sticky left-0 z-10 bg-card px-2 py-1 rounded-md group-hover:bg-muted/60 transition-colors">
+                                <div className="font-medium truncate max-w-[220px]">
                                   {lesson.lessonTitle}
                                 </div>
                               </td>
-                              {Array.from({ length: unitMaxQuestions }).map((_, i) => {
+
+                              {/* 小テスト平均 */}
+                              <td className="p-0">
+                                <Tooltip>
+                                  <TooltipTrigger asChild>
+                                    <div
+                                      className={`h-7 w-16 rounded-md flex items-center justify-center text-sm font-bold tabular-nums ring-1 ring-inset ring-black/5 dark:ring-white/10 cursor-default ${avgLevel.tile}`}
+                                    >
+                                      {formatRate(lesson.avgCorrectRate)}
+                                    </div>
+                                  </TooltipTrigger>
+                                  <TooltipContent side="top" className="max-w-[240px] text-left">
+                                    <p className="font-medium mb-1">小テストの平均正答率</p>
+                                    <p className="text-xs opacity-80">
+                                      記述式を除く全回答の正答率（{lesson.answerCount}回答）
+                                    </p>
+                                  </TooltipContent>
+                                </Tooltip>
+                              </td>
+
+                              <td aria-hidden className="p-0">
+                                <div className="mx-auto h-5 w-px bg-border" />
+                              </td>
+
+                              {/* 設問ごとの正答率 */}
+                              {Array.from({ length: maxQuestions }).map((_, i) => {
                                 const q = lesson.questions[i];
                                 if (!q) {
-                                  return (
-                                    <td key={i} className="border-r text-center bg-muted/20">
-                                      <span className="text-xs text-muted-foreground">—</span>
-                                    </td>
-                                  );
+                                  return <td key={i} className="p-0" />;
                                 }
                                 const rate = q.avgCorrectRate;
-                                const bg = getRateColor(rate);
-                                const textColor = getRateTextColor(rate);
-                                const label =
-                                  rate === null ? "N/A" : `${Math.round(rate * 100)}%`;
                                 const questionText = tiptapDocToText(q.content);
-
                                 return (
-                                  <td
-                                    key={i}
-                                    className="border-r text-center p-0"
-                                    style={{ backgroundColor: bg }}
-                                  >
+                                  <td key={i} className="p-0">
                                     <Tooltip>
                                       <TooltipTrigger asChild>
                                         <div
-                                          className="w-full h-full px-3 py-2.5 cursor-default text-xs font-medium"
-                                          style={{ color: textColor }}
+                                          className={`h-7 w-16 rounded-md flex items-center justify-center text-xs font-semibold tabular-nums cursor-default transition-transform group-hover:scale-[1.03] ${levelOf(rate).tile}`}
                                         >
-                                          {label}
+                                          {q.type === "short_answer" ? "記述" : formatRate(rate)}
                                         </div>
                                       </TooltipTrigger>
                                       <TooltipContent side="top" className="max-w-[240px] text-left">
@@ -259,9 +327,7 @@ export default function QuizAnalytics({ subjects }: Props) {
                                         {rate !== null && (
                                           <p className="mt-1.5 text-xs">
                                             平均正答率:{" "}
-                                            <span className="font-medium">
-                                              {Math.round(rate * 100)}%
-                                            </span>
+                                            <span className="font-medium">{formatRate(rate)}</span>
                                             <span className="opacity-70 ml-1">
                                               （{q.answerCount}人）
                                             </span>
@@ -278,30 +344,16 @@ export default function QuizAnalytics({ subjects }: Props) {
                                 );
                               })}
                             </tr>
-                          ))}
-                        </tbody>
-                      </table>
-                    </div>
+                          );
+                        })}
+                      </tbody>
+                    </table>
                   </div>
-                );
-              })}
-            </div>
-          </TooltipProvider>
-
-          {/* 凡例 */}
-          <div className="flex flex-wrap items-center gap-3 text-xs text-muted-foreground">
-            <span className="font-medium">凡例:</span>
-            {LEGEND.map(({ color, label }) => (
-              <div key={label} className="flex items-center gap-1">
-                <span
-                  className="inline-block w-3.5 h-3.5 rounded-sm border border-black/10"
-                  style={{ backgroundColor: color }}
-                />
-                <span>{label}</span>
-              </div>
-            ))}
+                </section>
+              );
+            })}
           </div>
-        </>
+        </TooltipProvider>
       )}
 
       {/* フィルタ未選択時のヒント */}
@@ -312,24 +364,4 @@ export default function QuizAnalytics({ subjects }: Props) {
       )}
     </div>
   );
-}
-
-type UnitGroup = {
-  unitId: string;
-  unitName: string;
-  lessons: LessonAnalytics[];
-};
-
-function groupByUnit(lessons: LessonAnalytics[]): UnitGroup[] {
-  const map = new Map<string, UnitGroup>();
-  for (const lesson of lessons) {
-    const group = map.get(lesson.unitId) ?? {
-      unitId: lesson.unitId,
-      unitName: lesson.unitName,
-      lessons: [],
-    };
-    group.lessons.push(lesson);
-    map.set(lesson.unitId, group);
-  }
-  return Array.from(map.values());
 }

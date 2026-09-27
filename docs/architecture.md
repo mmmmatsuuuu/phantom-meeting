@@ -126,7 +126,7 @@ src/
 │   │       │       └── code-snippets/page.tsx           # コーディングプレイグラウンド管理（有効化・初期コード）
 │   │       ├── analytics/                                # 分析（タブ統合。/analytics 自体は next.config.ts で /analytics/units へリダイレクト）
 │   │       │   ├── layout.tsx                            # タブ切り替えUI（単元別／レッスン別／生徒別）
-│   │       │   ├── units/page.tsx                         # 単元別：授業×設問の正答率ヒートマップ
+│   │       │   ├── units/page.tsx                         # 単元別：授業×設問の正答率ヒートマップ（小テスト・単元・科目の平均つき）
 │   │       │   ├── lessons/page.tsx                       # レッスン別：📝小テスト/💻コード/📋メモのサブタブ
 │   │       │   └── students/page.tsx                      # 生徒別：検索付き生徒リスト→個人詳細へ
 │   │       ├── students/

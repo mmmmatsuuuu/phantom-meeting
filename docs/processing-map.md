@@ -197,9 +197,9 @@
 
 | 層 | 処理 | 場所 |
 |---|---|---|
-| フロント | 学年・クラス・科目の選択、単元ごとのグループ化、正答率による色分け、設問の Tooltip | `components/teacher/quiz-analytics.tsx` |
+| フロント | 学年・クラス・科目の選択（`useLazyFetch` で取得）、単元を新しい順（order の降順）に並べ替え、正答率による色分け、設問の Tooltip、小テスト・単元・科目の平均正答率の表示 | `components/teacher/quiz-analytics.tsx` |
 | API | 教師確認、学年・クラスの検証 | `api/teacher/quiz-analytics/route.ts` |
-| lib/db | 科目→単元→レッスン→小テスト→設問をネスト select で取得し、RPC の集計結果から正答率を算出して組み立て | `quizzes.ts` `getQuizAnalytics` |
+| lib/db | 科目→単元→レッスン→小テスト→設問をネスト select で取得し、RPC の集計結果から設問別の正答率と平均正答率を算出して単元→レッスンの入れ子で組み立て（小テスト平均＝記述式を除く全回答の正答率、単元・科目平均＝その中の小テスト平均の単純平均） | `quizzes.ts` `getQuizAnalytics` |
 | lib | 学年・クラスから学籍番号の範囲を算出 | `lib/student-number.ts` `studentNumberRange`（学籍番号から学年・クラスを取り出す `gradeOf` / `classOf` も同ファイル） |
 | DB | 対象生徒×小テストごとの最新受験を特定し、設問ごとの正答数・回答数を集計 | RPC `quiz_question_stats` |
 
