@@ -553,25 +553,13 @@ export async function getLessonQuizResultsByStudent(
 
   const questions: LessonQuizQuestionMeta[] = [...(quiz?.quiz_questions ?? [])]
     .sort((a, b) => a.order - b.order)
-    .map((q) => {
-      let correctAnswerText = "";
-      if (q.type === "multiple_choice") {
-        const opts = (q.options as string[] | null) ?? [];
-        const index = (q.correct_answer as { index?: number })?.index ?? -1;
-        correctAnswerText = opts[index] ?? "";
-      } else if (q.type === "ordering") {
-        correctAnswerText = ((q.correct_answer as string[] | null) ?? []).join(" → ");
-      } else {
-        correctAnswerText = (q.correct_answer as { text?: string })?.text?.trim() ?? "";
-      }
-      return {
-        id: q.id,
-        order: q.order,
-        type: q.type as QuizQuestionType,
-        content: q.content as Record<string, unknown>,
-        correctAnswerText,
-      };
-    });
+    .map((q) => ({
+      id: q.id,
+      order: q.order,
+      type: q.type as QuizQuestionType,
+      content: q.content as Record<string, unknown>,
+      correctAnswerText: toCorrectAnswerText(q.type as QuizQuestionType, q.options, q.correct_answer),
+    }));
 
   const questionTypeById = new Map(questions.map((q) => [q.id, q.type]));
 
@@ -620,8 +608,25 @@ export async function getLessonQuizResultsByStudent(
   };
 }
 
+/** 正解を表示用テキストにする（選択式: 正解の選択肢 / 並び替え: 正しい順 / 記述式: 模範解答） */
+export function toCorrectAnswerText(
+  type: QuizQuestionType,
+  options: unknown,
+  correctAnswer: unknown
+): string {
+  if (type === "multiple_choice") {
+    const opts = (options as string[] | null) ?? [];
+    const index = (correctAnswer as { index?: number } | null)?.index ?? -1;
+    return opts[index] ?? "";
+  }
+  if (type === "ordering") {
+    return ((correctAnswer as string[] | null) ?? []).join(" → ");
+  }
+  return (correctAnswer as { text?: string } | null)?.text?.trim() ?? "";
+}
+
 /** 回答 JSON を表示用テキストにする（選択式: 選んだ選択肢 / 並び替え: 回答順 / 記述式: 記入内容） */
-function toAnswerText(type: QuizQuestionType, answer: Record<string, unknown> | null): string {
+export function toAnswerText(type: QuizQuestionType, answer: Record<string, unknown> | null): string {
   if (type === "multiple_choice") {
     return String(answer?.selectedText ?? "");
   }
