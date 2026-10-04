@@ -9,6 +9,7 @@ import {
 } from "@/components/ui/collapsible";
 import type { SubjectWithUnits } from "@/lib/db/contents";
 import type { LessonBadge } from "@/lib/student-dashboard";
+import ReviewPromptDialog from "@/components/student/review-prompt-dialog";
 
 const SUBJECT_COLORS = [
   "from-indigo-500 to-indigo-600",
@@ -144,9 +145,14 @@ export default function SubjectList({
                 <div className="bg-card divide-y">
                   {subject.units.map((unit) => (
                     <div key={unit.id} className="px-5 py-4">
-                      <h3 className="text-xs font-semibold tracking-widest text-muted-foreground uppercase mb-3">
-                        {unit.name}
-                      </h3>
+                      <div className="flex items-center justify-between gap-2 mb-3">
+                        <h3 className="text-xs font-semibold tracking-widest text-muted-foreground uppercase">
+                          {unit.name}
+                        </h3>
+                        {unit.lessons.length > 0 && (
+                          <ReviewPromptDialog unitId={unit.id} unitName={unit.name} />
+                        )}
+                      </div>
                       <div className="grid gap-2">
                         {unit.lessons.map((lesson, index) => (
                           <Link
