@@ -18,6 +18,7 @@
 | 画像ホスティング | ImageKit（小テスト問題文・解説の画像） |
 | Markdown変換 | tiptap-markdown（メモの Markdown エクスポート） |
 | 画面遷移フィードバック | nextjs-toploader（画面遷移中のトップローディングバー） |
+| アナリティクス | Vercel Analytics / Speed Insights（ページビュー・Core Web Vitals） |
 | AI | Claude API（Anthropic）※将来：発問自動生成 |
 
 ## 選定理由
