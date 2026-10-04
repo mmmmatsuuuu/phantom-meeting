@@ -2,6 +2,7 @@ import Link from "next/link";
 import { getQuizResultsByUser } from "@/lib/db/quizzes";
 import type { QuizAttemptResult } from "@/lib/db/quizzes";
 import LessonAttemptHistory from "@/components/student/lesson-attempt-history";
+import ReviewPromptDialog from "@/components/student/review-prompt-dialog";
 
 // ─── 型定義 ────────────────────────────────────────────────────────
 
@@ -189,7 +190,7 @@ export default async function QuizResultsPage() {
               <div className="space-y-8">
                 {subject.units.map((unit) => (
                   <section key={unit.unitId}>
-                    <div className="flex items-center gap-3 mb-4">
+                    <div className="flex flex-wrap items-center gap-3 mb-4">
                       <h3 className="text-base font-semibold text-muted-foreground">{unit.unitName}</h3>
                       <span className="text-xs px-2 py-0.5 rounded-full bg-muted text-muted-foreground">
                         単元平均{" "}
@@ -197,6 +198,9 @@ export default async function QuizResultsPage() {
                           {unit.unitAvgRate}%
                         </span>
                       </span>
+                      <div className="ml-auto">
+                        <ReviewPromptDialog unitId={unit.unitId} unitName={unit.unitName} />
+                      </div>
                     </div>
 
                     <div className="space-y-5 pl-4 border-l-2 border-indigo-100">
