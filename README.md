@@ -87,6 +87,7 @@ docker compose up
 ```bash
 docker compose exec app npm run lint
 docker compose exec app npm run typecheck
+docker compose exec app npm test        # 単体テスト（Vitest。src/**/*.test.ts）
 docker compose exec app npm run build
 ```
 
