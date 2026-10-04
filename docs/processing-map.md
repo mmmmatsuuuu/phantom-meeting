@@ -123,6 +123,16 @@
 | SC | レッスン別の統計（直近3回の最高・平均得点率）、よく間違える設問、単元平均の算出とツリー化 | `app/(student)/quiz-results/page.tsx` |
 | フロント | 受験履歴の開閉 | `components/student/lesson-attempt-history.tsx` |
 
+### AIで振り返る（`/quiz-results`・ホームの単元見出し）
+
+| 層 | 処理 | 場所 |
+|---|---|---|
+| フロント | ダイアログを開いたときだけ単元の学習データを取得（`useLazyFetch`）、メモ本文の有無の切り替え、プレビュー・文字数の表示、クリップボードへのコピー | `components/student/review-prompt-dialog.tsx` |
+| フロント | プロンプトの組み立て（受験の推移・間違えた問題などの整形）と10,000字の上限処理（メモ本文の短縮・省略 → コードを後半のレッスンから取り込む） | `lib/review-prompt.ts` `buildReviewPrompt`（純粋関数。単体テストあり） |
+| API | ログイン確認（本人のデータのみ返す） | `api/units/[unitId]/review-data/route.ts` |
+| lib/db | 単元→レッスン→発問・小テストの設問・初期コードをネスト select で取得し、本人の受験記録（回答をネスト）・メモ（共有の有無をネスト）・コードの保存内容の3クエリを並列取得。問題文・メモの tiptap JSON のテキスト化、回答・正解のテキスト化 | `review.ts` `getUnitReviewData`（回答・正解のテキスト化は `quizzes.ts` `toAnswerText` / `toCorrectAnswerText`） |
+| DB | 本人のデータは既存の RLS の範囲で読める。教師・管理者は RLS 上全生徒を読めるため、lib/db ですべて本人の ID で絞り込む | RLS（`quiz_attempts`・`memos`・`code_states`） |
+
 ### プロフィール（`/profile`）
 
 | 層 | 処理 | 場所 |
@@ -298,4 +308,4 @@ Supabase の `max_rows = 1000` により、1リクエストで1000行を超え�
 | `memos.ts` `getLessonMemosByClass` | 1レッスン×1クラスのメモ | 1クラスのメモが1000件を超える場合（40人なら1人平均25件以上） |
 | `users.ts` `getAllProfiles` | 全生徒のプロフィール | 生徒数が1000人を超える場合 |
 
-1人分のデータだけを取る関数（`getStudentQuizStatuses`・`getMemoCountsByLesson`・`getAllMemos`・`getQuizResultsByUser`）は、1人の件数が1000を超えない限り影響しない。
+1人分のデータだけを取る関数（`getStudentQuizStatuses`・`getMemoCountsByLesson`・`getAllMemos`・`getQuizResultsByUser`・`getUnitReviewData`）は、1人の件数が1000を超えない限り影響しない。

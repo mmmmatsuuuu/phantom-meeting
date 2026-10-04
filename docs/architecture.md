@@ -20,13 +20,14 @@
 |---|---|
 | `src/lib/db/` | Supabaseクエリを関数として集約。Server Component・API Route 両方から呼ぶ |
 | Server Component | `lib/db/` を直接呼び出してSSRでデータ取得（一覧・詳細の表示） |
-| API Route | Client Component からの mutation（メモ・投稿・レッスン登録）、秘匿キーが必要な処理（画像アップロード等）、Client Component のフィルタ操作に応じた読み取り（分析・エクスポート） |
+| API Route | Client Component からの mutation（メモ・投稿・レッスン登録）、秘匿キーが必要な処理（画像アップロード等）、Client Component のフィルタ操作に応じた読み取り（分析・エクスポート）、操作したときだけ必要になるデータの読み取り（「AIで振り返る」ダイアログ） |
 | Client Component | API Route 経由で読み書き、または Server Component から props を受け取る |
 
 ### API Route が必要なケース
 - Client Component からの書き込み（POST / PUT / DELETE）
 - サーバー秘匿キーが必要な処理（ImageKit アップロード等）
 - Client Component の操作（学年・クラスの選択など）に応じて読み取り直す必要がある処理（教師向け分析・CSV エクスポート）
+- 操作したときだけ必要になり、ページ表示時に取得すると無駄になるデータの読み取り（「AIで振り返る」ダイアログを開いたときの学習データ）
 
 ---
 
@@ -171,6 +172,7 @@ src/
 │   │   │       ├── route.ts                             # クイズ削除
 │   │   │       ├── attempts/route.ts                    # 提出・受験履歴取得
 │   │   │       └── questions/route.ts                   # 問題追加
+│   │   ├── units/[unitId]/review-data/route.ts          # AIで振り返る：本人の1単元分の学習データ
 │   │   └── teacher/
 │   │       ├── quiz-analytics/route.ts                  # 単元別ヒートマップ用データ
 │   │       ├── lessons/[lessonId]/
@@ -202,7 +204,8 @@ src/
 │   ├── student/
 │   │   ├── dashboard-summary.tsx                        # ホームの学習状況サマリー4カード
 │   │   ├── next-actions.tsx                             # 「つぎにやること」（要復習・未受験レッスン）
-│   │   └── lesson-attempt-history.tsx                   # 小テスト結果一覧の受験履歴表示
+│   │   ├── lesson-attempt-history.tsx                   # 小テスト結果一覧の受験履歴表示
+│   │   └── review-prompt-dialog.tsx                     # 「AIで振り返る」ダイアログ（プロンプトのプレビュー・コピー）
 │   ├── memos/
 │   │   ├── memo-download-button.tsx                     # Markdownダウンロード
 │   │   └── memo-toc.tsx                                 # 目次（IntersectionObserver）
@@ -246,7 +249,9 @@ src/
 │   │   ├── memos.ts                                     # メモ CRUD（生徒・教師向け）・メモ件数集計
 │   │   ├── posts.ts                                     # 共有投稿 CRUD
 │   │   ├── quizzes.ts                                   # 小テスト・提出記録・分析・エクスポート集計
+│   │   ├── review.ts                                    # AIで振り返る：本人の1単元分の学習データ
 │   │   └── users.ts                                     # プロフィール・生徒一覧
+│   ├── review-prompt.ts                                 # AIで振り返る：プロンプトの組み立てと上限処理（純粋関数）
 │   ├── student-dashboard.ts                             # 生徒ダッシュボード・個人詳細の集計ロジック（純粋関数）
 │   ├── student-number.ts                                # 学籍番号（GCNN 形式）の範囲算出・学年／クラスの取り出し
 │   ├── rate-level.ts                                    # 分析画面共通：正答率の段階（40/70/90%）と色・表示形式
