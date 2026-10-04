@@ -1048,7 +1048,8 @@ Vercel ダッシュボードの Analytics タブでデータが収集されて�
 - [x] `lib/db/review.ts` `getUnitReviewData`：単元の構成と本人の受験記録・メモ・コードを取得（教師・管理者が使っても本人のデータだけになるよう、すべて本人の ID で絞り込む）
 - [x] `GET /api/units/[unitId]/review-data`（ログインユーザー本人のみ）
 - [x] ダイアログ `components/student/review-prompt-dialog.tsx` と2か所の入口
-- [ ] 生成したプロンプトを複数の AI（ChatGPT・Gemini・Claude など）に貼り付け、最初の返信が「観点ごとの軽い読み取り＋質問」になるかを確認する
+- [x] 生成したプロンプトを複数の AI に貼り付け、最初の返信が「観点ごとの軽い読み取り＋質問」になるかを確認する（ChatGPT・Gemini・Claude で、テストデータから生成したプロンプトにより想定どおりの返信を確認）
+- 今後：生徒の利用後のフィードバックをもとに、プロンプトの文言を見直す
 
 ### 19c: メモエクスポート
 
