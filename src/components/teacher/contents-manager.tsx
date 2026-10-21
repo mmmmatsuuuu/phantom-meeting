@@ -2,12 +2,17 @@
 
 import { useState } from "react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 import type { SubjectWithUnits, Subject, Unit, Lesson } from "@/lib/db/contents";
+import { sortUnitsNewestFirst } from "@/lib/contents-order";
 import SubmitButton from "@/components/shared/submit-button";
+import SubjectTabs from "@/components/teacher/subject-tabs";
 
 type Props = {
-  initialSubjects: SubjectWithUnits[];
+  subjects: Pick<Subject, "id" | "name">[];
+  // 科目が1件もないときは null
+  initialSubject: SubjectWithUnits | null;
 };
 
 type EditingState =
@@ -15,11 +20,13 @@ type EditingState =
   | { type: "unit"; id: string; name: string }
   | null;
 
-export default function ContentsManager({ initialSubjects }: Props) {
-  const [subjects, setSubjects] = useState<SubjectWithUnits[]>(initialSubjects);
+export default function ContentsManager({ subjects: initialSubjects, initialSubject }: Props) {
+  const router = useRouter();
+  const [subjects, setSubjects] = useState(initialSubjects);
+  const [subject, setSubject] = useState<SubjectWithUnits | null>(initialSubject);
   const [newSubjectName, setNewSubjectName] = useState("");
   const [isAddingSubject, setIsAddingSubject] = useState(false);
-  const [addingUnitForSubjectId, setAddingUnitForSubjectId] = useState<string | null>(null);
+  const [isAddingUnit, setIsAddingUnit] = useState(false);
   const [newUnitName, setNewUnitName] = useState("");
   const [editing, setEditing] = useState<EditingState>(null);
   const [saving, setSaving] = useState(false);
@@ -37,9 +44,7 @@ export default function ContentsManager({ initialSubjects }: Props) {
       });
       const json = (await res.json()) as { data: Subject | null; error: string | null };
       if (json.data) {
-        setSubjects((prev) => [...prev, { ...json.data!, units: [] }]);
-        setNewSubjectName("");
-        setIsAddingSubject(false);
+        router.push(`/teacher/contents/${json.data.id}`);
       } else {
         toast.error("科目の追加に失敗しました");
       }
@@ -57,9 +62,8 @@ export default function ContentsManager({ initialSubjects }: Props) {
         body: JSON.stringify({ name }),
       });
       if (res.ok) {
-        setSubjects((prev) =>
-          prev.map((s) => (s.id === id ? { ...s, name } : s))
-        );
+        setSubjects((prev) => prev.map((s) => (s.id === id ? { ...s, name } : s)));
+        setSubject((prev) => (prev ? { ...prev, name } : prev));
         setEditing(null);
       } else {
         toast.error("科目名の変更に失敗しました");
@@ -73,7 +77,7 @@ export default function ContentsManager({ initialSubjects }: Props) {
     if (!confirm("この科目を削除しますか？配下の単元・レッスンもすべて削除されます。")) return;
     const res = await fetch(`/api/contents/subjects/${id}`, { method: "DELETE" });
     if (res.ok) {
-      setSubjects((prev) => prev.filter((s) => s.id !== id));
+      router.push("/teacher/contents");
     } else {
       toast.error("科目の削除に失敗しました");
     }
@@ -81,7 +85,7 @@ export default function ContentsManager({ initialSubjects }: Props) {
 
   // ---- レッスン ----
 
-  const handleDeleteLesson = async (lessonId: string, unitId: string, subjectId: string) => {
+  const handleDeleteLesson = async (lessonId: string, unitId: string) => {
     if (
       !confirm(
         "このレッスンを削除しますか？\n\nこのレッスンに紐づくメモ・投稿・小テスト回答もすべて削除されます。この操作は取り消せません。"
@@ -90,19 +94,17 @@ export default function ContentsManager({ initialSubjects }: Props) {
       return;
     const res = await fetch(`/api/contents/lessons/${lessonId}`, { method: "DELETE" });
     if (res.ok) {
-      setSubjects((prev) =>
-        prev.map((s) =>
-          s.id === subjectId
-            ? {
-                ...s,
-                units: s.units.map((u) =>
-                  u.id === unitId
-                    ? { ...u, lessons: u.lessons.filter((l) => l.id !== lessonId) }
-                    : u
-                ),
-              }
-            : s
-        )
+      setSubject((prev) =>
+        prev
+          ? {
+              ...prev,
+              units: prev.units.map((u) =>
+                u.id === unitId
+                  ? { ...u, lessons: u.lessons.filter((l) => l.id !== lessonId) }
+                  : u
+              ),
+            }
+          : prev
       );
     } else {
       toast.error("レッスンの削除に失敗しました");
@@ -122,15 +124,11 @@ export default function ContentsManager({ initialSubjects }: Props) {
       });
       const json = (await res.json()) as { data: Unit | null; error: string | null };
       if (json.data) {
-        setSubjects((prev) =>
-          prev.map((s) =>
-            s.id === subjectId
-              ? { ...s, units: [...s.units, { ...json.data!, lessons: [] }] }
-              : s
-          )
+        setSubject((prev) =>
+          prev ? { ...prev, units: [...prev.units, { ...json.data!, lessons: [] }] } : prev
         );
         setNewUnitName("");
-        setAddingUnitForSubjectId(null);
+        setIsAddingUnit(false);
       } else {
         toast.error("単元の追加に失敗しました");
       }
@@ -148,11 +146,10 @@ export default function ContentsManager({ initialSubjects }: Props) {
         body: JSON.stringify({ name }),
       });
       if (res.ok) {
-        setSubjects((prev) =>
-          prev.map((s) => ({
-            ...s,
-            units: s.units.map((u) => (u.id === id ? { ...u, name } : u)),
-          }))
+        setSubject((prev) =>
+          prev
+            ? { ...prev, units: prev.units.map((u) => (u.id === id ? { ...u, name } : u)) }
+            : prev
         );
         setEditing(null);
       } else {
@@ -163,36 +160,82 @@ export default function ContentsManager({ initialSubjects }: Props) {
     }
   };
 
-  const handleDeleteUnit = async (unitId: string, subjectId: string) => {
+  const handleDeleteUnit = async (unitId: string) => {
     if (!confirm("この単元を削除しますか？配下のレッスンもすべて削除されます。")) return;
     const res = await fetch(`/api/contents/units/${unitId}`, { method: "DELETE" });
     if (res.ok) {
-      setSubjects((prev) =>
-        prev.map((s) =>
-          s.id === subjectId
-            ? { ...s, units: s.units.filter((u) => u.id !== unitId) }
-            : s
-        )
+      setSubject((prev) =>
+        prev ? { ...prev, units: prev.units.filter((u) => u.id !== unitId) } : prev
       );
     } else {
       toast.error("単元の削除に失敗しました");
     }
   };
 
+  // 新しい単元（order の大きい順）を上に表示する。単元内のレッスンは授業の順のまま
+  const units = subject ? sortUnitsNewestFirst(subject.units) : [];
+
   return (
     <div className="max-w-3xl mx-auto px-4 py-8">
-      <div className="mb-8 flex items-center justify-between">
+      <div className="mb-6 flex items-center justify-between">
         <div>
           <h1 className="text-2xl font-bold mb-1">📚 コンテンツ管理</h1>
           <p className="text-sm text-muted-foreground">
-            科目・単元を管理します。レッスンは各単元から追加できます。
+            科目ごとに単元を管理します。新しい単元が上に表示されます。レッスンは各単元から追加できます。
           </p>
         </div>
       </div>
 
       <div className="space-y-4">
-        {subjects.map((subject) => (
-          <div key={subject.id} className="rounded-md border bg-card">
+        <SubjectTabs
+          subjects={subjects}
+          currentSubjectId={subject?.id ?? null}
+          onAddClick={() => setIsAddingSubject(true)}
+        />
+
+        {/* 科目追加 */}
+        {isAddingSubject && (
+          <form
+            className="flex gap-2"
+            onSubmit={(e) => {
+              e.preventDefault();
+              handleAddSubject();
+            }}
+          >
+            <input
+              autoFocus
+              className="flex-1 px-3 py-2 rounded-md border bg-background text-sm focus:outline-none focus:ring-2 focus:ring-ring"
+              placeholder="科目名を入力..."
+              value={newSubjectName}
+              onChange={(e) => setNewSubjectName(e.target.value)}
+            />
+            <SubmitButton
+              type="submit"
+              loading={saving}
+              loadingLabel="追加中..."
+              className="px-4 py-2 text-sm rounded-md bg-primary text-primary-foreground hover:opacity-90 transition-opacity disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              追加
+            </SubmitButton>
+            <button
+              type="button"
+              onClick={() => {
+                setIsAddingSubject(false);
+                setNewSubjectName("");
+              }}
+              className="px-4 py-2 text-sm rounded-md border hover:bg-muted transition-colors"
+            >
+              キャンセル
+            </button>
+          </form>
+        )}
+
+        {!subject ? (
+          <p className="py-8 text-center text-sm text-muted-foreground">
+            科目がまだありません。「＋ 科目を追加」から作成してください。
+          </p>
+        ) : (
+          <div className="rounded-md border bg-card">
             {/* 科目ヘッダー */}
             <div className="flex items-center gap-2 px-4 py-3 border-b bg-muted/40 rounded-t-md">
               {editing?.type === "subject" && editing.id === subject.id ? (
@@ -248,9 +291,58 @@ export default function ContentsManager({ initialSubjects }: Props) {
               )}
             </div>
 
-            {/* 単元リスト */}
             <div className="divide-y">
-              {subject.units.map((unit) => (
+              {/* 単元追加フォーム（新しい単元は先頭に並ぶため、リストの上に置く） */}
+              {isAddingUnit ? (
+                <form
+                  className="flex gap-2 px-6 py-2.5"
+                  onSubmit={(e) => {
+                    e.preventDefault();
+                    handleAddUnit(subject.id);
+                  }}
+                >
+                  <input
+                    autoFocus
+                    className="flex-1 px-2 py-1 rounded border bg-background text-sm focus:outline-none focus:ring-2 focus:ring-ring"
+                    placeholder="単元名を入力..."
+                    value={newUnitName}
+                    onChange={(e) => setNewUnitName(e.target.value)}
+                  />
+                  <SubmitButton
+                    type="submit"
+                    loading={saving}
+                    loadingLabel="追加中..."
+                    className="px-3 py-1 text-xs rounded bg-primary text-primary-foreground disabled:opacity-50 disabled:cursor-not-allowed"
+                  >
+                    追加
+                  </SubmitButton>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setIsAddingUnit(false);
+                      setNewUnitName("");
+                    }}
+                    className="px-3 py-1 text-xs rounded border hover:bg-muted"
+                  >
+                    キャンセル
+                  </button>
+                </form>
+              ) : (
+                <div className="px-6 py-2.5">
+                  <button
+                    onClick={() => {
+                      setIsAddingUnit(true);
+                      setNewUnitName("");
+                    }}
+                    className="text-xs text-muted-foreground hover:text-foreground transition-colors"
+                  >
+                    ＋ 単元を追加
+                  </button>
+                </div>
+              )}
+
+              {/* 単元リスト */}
+              {units.map((unit) => (
                 <div key={unit.id}>
                   {/* 単元行 */}
                   <div className="flex items-center gap-2 px-6 py-2.5">
@@ -304,7 +396,7 @@ export default function ContentsManager({ initialSubjects }: Props) {
                           編集
                         </button>
                         <button
-                          onClick={() => handleDeleteUnit(unit.id, subject.id)}
+                          onClick={() => handleDeleteUnit(unit.id)}
                           className="text-xs px-2 py-1 rounded border border-destructive/30 text-destructive hover:bg-destructive/10 transition-colors"
                         >
                           削除
@@ -336,7 +428,7 @@ export default function ContentsManager({ initialSubjects }: Props) {
                       </Link>
                       <button
                         onClick={() =>
-                          handleDeleteLesson(lesson.id, unit.id, subject.id)
+                          handleDeleteLesson(lesson.id, unit.id)
                         }
                         className="text-xs px-2 py-1 rounded border border-destructive/30 text-destructive hover:bg-destructive/10 transition-colors"
                       >
@@ -347,100 +439,12 @@ export default function ContentsManager({ initialSubjects }: Props) {
                 </div>
               ))}
 
-              {/* 単元追加フォーム */}
-              {addingUnitForSubjectId === subject.id ? (
-                <form
-                  className="flex gap-2 px-6 py-2.5"
-                  onSubmit={(e) => {
-                    e.preventDefault();
-                    handleAddUnit(subject.id);
-                  }}
-                >
-                  <input
-                    autoFocus
-                    className="flex-1 px-2 py-1 rounded border bg-background text-sm focus:outline-none focus:ring-2 focus:ring-ring"
-                    placeholder="単元名を入力..."
-                    value={newUnitName}
-                    onChange={(e) => setNewUnitName(e.target.value)}
-                  />
-                  <SubmitButton
-                    type="submit"
-                    loading={saving}
-                    loadingLabel="追加中..."
-                    className="px-3 py-1 text-xs rounded bg-primary text-primary-foreground disabled:opacity-50 disabled:cursor-not-allowed"
-                  >
-                    追加
-                  </SubmitButton>
-                  <button
-                    type="button"
-                    onClick={() => {
-                      setAddingUnitForSubjectId(null);
-                      setNewUnitName("");
-                    }}
-                    className="px-3 py-1 text-xs rounded border hover:bg-muted"
-                  >
-                    キャンセル
-                  </button>
-                </form>
-              ) : (
-                <div className="px-6 py-2.5">
-                  <button
-                    onClick={() => {
-                      setAddingUnitForSubjectId(subject.id);
-                      setNewUnitName("");
-                    }}
-                    className="text-xs text-muted-foreground hover:text-foreground transition-colors"
-                  >
-                    ＋ 単元を追加
-                  </button>
-                </div>
+
+              {units.length === 0 && (
+                <p className="px-6 py-4 text-sm text-muted-foreground">単元がまだありません。</p>
               )}
             </div>
           </div>
-        ))}
-
-        {/* 科目追加 */}
-        {isAddingSubject ? (
-          <form
-            className="flex gap-2"
-            onSubmit={(e) => {
-              e.preventDefault();
-              handleAddSubject();
-            }}
-          >
-            <input
-              autoFocus
-              className="flex-1 px-3 py-2 rounded-md border bg-background text-sm focus:outline-none focus:ring-2 focus:ring-ring"
-              placeholder="科目名を入力..."
-              value={newSubjectName}
-              onChange={(e) => setNewSubjectName(e.target.value)}
-            />
-            <SubmitButton
-              type="submit"
-              loading={saving}
-              loadingLabel="追加中..."
-              className="px-4 py-2 text-sm rounded-md bg-primary text-primary-foreground hover:opacity-90 transition-opacity disabled:opacity-50 disabled:cursor-not-allowed"
-            >
-              追加
-            </SubmitButton>
-            <button
-              type="button"
-              onClick={() => {
-                setIsAddingSubject(false);
-                setNewSubjectName("");
-              }}
-              className="px-4 py-2 text-sm rounded-md border hover:bg-muted transition-colors"
-            >
-              キャンセル
-            </button>
-          </form>
-        ) : (
-          <button
-            onClick={() => setIsAddingSubject(true)}
-            className="w-full py-2.5 rounded-md border border-dashed text-sm text-muted-foreground hover:text-foreground hover:border-foreground transition-colors"
-          >
-            ＋ 科目を追加
-          </button>
         )}
       </div>
     </div>

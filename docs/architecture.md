@@ -119,7 +119,9 @@ src/
 │   │   ├── layout.tsx                                   # teacher/admin ロール確認
 │   │   └── teacher/
 │   │       ├── page.tsx                                 # 教師ハブ（授業をつくる／生徒をみる の2グループ導線）
-│   │       ├── contents/page.tsx                        # 科目・単元・レッスン管理（レッスン登録・小テスト作成もここから遷移）
+│   │       ├── contents/
+│   │       │   ├── page.tsx                             # 先頭の科目のページへリダイレクト（科目0件なら科目追加のみ表示）
+│   │       │   └── [subjectId]/page.tsx                 # 科目ごとの単元・レッスン管理（レッスン登録・小テスト作成もここから遷移）
 │   │       ├── lessons/
 │   │       │   ├── new/page.tsx                         # レッスン登録
 │   │       │   └── [lessonId]/
@@ -219,7 +221,8 @@ src/
 │   │   ├── resizable-image-node.tsx                     # 画像リサイズ対応ノード
 │   │   └── user-menu.tsx                                # DropdownMenu（ロール別表示・ロールアイコン）
 │   └── teacher/
-│       ├── contents-manager.tsx                         # 科目・単元・レッスン管理UI
+│       ├── contents-manager.tsx                         # 1科目分の単元・レッスン管理UI（単元は新しい順）
+│       ├── subject-tabs.tsx                             # コンテンツ管理の科目タブ（＋科目追加）
 │       ├── lesson-new-form.tsx
 │       ├── quiz-existing.tsx
 │       ├── quiz-form.tsx                                # 小テスト作成フォーム（JSONインポート対応）
@@ -251,6 +254,7 @@ src/
 │   │   ├── quizzes.ts                                   # 小テスト・提出記録・分析・エクスポート集計
 │   │   ├── review.ts                                    # AIで振り返る：本人の1単元分の学習データ
 │   │   └── users.ts                                     # プロフィール・生徒一覧
+│   ├── contents-order.ts                                # コンテンツ管理：単元を新しい順に並べる（純粋関数）
 │   ├── review-prompt.ts                                 # AIで振り返る：プロンプトの組み立てと上限処理（純粋関数）
 │   ├── student-dashboard.ts                             # 生徒ダッシュボード・個人詳細の集計ロジック（純粋関数）
 │   ├── student-number.ts                                # 学籍番号（GCNN 形式）の範囲算出・学年／クラスの取り出し

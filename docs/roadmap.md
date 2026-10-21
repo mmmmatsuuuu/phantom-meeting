@@ -1287,6 +1287,18 @@ CREATE TABLE public.code_states (
     - 独立ページ `/teacher/lessons/[lessonId]/memos` は削除し `/teacher/analytics/lessons` へリダイレクト（`next.config.ts`。Phase 20cで `/teacher/quiz-analytics` を統合した際と同じパターン）。コンテンツ管理の「📋 メモ閲覧」リンクも削除
     - `StudentMemoViewer` は `LessonMemoCards` に置き換え（ロジックは踏襲、フィルタ部分のみ親コンポーネント共通化）
 
+## Phase 23: コンテンツ管理の科目別ページ化
+
+> 単元が増えると、古い順の一覧では最新の単元を探しにくく、複数科目が1ページに縦に並ぶため見通しも悪かった。
+
+- [x] `/teacher/contents/[subjectId]` を新設し、科目ごとにページを分割。上部の科目タブ（`SubjectTabs`）で切り替える
+  - `/teacher/contents` は先頭の科目へリダイレクト（既存のメニュー・パンくず・小テスト保存後の遷移先はそのまま使える）。科目が0件のときは科目追加のみ表示
+  - 科目の追加後は新しい科目のページへ、削除後は `/teacher/contents` へ移動
+- [x] 単元を新しい順に表示（`src/lib/contents-order.ts` の `sortUnitsNewestFirst`）。単元内のレッスンは授業の順のまま
+  - 並べ替えは表示側だけで行い、`getContents()` は他画面（生徒ホーム・分析など）と共通のため昇順のまま
+  - `order` は作成時点の単元数から決まり、削除後の追加で重複しうるため、同じ `order` なら作成日時の新しい方を上にする
+  - 新しい単元は先頭に並ぶため、「＋ 単元を追加」フォームを単元リストの上に移動
+
 ---
 
 ## ウェイトリスト
@@ -1344,6 +1356,7 @@ CREATE TABLE public.code_states (
 [✅] Phase 22a:   コーディングプレイグラウンド - Python無限ループ対策
 [✅] Phase 22b:   コーディングプレイグラウンド - input()入力値のトランスクリプト反映
 [✅] Phase 22c:   コーディングプレイグラウンド - 教師向け利用状況可視化
+[✅] Phase 23:    コンテンツ管理の科目別ページ化
 ```
 
 Phase 20（導線改善と分析拡充）は完了。
