@@ -152,11 +152,14 @@
 |---|---|---|
 | SC | 各機能へのリンクのみ（データ取得なし） | `app/(teacher)/teacher/page.tsx` |
 
-### コンテンツ管理・レッスン登録（`/teacher/contents`、`/teacher/lessons/new`）
+### コンテンツ管理・レッスン登録（`/teacher/contents/[subjectId]`、`/teacher/lessons/new`）
 
 | 層 | 処理 | 場所 |
 |---|---|---|
 | lib/db | 科目ツリーの取得 | `contents.ts` `getContents` |
+| SC | `/teacher/contents` は先頭の科目のページへリダイレクト。`[subjectId]` はツリーから該当科目を取り出し、なければ 404 | `app/(teacher)/teacher/contents/page.tsx`、`contents/[subjectId]/page.tsx` |
+| フロント | 科目タブの表示・切り替え（科目の追加後は新しい科目のページへ、削除後は `/teacher/contents` へ移動） | `components/teacher/subject-tabs.tsx`、`contents-manager.tsx` |
+| フロント | 単元を新しい順（order の降順、同じ order なら作成日時の新しい順）に並べる。単元内のレッスンは授業の順 | `lib/contents-order.ts` `sortUnitsNewestFirst` |
 | フロント | 科目・単元の作成・名前変更・削除、レッスン削除の操作 | `components/teacher/contents-manager.tsx` |
 | フロント | レッスン登録フォーム（YouTube URL・発問・初期コード） | `components/teacher/lesson-new-form.tsx` |
 | API | 教師確認と入力値の検証 | `api/contents/**/route.ts` |
