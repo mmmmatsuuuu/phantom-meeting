@@ -9,6 +9,7 @@ import {
 } from "@/components/ui/collapsible";
 import type { SubjectWithUnits } from "@/lib/db/contents";
 import type { LessonBadge } from "@/lib/student-dashboard";
+import { sortUnitsNewestFirst } from "@/lib/contents-order";
 import ReviewPromptDialog from "@/components/student/review-prompt-dialog";
 
 const SUBJECT_COLORS = [
@@ -143,7 +144,8 @@ export default function SubjectList({
 
               <CollapsibleContent>
                 <div className="bg-card divide-y">
-                  {subject.units.map((unit) => (
+                  {/* 新しい単元を上に表示する。単元内のレッスンは授業の順のまま */}
+                  {sortUnitsNewestFirst(subject.units).map((unit) => (
                     <div key={unit.id} className="px-5 py-4">
                       <div className="flex items-center justify-between gap-2 mb-3">
                         <h3 className="text-xs font-semibold tracking-widest text-muted-foreground uppercase">

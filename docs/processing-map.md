@@ -49,6 +49,7 @@
 | lib | サマリー（受験数・平均得点率・要復習数）、レッスンのバッジ、「つぎにやること」の算出 | `lib/student-dashboard.ts` `buildStudentDashboard` |
 | SC | 科目の折りたたみ状態を Cookie から復元 | `app/(student)/page.tsx` |
 | フロント | 科目の折りたたみ操作と Cookie への保存 | `components/lesson/subject-list.tsx` |
+| フロント | 単元を新しい順に並べる（表示のみ。「つぎにやること」は昇順のツリーから算出）。単元内のレッスンは授業の順 | `lib/contents-order.ts` `sortUnitsNewestFirst` |
 
 ### レッスンページ（`/lessons/[lessonId]`）
 
