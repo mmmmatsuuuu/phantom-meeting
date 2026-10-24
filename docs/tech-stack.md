@@ -34,6 +34,24 @@
 
 ## デプロイ構成
 
+### Node.js バージョン
+
+本番（Vercel）・開発コンテナともに **Node.js 24.x（Active LTS）** に揃える。
+
+- 本番：[`package.json`](../package.json) の `engines.node`（`"24.x"`）で固定する。
+  ダッシュボードの Node.js Version 設定より `engines` が優先される
+- 開発：[`docker-compose.yml`](../docker-compose.yml) の `node:24-alpine`
+
+**理由**：2026年10月の Node.js セキュリティリリースは 26.x / 24.x / 22.x のみが対象で、
+EOL の 20.x には修正が提供されない。サポート中の LTS に揃え、バージョンをリポジトリで管理して
+ダッシュボード側の設定漏れや、プロジェクト作り直し時に既定値へ戻る事故を防ぐ。
+
+**補足**
+
+- `24.x` 指定のため、パッチ版（セキュリティ修正）は Vercel 側で自動的に最新が使われる
+- 開発コンテナは `docker compose pull` でイメージを更新すると最新のパッチ版になる
+- メジャーバージョンを上げるときは `engines`・`docker-compose.yml`・`@types/node` を同時に変更する
+
 ### 実行リージョン
 
 Vercel Functions は**東京（`hnd1`）**に固定する。設定は [`vercel.json`](../vercel.json) で管理する。
