@@ -25,10 +25,14 @@ type Props = {
 export default function CodeEditor({ language, initialValue, onChange, onRun }: Props) {
   const containerRef = useRef<HTMLDivElement>(null);
   const onChangeRef = useRef(onChange);
-  onChangeRef.current = onChange;
   const onRunRef = useRef(onRun);
-  onRunRef.current = onRun;
   const { resolvedTheme } = useTheme();
+
+  // レンダー中の ref 書き込みは React のルール違反のため、コミット後に最新のコールバックへ差し替える
+  useEffect(() => {
+    onChangeRef.current = onChange;
+    onRunRef.current = onRun;
+  });
 
   useEffect(() => {
     if (!containerRef.current) return;

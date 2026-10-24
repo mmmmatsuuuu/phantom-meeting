@@ -119,11 +119,11 @@ export default function MemoSection({
   }, [lessonId]);
 
   // プレイグラウンドの「メモに保存」から渡された内容をエディタに反映する
+  // （setContent は既定で onUpdate を発火するため、syncEditorState はそちらで呼ばれる）
   useEffect(() => {
     if (editor && prefillContent) {
       editor.commands.setContent(prefillContent.content);
       editor.commands.focus("end");
-      syncEditorState(editor);
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [editor, prefillContent?.key]);
