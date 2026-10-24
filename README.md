@@ -36,6 +36,7 @@
 | バックエンド | Next.js API Routes（Client からの mutation と秘匿キーが必要な処理のみ） |
 | DB / 認証 | Supabase（Google OAuth） |
 | ホスティング | Vercel（Functions は東京リージョン `hnd1` 固定。[理由](docs/tech-stack.md#実行リージョン)） |
+| ランタイム | Node.js 24.x（本番・開発コンテナ共通。[理由](docs/tech-stack.md#nodejs-バージョン)） |
 | UI | shadcn/ui + Tailwind CSS |
 | リッチテキスト | tiptap |
 | コードエディタ | CodeMirror 6 |
@@ -89,7 +90,8 @@ docker compose up
 docker compose exec app npm run lint
 docker compose exec app npm run typecheck
 docker compose exec app npm test        # 単体テスト（Vitest。src/**/*.test.ts）
-docker compose exec app npm run build
+docker compose exec -e NODE_ENV=production app npm run build   # コンテナ既定の NODE_ENV=development のままだとプリレンダーで失敗する
+docker compose exec app npm audit       # 依存パッケージの既知の脆弱性を確認
 ```
 
 ### 停止
