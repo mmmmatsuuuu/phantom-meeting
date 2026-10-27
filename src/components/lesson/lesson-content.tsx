@@ -93,19 +93,18 @@ export default function LessonContent({
           </div>
         </div>
 
-        {memoVisible && (
-          <div className="col-span-2">
-            <LessonSidePanel
-              lessonId={lessonId}
-              enablePlayground={enablePlayground}
-              snippets={codeSnippets}
-              initialCodeStates={initialCodeStates}
-              getCurrentTime={getCurrentTime}
-              seekTo={seekTo}
-              onClose={() => setMemoVisible(false)}
-            />
-          </div>
-        )}
+        {/* 閉じてもアンマウントせず非表示にする（プレイグラウンドの未保存の編集を保持するため） */}
+        <div className={memoVisible ? "col-span-2" : "hidden"}>
+          <LessonSidePanel
+            lessonId={lessonId}
+            enablePlayground={enablePlayground}
+            snippets={codeSnippets}
+            initialCodeStates={initialCodeStates}
+            getCurrentTime={getCurrentTime}
+            seekTo={seekTo}
+            onClose={() => setMemoVisible(false)}
+          />
+        </div>
       </div>
     </div>
   );

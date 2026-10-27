@@ -3,6 +3,7 @@
 import { useState, useRef, useEffect } from "react";
 import type { CodeSnippet, StudentCodeStateEntry } from "@/lib/db/code-snippets";
 import CodeEditor from "@/components/lesson/code-editor";
+import SubmitButton from "@/components/shared/submit-button";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -19,7 +20,6 @@ const LANGUAGE_LABELS: Record<CodeSnippet["language"], string> = {
   javascript: "JavaScript",
 };
 
-const AUTOSAVE_DELAY_MS = 1000;
 // 無限ループ等で大量出力された場合に文字列肥大化・描画負荷を防ぐための上限
 const MAX_OUTPUT_CHARS = 8000;
 
@@ -54,6 +54,22 @@ export default function Playground({
       snippets.map((s) => [s.id, initialCodeStates[s.id]?.lastOutput ?? ""])
     )
   );
+  // DBに保存済みの内容。現在の内容と比べて未保存の変更があるかを判定する
+  const [savedBySnippet, setSavedBySnippet] = useState<
+    Record<string, { code: string; output: string }>
+  >(() =>
+    Object.fromEntries(
+      snippets.map((s) => [
+        s.id,
+        {
+          code: initialCodeStates[s.id]?.code ?? s.initial_code,
+          output: initialCodeStates[s.id]?.lastOutput ?? "",
+        },
+      ])
+    )
+  );
+  const [saving, setSaving] = useState(false);
+  const [saveError, setSaveError] = useState<string | null>(null);
   // 初期コードへのリセット時にエディタを強制再マウントさせるためのバージョンカウンタ（key に含める）
   const [resetVersionBySnippet, setResetVersionBySnippet] = useState<Record<string, number>>({});
   const [resetConfirmOpen, setResetConfirmOpen] = useState(false);
@@ -64,34 +80,57 @@ export default function Playground({
     resolve: (value: string) => void;
   } | null>(null);
   const [inputDraft, setInputDraft] = useState("");
-  const saveTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   // input() に答えた値をコンソールへエコーするため、実行中のonOutputを参照できるようにする
   const onOutputRef = useRef<(text: string) => void>(() => {});
 
+  const isDirty = (snippetId: string) => {
+    const saved = savedBySnippet[snippetId];
+    return (
+      (codeBySnippet[snippetId] ?? "") !== (saved?.code ?? "") ||
+      (outputBySnippet[snippetId] ?? "") !== (saved?.output ?? "")
+    );
+  };
+  const hasUnsavedChanges = snippets.some((s) => isDirty(s.id));
+
+  // 未保存の変更がある状態でページを離れようとしたらブラウザの確認ダイアログを出す
   useEffect(() => {
-    return () => {
-      if (saveTimerRef.current) clearTimeout(saveTimerRef.current);
+    if (!hasUnsavedChanges) return;
+    const handleBeforeUnload = (e: BeforeUnloadEvent) => {
+      e.preventDefault();
     };
-  }, []);
+    window.addEventListener("beforeunload", handleBeforeUnload);
+    return () => window.removeEventListener("beforeunload", handleBeforeUnload);
+  }, [hasUnsavedChanges]);
 
   const activeSnippet = snippets.find((s) => s.id === activeId) ?? null;
   const output = activeId ? (outputBySnippet[activeId] ?? "") : "";
 
-  const persistState = (snippetId: string, code: string, lastOutput: string) => {
-    fetch(`/api/code-snippets/${snippetId}/state`, {
-      method: "PUT",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ code, lastOutput: lastOutput || null }),
-    }).catch(() => {});
-  };
-
   const handleChange = (snippetId: string, value: string) => {
     setCodeBySnippet((prev) => ({ ...prev, [snippetId]: value }));
+  };
 
-    if (saveTimerRef.current) clearTimeout(saveTimerRef.current);
-    saveTimerRef.current = setTimeout(() => {
-      persistState(snippetId, value, outputBySnippet[snippetId] ?? "");
-    }, AUTOSAVE_DELAY_MS);
+  // DBへの書き込みは生徒が「保存」を押したときだけ行う
+  // （編集のたびに保存すると授業中の同時編集で書き込みが膨大になるため）
+  const handleSave = async () => {
+    if (!activeSnippet) return;
+    const snippetId = activeSnippet.id;
+    const code = codeBySnippet[snippetId] ?? "";
+    const lastOutput = outputBySnippet[snippetId] ?? "";
+    setSaving(true);
+    setSaveError(null);
+    try {
+      const res = await fetch(`/api/code-snippets/${snippetId}/state`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ code, lastOutput: lastOutput || null }),
+      });
+      if (!res.ok) throw new Error();
+      setSavedBySnippet((prev) => ({ ...prev, [snippetId]: { code, output: lastOutput } }));
+    } catch {
+      setSaveError("保存に失敗しました。もう一度お試しください");
+    } finally {
+      setSaving(false);
+    }
   };
 
   // Python の input() 呼び出しに応答する。コンソール内のテキストボックスに
@@ -121,8 +160,6 @@ export default function Playground({
     setRunError(null);
     setPendingInput(null);
 
-    // React state の更新は非同期のため、実行終了後にDBへ保存する値は
-    // ローカル変数に直接蓄積して確定させる
     let fullOutput = "";
     const onOutput = (text: string) => {
       fullOutput += text;
@@ -147,10 +184,6 @@ export default function Playground({
     } finally {
       setRunning(false);
       setPendingInput(null);
-      // コード自体は自動保存済みの可能性が高いが、実行結果と一致させるため
-      // 直近のコードと合わせて確定保存する（デバウンス待ちをキャンセル）
-      if (saveTimerRef.current) clearTimeout(saveTimerRef.current);
-      persistState(snippetId, code, fullOutput);
     }
   };
 
@@ -160,12 +193,10 @@ export default function Playground({
     const snippetId = activeSnippet.id;
     const initialCode = activeSnippet.initial_code;
 
-    if (saveTimerRef.current) clearTimeout(saveTimerRef.current);
     setCodeBySnippet((prev) => ({ ...prev, [snippetId]: initialCode }));
     setOutputBySnippet((prev) => ({ ...prev, [snippetId]: "" }));
     setRunError(null);
     setResetVersionBySnippet((prev) => ({ ...prev, [snippetId]: (prev[snippetId] ?? 0) + 1 }));
-    persistState(snippetId, initialCode, "");
   };
 
   const handleSaveToMemo = () => {
@@ -226,6 +257,7 @@ export default function Playground({
                 onClick={() => {
                   setActiveId(s.id);
                   setRunError(null);
+                  setSaveError(null);
                 }}
                 className={`px-3 py-1 rounded text-xs font-medium transition-colors ${
                   activeId === s.id
@@ -234,6 +266,7 @@ export default function Playground({
                 }`}
               >
                 {s.title}
+                {isDirty(s.id) && <span aria-label="未保存の変更あり"> ●</span>}
               </button>
             ))}
           </div>
@@ -253,7 +286,7 @@ export default function Playground({
             💡 エディタ内で Cmd/Ctrl + Enter でも実行できます
           </p>
 
-          <div className="flex gap-2">
+          <div className="flex flex-wrap gap-2">
             <button
               onClick={handleRun}
               disabled={running}
@@ -261,6 +294,15 @@ export default function Playground({
             >
               {running ? "実行中..." : "▶ 実行"}
             </button>
+            <SubmitButton
+              loading={saving}
+              loadingLabel="保存中..."
+              disabled={!isDirty(activeSnippet.id)}
+              onClick={handleSave}
+              className="px-3 py-2 text-sm rounded-md border hover:bg-muted transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              💾 保存
+            </SubmitButton>
             <button
               onClick={handleSaveToMemo}
               className="px-3 py-2 text-sm rounded-md border hover:bg-muted transition-colors"
@@ -275,6 +317,14 @@ export default function Playground({
               🔄 初期コードにリセット
             </button>
           </div>
+          <p
+            className={`text-[11px] -mt-1 ${saveError ? "text-red-600 dark:text-red-400" : "text-muted-foreground"}`}
+          >
+            {saveError ??
+              (isDirty(activeSnippet.id)
+                ? "未保存の変更があります。「保存」を押すと、コードと実行結果が保存されます"
+                : "保存済み")}
+          </p>
 
           {/* コンソール */}
           <div
@@ -325,7 +375,7 @@ export default function Playground({
           <AlertDialogHeader>
             <AlertDialogTitle>初期コードにリセットしますか？</AlertDialogTitle>
             <AlertDialogDescription>
-              このスニペットのコードを、教師が配信した初期コードに戻します。現在の編集内容と実行結果は失われます。この操作は取り消せません。
+              このスニペットのコードを、教師が配信した初期コードに戻します。現在の編集内容と実行結果は失われます。リセット後に「保存」を押すと、保存済みの内容も初期コードで上書きされます。
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
