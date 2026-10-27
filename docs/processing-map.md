@@ -103,7 +103,7 @@
 | lib/db | 初期コード一覧、自分の保存済みコード・実行結果の取得 | `code-snippets.ts` `getCodeSnippetsByLesson` / `getStudentCodeStatesByLesson` |
 | フロント | Python の実行（Pyodide を jsDelivr から読み込み、メインスレッドで実行） | `lib/pyodide-runner.ts` |
 | フロント | JavaScript の実行（sandbox 属性つき iframe 内で実行） | `lib/js-runner.ts` |
-| フロント | 編集内容・実行結果を一定時間おいて自動保存、メモへの貼り付け | `components/lesson/playground.tsx` |
+| フロント | 「保存」ボタンで編集内容・実行結果を保存、メモへの貼り付け | `components/lesson/playground.tsx` |
 | API / lib/db | 編集内容・実行結果の保存（存在すれば更新・なければ作成） | `api/code-snippets/[snippetId]/state/route.ts` → `code-snippets.ts` `saveStudentCodeState` |
 | DB | 生徒×初期コードで1行（一意制約）。本人のみ読み書き可、教師は閲覧可 | 一意制約・RLS（`code_states`） |
 

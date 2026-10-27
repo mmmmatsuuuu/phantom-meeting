@@ -38,6 +38,9 @@ export default function LessonSidePanel({
   onClose,
 }: Props) {
   const [activeTab, setActiveTab] = useState<Tab>("memo");
+  // コードは「保存」を押すまでDBに書き込まないため、タブ切り替えで未保存の編集が消えないよう
+  // 一度開いたプレイグラウンドはアンマウントせず非表示で保持する
+  const [codeOpened, setCodeOpened] = useState(false);
   const [prefillContent, setPrefillContent] = useState<{
     content: Record<string, unknown>;
     key: number;
@@ -73,7 +76,10 @@ export default function LessonSidePanel({
           📝 メモ
         </button>
         <button
-          onClick={() => setActiveTab("code")}
+          onClick={() => {
+            setActiveTab("code");
+            setCodeOpened(true);
+          }}
           className={`px-4 py-1.5 rounded text-sm font-medium transition-colors ${
             activeTab === "code"
               ? "bg-background shadow-sm text-foreground"
@@ -84,7 +90,7 @@ export default function LessonSidePanel({
         </button>
       </div>
 
-      {activeTab === "memo" ? (
+      <div className={activeTab === "memo" ? "" : "hidden"}>
         <MemoSection
           lessonId={lessonId}
           getCurrentTime={getCurrentTime}
@@ -92,13 +98,16 @@ export default function LessonSidePanel({
           onClose={onClose}
           prefillContent={prefillContent}
         />
-      ) : (
-        <Playground
-          snippets={snippets}
-          initialCodeStates={initialCodeStates}
-          onSaveToMemo={handleSaveToMemo}
-          onClose={onClose}
-        />
+      </div>
+      {codeOpened && (
+        <div className={activeTab === "code" ? "" : "hidden"}>
+          <Playground
+            snippets={snippets}
+            initialCodeStates={initialCodeStates}
+            onSaveToMemo={handleSaveToMemo}
+            onClose={onClose}
+          />
+        </div>
       )}
     </div>
   );
