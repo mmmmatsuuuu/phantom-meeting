@@ -155,6 +155,27 @@ alter policy "quiz_questions: teacher/admin のみ削除" on public.quiz_questio
   using ((select public.my_role()) in ('teacher', 'admin'));
 
 -- quiz_attempts
+-- 本番 DB ではダッシュボードから別名（式は同じ）で作成されていたため、リポジトリの名前にそろえる
+do $$
+declare
+  renames text[][] := array[
+    ['quiz_attempts: 認証ユーザーのみ閲覧', 'quiz_attempts_select_own'],
+    ['quiz_attempts: 認証ユーザーのみ追加', 'quiz_attempts_insert_own'],
+    ['quiz_attempts: admin/teacher閲覧可', 'quiz_attempts_select_teacher']
+  ];
+  i int;
+begin
+  for i in 1 .. array_length(renames, 1) loop
+    if exists (
+      select 1 from pg_policies
+      where schemaname = 'public' and tablename = 'quiz_attempts' and policyname = renames[i][1]
+    ) then
+      execute format('alter policy %I on public.quiz_attempts rename to %I', renames[i][1], renames[i][2]);
+    end if;
+  end loop;
+end
+$$;
+
 alter policy "quiz_attempts_select_own" on public.quiz_attempts
   using ((select auth.uid()) = user_id);
 alter policy "quiz_attempts_insert_own" on public.quiz_attempts
@@ -197,5 +218,16 @@ alter policy "student_code_states: 本人のみ作成" on public.code_states
   with check (user_id = (select auth.uid()));
 alter policy "student_code_states: 本人のみ更新" on public.code_states
   using (user_id = (select auth.uid()));
-alter policy "code_states: teacher/adminも閲覧可" on public.code_states
-  using ((select public.my_role()) in ('teacher', 'admin'));
+-- 本番 DB には 20260804000001_code_states_teacher_select が未適用の場合があるため、存在するときだけ書き換える
+-- （権限の追加はこのマイグレーションの範囲外）
+do $$
+begin
+  if exists (
+    select 1 from pg_policies
+    where schemaname = 'public' and tablename = 'code_states' and policyname = 'code_states: teacher/adminも閲覧可'
+  ) then
+    alter policy "code_states: teacher/adminも閲覧可" on public.code_states
+      using ((select public.my_role()) in ('teacher', 'admin'));
+  end if;
+end
+$$;
