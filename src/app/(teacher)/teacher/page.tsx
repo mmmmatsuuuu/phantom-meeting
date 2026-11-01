@@ -14,6 +14,12 @@ const CREATE_CARDS: HubCard[] = [
     title: "コンテンツ管理",
     description: "科目・単元・レッスンの追加・編集・削除。レッスン登録や小テスト作成もここから",
   },
+  {
+    href: "/teacher/maker",
+    emoji: "🛠",
+    title: "自由制作",
+    description: "生徒が自分で決めたプログラムを制作・提出・共有する課題の配信と、クラスごとの公開管理",
+  },
 ];
 
 const OBSERVE_CARDS: HubCard[] = [

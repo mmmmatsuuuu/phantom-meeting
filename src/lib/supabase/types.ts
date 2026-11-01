@@ -152,6 +152,179 @@ export type Database = {
           },
         ]
       }
+      maker_events: {
+        Row: {
+          created_at: string
+          created_by: string | null
+          description: string
+          id: string
+          settings: Json
+          status: string
+          title: string
+          unit_id: string | null
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          created_by?: string | null
+          description?: string
+          id?: string
+          settings?: Json
+          status?: string
+          title: string
+          unit_id?: string | null
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          created_by?: string | null
+          description?: string
+          id?: string
+          settings?: Json
+          status?: string
+          title?: string
+          unit_id?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "maker_events_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "maker_events_unit_id_fkey"
+            columns: ["unit_id"]
+            isOneToOne: false
+            referencedRelation: "units"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      maker_gallery_openings: {
+        Row: {
+          class_num: number
+          event_id: string
+          grade: number
+          opened_at: string
+        }
+        Insert: {
+          class_num: number
+          event_id: string
+          grade: number
+          opened_at?: string
+        }
+        Update: {
+          class_num?: number
+          event_id?: string
+          grade?: number
+          opened_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "maker_gallery_openings_event_id_fkey"
+            columns: ["event_id"]
+            isOneToOne: false
+            referencedRelation: "maker_events"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      maker_submissions: {
+        Row: {
+          code: string
+          description: string
+          event_id: string
+          hidden_at: string | null
+          student_number: number | null
+          submitted_at: string
+          title: string
+          user_id: string
+        }
+        Insert: {
+          code: string
+          description: string
+          event_id: string
+          hidden_at?: string | null
+          student_number?: number | null
+          submitted_at?: string
+          title: string
+          user_id: string
+        }
+        Update: {
+          code?: string
+          description?: string
+          event_id?: string
+          hidden_at?: string | null
+          student_number?: number | null
+          submitted_at?: string
+          title?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "maker_submissions_event_id_fkey"
+            columns: ["event_id"]
+            isOneToOne: false
+            referencedRelation: "maker_events"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "maker_submissions_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      maker_works: {
+        Row: {
+          code: string
+          description: string
+          event_id: string
+          plan: string
+          title: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          code?: string
+          description?: string
+          event_id: string
+          plan?: string
+          title?: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          code?: string
+          description?: string
+          event_id?: string
+          plan?: string
+          title?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "maker_works_event_id_fkey"
+            columns: ["event_id"]
+            isOneToOne: false
+            referencedRelation: "maker_events"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "maker_works_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       memos: {
         Row: {
           content: Json
@@ -531,6 +704,7 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      maker_can_view_gallery: { Args: { p_event_id: string }; Returns: boolean }
       my_role: { Args: never; Returns: Database["public"]["Enums"]["role"] }
       quiz_question_stats: {
         Args: {
@@ -544,6 +718,7 @@ export type Database = {
           total_count: number
         }[]
       }
+      submit_maker_work: { Args: { p_event_id: string }; Returns: undefined }
       tiptap_to_text: { Args: { doc: Json }; Returns: string }
       unit_memo_export_samples: {
         Args: {

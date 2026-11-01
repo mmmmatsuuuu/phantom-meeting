@@ -47,6 +47,8 @@ type Props = {
   initialCollapsedIds: string[];
   /** 生徒の学習状況バッジ（レッスンID → バッジ）。未指定なら非表示 */
   lessonBadges?: Record<string, LessonBadge>;
+  /** 単元内に表示する自由制作の課題（単元ID → 課題） */
+  makerEventsByUnit?: Record<string, { id: string; title: string }[]>;
 };
 
 function LessonStatusBadges({ badge }: { badge: LessonBadge }) {
@@ -81,6 +83,7 @@ export default function SubjectList({
   subjects,
   initialCollapsedIds,
   lessonBadges,
+  makerEventsByUnit,
 }: Props) {
   const [collapsedIds, setCollapsedIds] = useState<Set<string>>(
     new Set(initialCollapsedIds)
@@ -199,6 +202,16 @@ export default function SubjectList({
                                 />
                               </svg>
                             </div>
+                          </Link>
+                        ))}
+                        {makerEventsByUnit?.[unit.id]?.map((event) => (
+                          <Link
+                            key={event.id}
+                            href={`/maker/${event.id}`}
+                            className="flex items-center gap-3 p-3 rounded-lg border border-amber-300 bg-amber-50/60 dark:bg-amber-950/20 hover:border-amber-500 hover:shadow-sm transition-all"
+                          >
+                            <span className="text-lg shrink-0">🛠</span>
+                            <span className="text-sm font-medium">{event.title}</span>
                           </Link>
                         ))}
                       </div>
