@@ -85,6 +85,16 @@ supabase start
 docker compose up
 ```
 
+### ダミーアカウントでのログイン
+
+開発環境では、ログイン画面のパネルから Google OAuth を使わずにシードの教師1名・生徒32名でログインできる。`NODE_ENV=development` かつ接続先がローカルの Supabase のときだけ有効で、本番では表示されず、ログイン用のルートも 404 を返す。
+
+`supabase db reset` をすれば自動で準備される。reset せずに既存のローカル DB で使えるようにするには、次を実行する。
+
+```bash
+docker exec -i supabase_db_phantom_meeting psql -U postgres -d postgres < supabase/seeds/dev-login.sql
+```
+
 ### よく使うコマンド
 
 ```bash
