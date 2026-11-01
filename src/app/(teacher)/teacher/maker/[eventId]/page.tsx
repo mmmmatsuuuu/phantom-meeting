@@ -56,12 +56,20 @@ export default async function TeacherMakerEventPage({ params }: Props) {
       <section className="space-y-3">
         <div className="flex flex-wrap items-center justify-between gap-2">
           <h2 className="text-lg font-semibold">作品一覧の公開（提出 {items.length} 件）</h2>
-          <Link
-            href={`/maker/${eventId}/gallery`}
-            className="px-3 py-1.5 text-sm rounded-md border hover:bg-muted transition-colors"
-          >
-            作品一覧を開く・公開停止する
-          </Link>
+          <div className="flex flex-wrap gap-2">
+            <Link
+              href={`/teacher/maker/${eventId}/submissions`}
+              className="px-3 py-1.5 text-sm rounded-md bg-primary text-primary-foreground hover:opacity-90 transition-opacity"
+            >
+              提出状況を確認する
+            </Link>
+            <Link
+              href={`/maker/${eventId}/gallery`}
+              className="px-3 py-1.5 text-sm rounded-md border hover:bg-muted transition-colors"
+            >
+              生徒の見え方で作品一覧を開く
+            </Link>
+          </div>
         </div>
         <p className="text-sm text-muted-foreground">
           開放したクラスの生徒だけが、他の生徒の作品を見られます。提出前に他の生徒の作品を見られないよう、提出が終わってから開放してください。

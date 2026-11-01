@@ -247,16 +247,74 @@ export async function setMakerOpening(
   return !error;
 }
 
+/** 提出状況の一覧用。一覧の負荷を抑えるためコード本体は含めない（teacher/admin 用） */
+export async function getMakerProgress(eventId: string) {
+  const supabase = await createClient();
+  const [works, submissions] = await Promise.all([
+    supabase.from("maker_works").select("user_id, title, updated_at").eq("event_id", eventId),
+    supabase
+      .from("maker_submissions")
+      .select("user_id, title, submitted_at, hidden_at")
+      .eq("event_id", eventId),
+  ]);
+  return { works: works.data ?? [], submissions: submissions.data ?? [] };
+}
+
+export type MakerStudentDetail = {
+  work: Pick<MakerWork, "plan" | "title" | "description" | "code" | "updated_at"> | null;
+  submission: {
+    title: string;
+    description: string;
+    code: string;
+    submitted_at: string;
+    hidden_at: string | null;
+  } | null;
+};
+
+/** 生徒1人の課題設定・下書き・提出物を取得する（teacher/admin 用） */
+export async function getMakerStudentDetail(
+  eventId: string,
+  userId: string
+): Promise<MakerStudentDetail> {
+  const supabase = await createClient();
+  const [work, submission] = await Promise.all([
+    supabase
+      .from("maker_works")
+      .select("plan, title, description, code, updated_at")
+      .eq("event_id", eventId)
+      .eq("user_id", userId)
+      .maybeSingle(),
+    supabase
+      .from("maker_submissions")
+      .select("title, description, code, submitted_at, hidden_at")
+      .eq("event_id", eventId)
+      .eq("user_id", userId)
+      .maybeSingle(),
+  ]);
+  return { work: work.data, submission: submission.data };
+}
+
 /** 廃止・年度替えの前に作品を残すための書き出し（teacher/admin 用） */
 export async function getMakerExport(eventId: string) {
   const supabase = await createClient();
-  const [event, submissions] = await Promise.all([
+  const [event, submissions, works, profiles] = await Promise.all([
     getMakerEvent(eventId),
     supabase
       .from("maker_submissions")
-      .select("student_number, title, description, code, submitted_at, hidden_at")
+      .select("user_id, student_number, title, description, code, submitted_at, hidden_at")
       .eq("event_id", eventId)
       .order("student_number", { ascending: true, nullsFirst: false }),
+    supabase.from("maker_works").select("user_id, plan").eq("event_id", eventId),
+    supabase.from("profiles").select("id, display_name"),
   ]);
-  return { event, submissions: submissions.data ?? [] };
+  const planByUser = new Map((works.data ?? []).map((w) => [w.user_id, w.plan]));
+  const nameByUser = new Map((profiles.data ?? []).map((p) => [p.id, p.display_name]));
+  return {
+    event,
+    submissions: (submissions.data ?? []).map(({ user_id, ...submission }) => ({
+      display_name: nameByUser.get(user_id) ?? "",
+      plan: planByUser.get(user_id) ?? "",
+      ...submission,
+    })),
+  };
 }
