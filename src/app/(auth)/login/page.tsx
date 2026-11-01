@@ -1,6 +1,8 @@
 import { getUser } from "@/lib/supabase/server";
 import { redirect } from "next/navigation";
 import LoginButton from "@/components/shared/login-button";
+import DevLoginPanel from "@/components/shared/dev-login-panel";
+import { isDevLoginEnabled } from "@/lib/dev-login";
 
 export default async function LoginPage({
   searchParams,
@@ -63,6 +65,8 @@ export default async function LoginPage({
 
           <LoginButton />
         </div>
+
+        {isDevLoginEnabled() && <DevLoginPanel hasError={error === "dev_login_failed"} />}
       </div>
     </div>
   );
