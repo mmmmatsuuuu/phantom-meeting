@@ -95,6 +95,8 @@ docker compose up
 docker exec -i supabase_db_phantom_meeting psql -U postgres -d postgres < supabase/seeds/dev-login.sql
 ```
 
+自由制作のダミーデータ（課題1件と提出物。内容はファイル冒頭に記載）も `db reset` で入る。reset せずに入れる、または初期状態に戻すには `supabase/seeds/maker.sql` を同様に流す。
+
 ### よく使うコマンド
 
 ```bash
