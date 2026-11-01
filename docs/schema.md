@@ -14,6 +14,11 @@ subjects
               │           └── quiz_attempt_answers
               └── code_snippets
                     └── code_states
+
+maker_events（自由制作。既存テーブルへは unit_id の一方向のみ）
+  ├── maker_gallery_openings
+  ├── maker_works
+  └── maker_submissions
 ```
 
 ---
@@ -157,3 +162,52 @@ subjects
 | updated_at | timestamptz | |
 
 `unique(snippet_id, user_id)`。書き込みは本人のみ（RLS）。閲覧は本人に加えteacher/adminも可（Phase 22c、`20260804000001_code_states_teacher_select.sql`）。
+
+### maker_events（自由制作の課題）
+既存テーブルに列を追加せず、`maker_*` だけで完結させている（年1回程度の特設イベントで、次年度以降も使う保証がないため）。廃止手順は [features.md](features.md) の「自由制作」を参照。
+
+| カラム | 型 | 備考 |
+|---|---|---|
+| id | uuid | PK |
+| unit_id | uuid | nullable、FK → units（on delete set null）。レッスン一覧で表示する単元 |
+| title | text | 1〜100文字 |
+| description | text | 課題の詳細（プレーンテキスト、5000文字以内） |
+| settings | jsonb | `{ prompts: [{title, body}], examples: [{title, description, code}], starterCode }` |
+| status | text | 'draft' / 'open' / 'closed'。draft は生徒から見えない |
+| created_by | uuid | nullable、FK → profiles |
+| created_at / updated_at | timestamptz | |
+
+### maker_gallery_openings（作品一覧を閲覧できるクラス）
+| カラム | 型 | 備考 |
+|---|---|---|
+| event_id | uuid | PK、FK → maker_events |
+| grade | smallint | PK、1〜3 |
+| class_num | smallint | PK、1〜9 |
+| opened_at | timestamptz | |
+
+行があるクラスの生徒だけが他の生徒の作品を閲覧できる。読み書きは teacher/admin のみ。
+
+### maker_works（生徒の下書き）
+| カラム | 型 | 備考 |
+|---|---|---|
+| event_id | uuid | PK、FK → maker_events |
+| user_id | uuid | PK、FK → profiles |
+| plan | text | 課題設定。他の生徒には公開しない（2000文字以内） |
+| title | text | 作品名（100文字以内） |
+| description | text | 説明（2000文字以内） |
+| code | text | Pythonコード（2万文字以内） |
+| updated_at | timestamptz | |
+
+閲覧は本人と teacher/admin。書き込みは受付中（status = 'open'）の本人のみ。
+
+### maker_submissions（提出時点のコピー）
+| カラム | 型 | 備考 |
+|---|---|---|
+| event_id | uuid | PK、FK → maker_events |
+| user_id | uuid | PK、FK → profiles |
+| student_number | int | nullable、提出時点の学籍番号（作者表示用。生徒は他の生徒の profiles を読めないため） |
+| title / description / code | text | 提出時点の下書きのコピー |
+| submitted_at | timestamptz | 再提出で更新 |
+| hidden_at | timestamptz | nullable、教員による公開停止。再提出しても解除されない |
+
+書き込みは RPC `submit_maker_work` のみ（生徒に `hidden_at` を書き換えさせないため）。閲覧は本人、teacher/admin、および公開停止されていない作品を開放済みクラスの生徒（`maker_can_view_gallery`）。

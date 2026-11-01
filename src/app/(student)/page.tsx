@@ -3,6 +3,7 @@ import { cookies } from "next/headers";
 import { getContents } from "@/lib/db/contents";
 import { getStudentQuizStatuses, getQuizLessonPairs } from "@/lib/db/quizzes";
 import { getMemoCountsByLesson } from "@/lib/db/memos";
+import { getMakerEventsByUnit } from "@/lib/db/maker";
 import { buildStudentDashboard } from "@/lib/student-dashboard";
 import type { StudentDashboard } from "@/lib/student-dashboard";
 import { getUserProfile } from "@/lib/supabase/server";
@@ -11,10 +12,11 @@ import DashboardSummaryCards from "@/components/student/dashboard-summary";
 import NextActions from "@/components/student/next-actions";
 
 export default async function HomePage() {
-  const [subjects, profile, cookieStore] = await Promise.all([
+  const [subjects, profile, cookieStore, makerEventsByUnit] = await Promise.all([
     getContents(),
     getUserProfile(),
     cookies(),
+    getMakerEventsByUnit(),
   ]);
 
   const displayName = profile?.displayName ?? "";
@@ -103,6 +105,7 @@ export default async function HomePage() {
           </div>
         ) : (
           <SubjectList
+            makerEventsByUnit={makerEventsByUnit}
             subjects={subjects}
             initialCollapsedIds={initialCollapsedIds}
             lessonBadges={dashboard?.lessonBadges}
