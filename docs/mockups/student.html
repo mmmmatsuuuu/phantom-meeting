@@ -1,0 +1,212 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>ruminy モック</title>
+<style>
+:root {
+  color-scheme: light;
+  --paper: #fbfbf8;
+  --paper-2: #f0f1ec;
+  --ink: #1d2b3f;
+  --pencil: #666b73;
+  --rule: #d8dce1;
+  --rule-strong: #aeb5bd;
+  --red: #b93a2b;
+  --serif: "Hiragino Mincho ProN", "Yu Mincho", "Noto Serif JP", serif;
+  --sans: system-ui, -apple-system, "Hiragino Sans", "Noto Sans JP", sans-serif;
+  --mono: ui-monospace, SFMono-Regular, Menlo, monospace;
+}
+* { box-sizing: border-box; }
+body { margin: 0; background: var(--paper); color: var(--ink); font: 16px/1.8 var(--sans); }
+button { font: inherit; color: inherit; cursor: pointer; }
+a { color: inherit; }
+:focus-visible { outline: 2px solid var(--ink); outline-offset: 2px; }
+h1, h2, h3 { font-family: var(--serif); font-weight: 600; margin: 0; line-height: 1.5; }
+
+.mock-bar { display: flex; flex-wrap: wrap; gap: 4px 14px; padding: 6px 16px; background: var(--ink); color: var(--paper); font-size: 12px; }
+.mock-bar a { text-decoration: none; opacity: .7; }
+.mock-bar a.on { opacity: 1; text-decoration: underline; text-underline-offset: 3px; }
+
+.site-head { display: flex; justify-content: space-between; align-items: baseline; max-width: 1240px; margin: 0 auto; padding: 18px 16px 10px; border-bottom: 2px solid var(--ink); }
+.site-name { font: 600 21px var(--serif); letter-spacing: .02em; text-decoration: none; }
+.site-user { font-size: 13px; color: var(--pencil); }
+main { max-width: 1240px; margin: 0 auto; padding: 0 16px 80px; }
+.screen { display: none; }
+.screen.on { display: block; }
+
+/* 目次 */
+.toc { max-width: 760px; margin: 0 auto; }
+.continue { display: block; padding: 28px 0 24px; border-bottom: 1px solid var(--rule-strong); text-decoration: none; }
+.continue small { display: block; font-size: 13px; color: var(--pencil); }
+.continue b { font: 600 clamp(22px, 5vw, 28px)/1.5 var(--serif); }
+.continue span { display: block; margin-top: 4px; font-size: 14px; }
+.continue u { text-underline-offset: 4px; }
+.subject { margin: 36px 0 0; font-size: 13px; color: var(--pencil); letter-spacing: .1em; }
+.unit { margin-top: 6px; font-size: 21px; padding-bottom: 6px; border-bottom: 1px solid var(--ink); }
+.row { display: grid; grid-template-columns: 34px minmax(0, 1fr) auto; gap: 8px; align-items: baseline; padding: 11px 0; border-bottom: 1px solid var(--rule); text-decoration: none; }
+.row:hover .row-title { text-decoration: underline; text-underline-offset: 4px; }
+.row-no { font: 13px var(--mono); color: var(--pencil); }
+.row-marks { font-size: 12px; color: var(--pencil); white-space: nowrap; }
+.row-marks b { color: var(--ink); font-weight: 600; }
+.row-marks .red { color: var(--red); font-weight: 600; margin-left: 10px; }
+.row.special .row-title { font-family: var(--serif); font-weight: 600; }
+
+/* レッスン */
+.lesson-head { padding: 20px 0 14px; }
+.crumb { font-size: 13px; color: var(--pencil); }
+.lesson-head h1 { font-size: clamp(22px, 5vw, 28px); }
+.lesson-grid { display: grid; grid-template-columns: minmax(0, 1.15fr) minmax(0, 1fr); gap: 32px; align-items: start; }
+.video-col { position: sticky; top: 12px; }
+.video { position: relative; aspect-ratio: 16/9; background: #17202c; color: #e9edf1; display: flex; align-items: center; justify-content: center; border: 0; width: 100%; padding: 0; }
+.video span { font: 15px var(--serif); opacity: .75; padding: 16px; text-align: center; }
+.steps { margin: 16px 0 0; padding: 0; list-style: none; border-top: 1px solid var(--rule-strong); }
+.steps li { display: grid; grid-template-columns: 1fr auto; gap: 8px; align-items: baseline; padding: 9px 0; border-bottom: 1px solid var(--rule); font-size: 14px; }
+.steps a { font-size: 13px; text-underline-offset: 3px; }
+.steps small { color: var(--pencil); font-size: 12px; }
+
+.memo-title { font-size: 18px; padding-bottom: 6px; border-bottom: 1px solid var(--ink); }
+.blank-state { padding: 22px 0; border-bottom: 1px solid var(--rule); }
+.blank-state p { margin: 0 0 12px; font-size: 14px; color: var(--pencil); }
+.btn { padding: 9px 14px; border: 1px solid var(--ink); background: transparent; font-size: 14px; border-radius: 2px; }
+.btn:hover { background: var(--paper-2); }
+.btn-ink { background: var(--ink); color: var(--paper); }
+.btn-ink:hover { background: #2c3e57; }
+.toolbar { display: flex; flex-wrap: wrap; gap: 4px; padding: 6px 0; border-bottom: 1px solid var(--rule); font-size: 13px; color: var(--pencil); }
+.toolbar span { padding: 0 8px; border: 1px solid var(--rule); border-radius: 2px; }
+.sheet { min-height: 400px; padding: 14px 2px 22px; }
+.sheet:focus { outline: none; }
+.sheet h3 { font-size: 17px; margin: 18px 0 6px; }
+.sheet h3:first-child { margin-top: 0; }
+.sheet p { margin: 0 0 8px; }
+.sheet figure { margin: 10px 0; }
+.sheet svg { display: block; width: 100%; max-width: 380px; height: auto; }
+.sheet figcaption { font-size: 12px; color: var(--pencil); }
+.sheet blockquote { margin: 12px 0 8px; padding-left: 12px; border-left: 3px solid var(--ink); font-family: var(--serif); font-weight: 600; }
+.sheet hr { border: 0; border-top: 1px solid var(--rule-strong); margin: 18px 0; }
+.memo-actions { display: flex; flex-wrap: wrap; gap: 10px; align-items: center; padding-top: 12px; border-top: 1px solid var(--ink); }
+.memo-actions small { color: var(--pencil); font-size: 12px; }
+.other { margin-top: 28px; }
+.other h2 { font-size: 15px; padding-bottom: 4px; border-bottom: 1px solid var(--rule-strong); }
+.other p { margin: 0; padding: 9px 0; border-bottom: 1px solid var(--rule); font-size: 13px; color: var(--pencil); }
+
+@media (max-width: 860px) {
+  .lesson-grid { grid-template-columns: minmax(0, 1fr); gap: 24px; }
+  .video-col { position: static; }
+}
+</style>
+</head>
+<body>
+<nav class="mock-bar" aria-label="モックの画面切り替え">
+  <strong>モック</strong>
+  <a href="#home">目次</a><a href="#lesson">レッスン</a>
+</nav>
+<header class="site-head">
+  <a class="site-name" href="#home">ruminy</a>
+  <span class="site-user">1101 テスト生徒</span>
+</header>
+<main>
+
+<section class="screen toc" id="home">
+  <a class="continue" href="#lesson">
+    <small>続きから</small>
+    <b>CPUとメモリの役割</b>
+    <span>メモの途中です <u>続ける</u></span>
+  </a>
+  <p class="subject">情報Ⅰ</p>
+  <h2 class="unit">プログラミング入門</h2>
+  <a class="row" href="#lesson"><span class="row-no">01</span><span class="row-title">プログラミングとアルゴリズム</span><span class="row-marks"><b>メモあり</b><span class="red">80</span></span></a>
+  <a class="row" href="#lesson"><span class="row-no">02</span><span class="row-title">順次・選択・反復</span><span class="row-marks"><b>メモあり</b><span class="red">60</span></span></a>
+  <a class="row" href="#lesson"><span class="row-no">03</span><span class="row-title">変数と配列</span><span class="row-marks">まだ</span></a>
+  <a class="row special" href="#home"><span class="row-no">自由</span><span class="row-title">自由制作：作りたいプログラムを作ろう</span><span class="row-marks">受付中</span></a>
+  <h2 class="unit" style="margin-top:34px">コンピュータの仕組み</h2>
+  <a class="row" href="#lesson"><span class="row-no">01</span><span class="row-title">CPUとメモリの役割</span><span class="row-marks"><b>メモの途中</b></span></a>
+  <a class="row" href="#lesson"><span class="row-no">02</span><span class="row-title">2進数と情報量</span><span class="row-marks">まだ</span></a>
+</section>
+
+<section class="screen" id="lesson">
+  <div class="lesson-head">
+    <div class="crumb"><a href="#home">コンピュータの仕組み</a> / 01</div>
+    <h1>CPUとメモリの役割</h1>
+  </div>
+  <div class="lesson-grid">
+    <div class="video-col">
+      <div class="video"><span>授業動画</span></div>
+      <ol class="steps">
+        <li><span>動画で学ぶ</span><small>見ながらメモの穴を埋める</small></li>
+        <li><span>メモで広げ、深める</span><small>問いに自分の考えを書く</small></li>
+        <li><span>小テストで確かめる</span><a href="#lesson">小テストへ</a></li>
+      </ol>
+    </div>
+    <div>
+      <h2 class="memo-title">メモ</h2>
+      <div class="blank-state" id="blank-state">
+        <p>先生が用意したメモのひな形があります。読み込むと、穴を埋めたり、自由に書き換えたりできます。</p>
+        <button class="btn btn-ink" id="load">ひな形を読み込む</button>
+        <button class="btn" id="free">白紙から書く</button>
+      </div>
+      <div id="editor" hidden>
+        <div class="toolbar" aria-hidden="true"><span>B</span><span>I</span><span>見出し</span><span>箇条書き</span><span>表</span><span>コード</span></div>
+        <div class="sheet" id="sheet" contenteditable="true" role="textbox" aria-multiline="true" aria-label="メモ"></div>
+        <div class="memo-actions">
+          <button class="btn btn-ink" id="save">保存</button>
+          <small id="saved">保存しても、あとから続きを書けます</small>
+        </div>
+      </div>
+      <div class="other">
+        <h2>クラスの投稿</h2>
+        <p>机の広さにたとえると分かりやすかった。作業台がメモリで、引き出しがストレージかな。</p>
+      </div>
+    </div>
+  </div>
+</section>
+</main>
+<template id="template">
+  <h3>1. CPUとメモリの関係</h3>
+  <p>CPUは【　　　　】から命令を読み出して実行する。</p>
+  <p>メモリは電源を切ると内容が【　　　　】記憶装置である。</p>
+  <figure>
+    <svg viewBox="0 0 380 110" role="img" aria-label="CPUとメモリとストレージの関係図">
+      <g fill="none" stroke="#1d2b3f" stroke-width="1.5">
+        <rect x="10" y="30" width="90" height="50"/><rect x="145" y="30" width="90" height="50"/><rect x="280" y="30" width="90" height="50"/>
+        <path d="M100 55h45M235 55h45"/>
+      </g>
+      <g fill="#1d2b3f" font-size="14" text-anchor="middle" font-family="sans-serif">
+        <text x="55" y="60">CPU</text><text x="190" y="60">メモリ</text><text x="325" y="60">【　　】</text>
+      </g>
+    </svg>
+    <figcaption>図1 データの流れ（先生が用意した図）</figcaption>
+  </figure>
+  <blockquote>考えてみよう：メモリを増やすと、なぜ速くなることがあるのだろう？</blockquote>
+  <p>自分の考え：</p>
+  <hr>
+  <h3>2. 記憶装置の使い分け</h3>
+  <p>速い順に並べると、【　　　　】→ メモリ → 【　　　　】となる。</p>
+  <blockquote>考えてみよう：すべてを一番速い記憶装置で作らないのはなぜだろう？</blockquote>
+  <p>自分の考え：</p>
+</template>
+<script>
+const $ = (s) => document.querySelector(s);
+function show() {
+  const route = location.hash.slice(1) || "home";
+  document.querySelectorAll(".mock-bar a").forEach((a) => a.classList.toggle("on", a.getAttribute("href") === `#${route}`));
+  $("#home").classList.toggle("on", route === "home");
+  $("#lesson").classList.toggle("on", route === "lesson");
+  window.scrollTo(0, 0);
+}
+function openEditor(useTemplate) {
+  $("#sheet").innerHTML = useTemplate ? $("#template").innerHTML : "<p><br></p>";
+  $("#blank-state").hidden = true;
+  $("#editor").hidden = false;
+  $("#sheet").focus();
+}
+$("#load").addEventListener("click", () => openEditor(true));
+$("#free").addEventListener("click", () => openEditor(false));
+$("#save").addEventListener("click", () => { $("#saved").textContent = "保存しました（モックのため実際には保存されません）"; });
+window.addEventListener("hashchange", show);
+if (location.search.includes("loaded")) openEditor(true);
+show();
+</script>
+</body>
+</html>
