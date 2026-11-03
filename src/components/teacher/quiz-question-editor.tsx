@@ -51,6 +51,7 @@ export default function QuizQuestionEditor({ uid, initialContent, onChange, plac
 
         const formData = new FormData();
         formData.append("file", file);
+        formData.append("purpose", "quiz");
 
         fetch("/api/images/upload", { method: "POST", body: formData })
           .then((res) => res.json() as Promise<UploadResponse>)

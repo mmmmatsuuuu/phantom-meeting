@@ -156,8 +156,8 @@ src/
 │   │   │   ├── units/route.ts                           # 単元作成
 │   │   │   └── units/[unitId]/route.ts                  # 単元更新・削除
 │   │   ├── images/
-│   │   │   ├── upload/route.ts                          # ImageKit アップロード（認証済みのみ）
-│   │   │   └── [fileId]/route.ts                        # ImageKit 削除
+│   │   │   ├── upload/route.ts                          # ImageKit アップロード（教師のみ。用途ごとにフォルダを分ける）
+│   │   │   └── [fileId]/route.ts                        # ImageKit 削除（教師のみ）
 │   │   ├── lessons/[lessonId]/memo-template/route.ts    # ノートのひな形の保存・削除（teacher/admin）
 │   │   ├── lessons/[lessonId]/code-snippets/
 │   │   │   ├── route.ts                                 # 初期コード追加（teacher/admin）

@@ -168,7 +168,7 @@
 | SC | レッスンとひな形を並列取得 | `app/(teacher)/teacher/lessons/[lessonId]/note-template/page.tsx` |
 | フロント | 生徒のノートと同じ見た目のエディタで編集、画像の貼り付け（アップロード）、JSON の読み込み | `components/teacher/note-template-editor.tsx` |
 | API | 教師確認と tiptap の文書か・256KB 以下かの検証、保存・削除 | `api/lessons/[lessonId]/memo-template/route.ts` |
-| API | 画像のアップロード（教師のみ） | `api/images/upload/route.ts` |
+| API | 画像のアップロード（教師のみ。ImageKit の `note-template-images` フォルダに置く） | `api/images/upload/route.ts` |
 | lib/db | ひな形の取得・保存（upsert）・削除 | `memo-templates.ts` |
 | DB | 閲覧は認証ユーザー全員、作成・更新・削除は教師・管理者 | RLS（`memo_templates`） |
 
@@ -181,7 +181,7 @@
 | フロント | 設問エディタ（tiptap・画像の貼り付け） | `components/teacher/quiz-question-editor.tsx` |
 | API | 教師確認と入力値の検証 | `api/quizzes/route.ts`、`api/quizzes/[quizId]/**`、`api/quiz-questions/[questionId]/route.ts` |
 | lib/db | 小テスト・設問の作成・追加・削除 | `quizzes.ts` `createQuiz` / `addQuizQuestion` / `deleteQuizQuestion` / `deleteQuiz` |
-| API | 画像を ImageKit にアップロード・削除（秘匿キーを使用、画像形式・5MB 以下を検証） | `api/images/upload/route.ts`、`api/images/[fileId]/route.ts` |
+| API | 画像を ImageKit にアップロード・削除（秘匿キーを使用、画像形式・5MB 以下を検証。小テストの画像は `quiz-images` フォルダに置く） | `api/images/upload/route.ts`、`api/images/[fileId]/route.ts` |
 | DB | 小テスト・設問の作成・更新・削除は教師のみ | RLS（`quizzes`・`quiz_questions`） |
 
 ### プレイグラウンド管理（`/teacher/lessons/[lessonId]/code-snippets`）

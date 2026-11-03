@@ -56,6 +56,7 @@ export default function NoteTemplateEditor({ lessonId, initialContent }: Props) 
         setIsUploading(true);
         const formData = new FormData();
         formData.append("file", file);
+        formData.append("purpose", "note-template");
         fetch("/api/images/upload", { method: "POST", body: formData })
           .then((res) => res.json() as Promise<UploadResponse>)
           .then((json) => {
