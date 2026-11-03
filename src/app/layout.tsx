@@ -1,6 +1,5 @@
 import type { Metadata } from "next";
 import "./globals.css";
-import NavBar from "@/components/shared/nav-bar";
 import { Toaster } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import NextTopLoader from "nextjs-toploader";
@@ -33,7 +32,7 @@ export default function RootLayout({
       <body className="antialiased min-h-screen bg-background">
         <NextTopLoader color="#1d2b3f" showSpinner={false} />
         <TooltipProvider>
-          <NavBar />
+          {/* ヘッダーは各ルートグループのレイアウトで出す（ログインと 404 はヤギを大きく出すため、ヘッダーを置かない） */}
           <main>{children}</main>
           <Toaster />
         </TooltipProvider>

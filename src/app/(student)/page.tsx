@@ -1,15 +1,14 @@
-import Image from "next/image";
 import { cookies } from "next/headers";
 import { getContents } from "@/lib/db/contents";
 import { getStudentQuizStatuses, getQuizLessonPairs } from "@/lib/db/quizzes";
-import { getMemoCountsByLesson } from "@/lib/db/memos";
+import { getLatestMemoLessonId, getMemoCountsByLesson } from "@/lib/db/memos";
 import { getMakerEventsByUnit } from "@/lib/db/maker";
 import { buildStudentDashboard } from "@/lib/student-dashboard";
 import type { StudentDashboard } from "@/lib/student-dashboard";
 import { getUserProfile } from "@/lib/supabase/server";
 import SubjectList from "@/components/lesson/subject-list";
-import DashboardSummaryCards from "@/components/student/dashboard-summary";
-import NextActions from "@/components/student/next-actions";
+import ContinueNote from "@/components/lesson/continue-note";
+import Mascot from "@/components/shared/mascot";
 
 export default async function HomePage() {
   const [subjects, profile, cookieStore, makerEventsByUnit] = await Promise.all([
@@ -19,19 +18,26 @@ export default async function HomePage() {
     getMakerEventsByUnit(),
   ]);
 
-  const displayName = profile?.displayName ?? "";
-
-  // 学習状況ダッシュボードは全ロールに表示する
-  // （教師が生徒向けの表示を確認できるようにするため。表示されるのは自分自身のデータ）
+  // 目次の各行に出すノートの有無と小テストの得点に使う。
+  // 学習状況のまとめ（DashboardSummaryCards・NextActions）は、機能として残したまま画面には出していない
   let dashboard: StudentDashboard | null = null;
+  let latestLessonId: string | null = null;
   if (profile) {
-    const [quizPairs, statuses, memoCounts] = await Promise.all([
+    const [quizPairs, statuses, memoCounts, latest] = await Promise.all([
       getQuizLessonPairs(),
       getStudentQuizStatuses(profile.userId),
       getMemoCountsByLesson(profile.userId),
+      getLatestMemoLessonId(profile.userId),
     ]);
     dashboard = buildStudentDashboard(subjects, quizPairs, statuses, memoCounts);
+    latestLessonId = latest;
   }
+
+  const latestLesson = latestLessonId
+    ? subjects
+        .flatMap((s) => s.units.flatMap((u) => u.lessons))
+        .find((l) => l.id === latestLessonId)
+    : undefined;
 
   // cookie から折りたたまれている科目IDを取得
   let initialCollapsedIds: string[] = [];
@@ -46,72 +52,24 @@ export default async function HomePage() {
   }
 
   return (
-    <div>
-      {/* Hero banner */}
-      <div className="bg-gradient-to-r from-indigo-600 to-indigo-500 text-white overflow-hidden">
-        <div className="max-w-4xl mx-auto px-4 py-8 flex items-center justify-between gap-4">
-          <div className="shrink-0">
-            <p className="text-sheet text-sm mb-1">
-              {displayName ? `こんにちは、${displayName} さん` : "ようこそ"}
-            </p>
-            <h1 className="text-2xl font-bold mb-2">今日も学習を進めましょう</h1>
-            <p className="text-sheet text-sm">
-              動画を視聴して、発問に答え、気づきをメモしましょう。
-            </p>
-          </div>
-          <div className="hidden sm:block shrink-0 opacity-90">
-            <Image
-              src="/undraw_writing-online.svg"
-              alt=""
-              width={200}
-              height={168}
-              priority
-            />
-          </div>
+    <div className="max-w-3xl mx-auto px-4 pb-16">
+      {latestLesson && <ContinueNote lessonId={latestLesson.id} title={latestLesson.title} />}
+
+      {subjects.length === 0 ? (
+        <div className="flex items-center gap-4 py-16">
+          <Mascot pose="rest" size={96} />
+          <p className="text-sm text-muted-foreground">
+            レッスンがまだ登録されていません。のんびり待ちましょう。
+          </p>
         </div>
-      </div>
-
-      <div className="max-w-4xl mx-auto px-4 py-8 space-y-8">
-        {dashboard && dashboard.summary.totalQuizCount + dashboard.summary.memoCount > 0 && (
-          <section className="space-y-3">
-            <h2 className="text-sm font-semibold text-muted-foreground">
-              あなたの学習状況
-            </h2>
-            <DashboardSummaryCards summary={dashboard.summary} />
-            <NextActions actions={dashboard.nextActions} />
-          </section>
-        )}
-
-        {subjects.length === 0 ? (
-          <div className="flex flex-col items-center justify-center py-20 text-center">
-            <div className="w-16 h-16 rounded-full bg-surface flex items-center justify-center mb-4">
-              <svg
-                viewBox="0 0 24 24"
-                fill="none"
-                stroke="currentColor"
-                strokeWidth={1.5}
-                className="w-8 h-8 text-ink"
-              >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  d="M3.375 19.5h17.25m-17.25 0a1.125 1.125 0 01-1.125-1.125M3.375 19.5h1.5C5.496 19.5 6 18.996 6 18.375m-3.75.125v-.375c0-.621.504-1.125 1.125-1.125h.375m17.25 0h-1.5c-.621 0-1.125-.504-1.125-1.125m1.5 1.125v-.375c0-.621-.504-1.125-1.125-1.125h-.375M6 18.375V7.875m0 0c0-.621.504-1.125 1.125-1.125h9.75c.621 0 1.125.504 1.125 1.125M6 7.875v10.5m12-10.5v10.5"
-                />
-              </svg>
-            </div>
-            <p className="text-muted-foreground text-sm">
-              レッスンがまだ登録されていません。
-            </p>
-          </div>
-        ) : (
-          <SubjectList
-            makerEventsByUnit={makerEventsByUnit}
-            subjects={subjects}
-            initialCollapsedIds={initialCollapsedIds}
-            lessonBadges={dashboard?.lessonBadges}
-          />
-        )}
-      </div>
+      ) : (
+        <SubjectList
+          makerEventsByUnit={makerEventsByUnit}
+          subjects={subjects}
+          initialCollapsedIds={initialCollapsedIds}
+          lessonBadges={dashboard?.lessonBadges}
+        />
+      )}
     </div>
   );
 }

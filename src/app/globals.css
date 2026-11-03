@@ -94,6 +94,35 @@
   }
 }
 
+@layer components {
+  /*
+   * 方眼の用紙。入力欄とノートに使う（コードエディタには使わない）。
+   * 目は 16px で、ノートの行の高さと余白も 16px の倍数にそろえる
+   */
+  .graph-paper {
+    background-color: var(--sheet);
+    background-image:
+      linear-gradient(var(--grid) 1px, transparent 1px),
+      linear-gradient(90deg, var(--grid) 1px, transparent 1px);
+    background-size: 16px 16px;
+    background-position: -1px -1px;
+  }
+
+  /*
+   * ルーズリーフ。目次で単元ごとに 1 枚使う。
+   * 左端にパンチ穴、その右に余白線、全体に 40px 間隔の罫線を引く（行の高さを罫線にそろえる）
+   */
+  .loose-leaf {
+    background-color: var(--sheet);
+    background-image:
+      radial-gradient(circle at 22px 20px, var(--paper) 0 6px, var(--rule-strong) 6.5px 7.5px, transparent 8px),
+      linear-gradient(90deg, transparent 47px, rgb(29 43 63 / 0.22) 47px 48px, transparent 48px),
+      repeating-linear-gradient(to bottom, transparent 0 39px, rgb(29 43 63 / 0.09) 39px 40px);
+    background-size: 44px 40px, 100% 100%, 100% 100%;
+    background-repeat: repeat-y, no-repeat, repeat;
+  }
+}
+
 /* tiptap エディタ内スタイル */
 .ProseMirror h2 {
   @apply text-base font-semibold mt-2 mb-1;

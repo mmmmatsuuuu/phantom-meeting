@@ -52,7 +52,7 @@ export default function ReviewPromptDialog({ unitId, unitName }: Props) {
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger asChild>
         <Button variant="outline" size="xs">
-          🤖 AIで振り返る
+          AIで振り返る
         </Button>
       </DialogTrigger>
       <DialogContent className="sm:max-w-2xl max-h-[90vh] overflow-y-auto">

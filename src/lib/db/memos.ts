@@ -230,6 +230,21 @@ export async function getMemoCountsByLesson(
 }
 
 /**
+ * 自分が最後に更新したメモのレッスンIDを取得する（目次の「続きから」用）
+ */
+export async function getLatestMemoLessonId(userId: string): Promise<string | null> {
+  const supabase = await createClient();
+  const { data } = await supabase
+    .from("memos")
+    .select("lesson_id")
+    .eq("user_id", userId)
+    .order("updated_at", { ascending: false })
+    .limit(1)
+    .maybeSingle();
+  return data?.lesson_id ?? null;
+}
+
+/**
  * メモを削除する
  */
 export async function deleteMemo(memoId: string): Promise<boolean> {
