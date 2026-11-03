@@ -187,19 +187,19 @@ img[src*="mascot"] { mix-blend-mode: multiply; }
   <a class="continue" href="#lesson">
     <small>続きから</small>
     <b>CPUとメモリの役割</b>
-    <span>メモの途中です　<u>続ける</u></span>
+    <span>ノートの途中です　<u>続ける</u></span>
   </a>
   <p class="subject">情報Ⅰ</p>
   <div class="leaf">
     <h2>プログラミング入門</h2>
-    <a class="row" href="#lesson"><span class="row-no">01</span><span class="row-title">プログラミングとアルゴリズム</span><span class="row-marks"><b>メモあり</b><span class="red">80</span></span></a>
-    <a class="row" href="#lesson"><span class="row-no">02</span><span class="row-title">順次・選択・反復</span><span class="row-marks"><b>メモあり</b><span class="red">60</span></span></a>
+    <a class="row" href="#lesson"><span class="row-no">01</span><span class="row-title">プログラミングとアルゴリズム</span><span class="row-marks"><b>ノートあり</b><span class="red">80</span></span></a>
+    <a class="row" href="#lesson"><span class="row-no">02</span><span class="row-title">順次・選択・反復</span><span class="row-marks"><b>ノートあり</b><span class="red">60</span></span></a>
     <a class="row" href="#lesson"><span class="row-no">03</span><span class="row-title">変数と配列</span><span class="row-marks">まだ</span></a>
     <a class="row special" href="#gallery"><span class="row-no">自由</span><span class="row-title">自由制作：作りたいプログラムを作ろう</span><span class="row-marks">受付中</span></a>
   </div>
   <div class="leaf">
     <h2>コンピュータの仕組み</h2>
-    <a class="row" href="#lesson"><span class="row-no">01</span><span class="row-title">CPUとメモリの役割</span><span class="row-marks"><b>メモの途中</b></span></a>
+    <a class="row" href="#lesson"><span class="row-no">01</span><span class="row-title">CPUとメモリの役割</span><span class="row-marks"><b>ノートの途中</b></span></a>
     <a class="row" href="#lesson"><span class="row-no">02</span><span class="row-title">2進数と情報量</span><span class="row-marks">まだ</span></a>
   </div>
 </section>
@@ -213,24 +213,24 @@ img[src*="mascot"] { mix-blend-mode: multiply; }
     <div class="video-col">
       <div class="video"><span>授業動画</span></div>
       <ol class="steps">
-        <li><span>動画で学ぶ</span><small>見ながらメモの穴を埋める</small></li>
-        <li><span>メモで広げ、深める</span><small>問いに自分の考えを書く</small></li>
+        <li><span>動画で学ぶ</span><small>見ながらノートの穴を埋める</small></li>
+        <li><span>ノートで広げ、深める</span><small>問いに自分の考えを書く</small></li>
         <li><span>小テストで確かめる</span><a href="#lesson">小テストへ</a></li>
       </ol>
     </div>
     <div>
-      <h2 class="memo-title">メモ</h2>
+      <h2 class="memo-title">ノート</h2>
       <div class="blank-state offer" id="blank-state">
         <img src="../../public/mascot/offer.png" alt="">
         <div>
-          <p>先生が用意したメモのひな形があります。読み込むと、穴を埋めたり、自由に書き換えたりできます。</p>
+          <p>先生が用意したノートのひな形があります。読み込むと、穴を埋めたり、自由に書き換えたりできます。</p>
           <button class="btn btn-ink" id="load">ひな形を読み込む</button>
           <button class="btn" id="free">白紙から書く</button>
         </div>
       </div>
       <div id="editor" hidden>
         <div class="toolbar" aria-hidden="true"><span>B</span><span>I</span><span>見出し</span><span>箇条書き</span><span>表</span><span>コード</span></div>
-        <div class="sheet" id="sheet" contenteditable="true" role="textbox" aria-multiline="true" aria-label="メモ"></div>
+        <div class="sheet" id="sheet" contenteditable="true" role="textbox" aria-multiline="true" aria-label="ノート"></div>
         <div class="memo-actions">
           <button class="btn btn-ink" id="save">保存</button>
           <small id="saved">保存しても、あとから続きを書けます</small>
