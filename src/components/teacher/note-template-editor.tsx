@@ -42,7 +42,8 @@ export default function NoteTemplateEditor({ lessonId, initialContent }: Props) 
     immediatelyRender: false,
     content: (initialContent ?? undefined) as JSONContent | undefined,
     extensions: createNoteExtensions("穴埋め（【　　】）と「考えてみよう」を入れて、プリントのように書きます"),
-    onSelectionUpdate: ({ editor }) => {
+    // ボタン操作でコードブロックにしたときもカーソルは動かないため、エディタのすべての変化で判定し直す
+    onTransaction: ({ editor }) => {
       const active = editor.isActive("codeBlock");
       setIsCodeBlockActive(active);
       setCodeBlockLang(active ? (editor.getAttributes("codeBlock").language ?? "") : "");

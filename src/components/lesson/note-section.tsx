@@ -49,7 +49,9 @@ export default function NoteSection({ lessonId, template, ref }: Props) {
     onUpdate: ({ editor }) => {
       setDirty(JSON.stringify(editor.getJSON()) !== savedRef.current);
     },
-    onSelectionUpdate: ({ editor }) => {
+    // ボタン操作でコードブロックにしたときもカーソルは動かないため、選択の変化ではなく
+    // エディタのすべての変化で判定し直す（ツールバーの言語の欄と、選択中のボタンの表示に使う）
+    onTransaction: ({ editor }) => {
       const isCode = editor.isActive("codeBlock");
       setIsCodeBlockActive(isCode);
       setCodeBlockLang(isCode ? (editor.getAttributes("codeBlock").language ?? "") : "");
