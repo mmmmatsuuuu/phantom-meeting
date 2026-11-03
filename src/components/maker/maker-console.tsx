@@ -95,14 +95,10 @@ export default function MakerConsole({ code }: Props) {
       </div>
 
       <div
-        className={`rounded-md border p-3 text-xs font-mono min-h-[96px] max-h-96 overflow-y-auto whitespace-pre-wrap ${
-          error
-            ? "border-red-pen/50 bg-red-pen/10 text-red-pen"
-            : "bg-muted/40 text-foreground"
-        }`}
+        className="px-3.5 py-2.5 bg-paper border border-rule-strong font-mono text-sm leading-6 min-h-[96px] max-h-96 overflow-y-auto whitespace-pre-wrap"
       >
         {output}
-        {error && <p className="mt-1 font-semibold">⚠ {lastLine(error)}</p>}
+        {error && <p className="mt-1 font-semibold text-red-pen">{lastLine(error)}</p>}
         {!output && !error && !waitingInput && (
           <span className="text-muted-foreground">「実行」を押すと結果がここに表示されます</span>
         )}

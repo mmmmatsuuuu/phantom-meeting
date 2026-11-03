@@ -3,6 +3,7 @@
 import { useState } from "react";
 import MakerConsole from "@/components/maker/maker-console";
 import SubmitButton from "@/components/shared/submit-button";
+import Mascot from "@/components/shared/mascot";
 import type { MakerGalleryItem } from "@/lib/db/maker";
 
 type Props = {
@@ -10,6 +11,9 @@ type Props = {
   initialItems: MakerGalleryItem[];
   isTeacher: boolean;
 };
+
+// 用紙の傾き（度）。並べたときに貼り出した感じが出るよう、少しずつ変える
+const TILTS = [-1.2, 0.8, -0.4, 1.1, -0.9, 0.5];
 
 export default function MakerGallery({ eventId, initialItems, isTeacher }: Props) {
   const [items, setItems] = useState(initialItems);
@@ -66,73 +70,78 @@ export default function MakerGallery({ eventId, initialItems, isTeacher }: Props
   };
 
   if (items.length === 0) {
-    return <p className="py-16 text-center text-sm text-muted-foreground">まだ作品がありません</p>;
+    return (
+      <div className="flex items-center gap-4 py-6 border-b border-rule">
+        <Mascot pose="rest" size={96} />
+        <p className="text-sm text-muted-foreground">まだ作品がありません。のんびり待ちましょう。</p>
+      </div>
+    );
   }
 
   return (
-    <div className="grid lg:grid-cols-[minmax(0,1fr)_minmax(0,1.4fr)] gap-6 items-start">
-      <div className="grid gap-2">
-        {items.map((item) => (
+    <div>
+      {/* 作品展：掲示板にピンで留めた用紙を、少しずつ傾けて並べる */}
+      <div className="grid grid-cols-[repeat(auto-fill,minmax(210px,1fr))] gap-x-[22px] gap-y-7 px-1 pt-3">
+        {items.map((item, index) => (
           <button
             key={item.user_id}
             onClick={() => openItem(item.user_id)}
-            className={`text-left rounded-lg border p-3 transition-colors hover:border-ink ${
-              item.user_id === selectedId ? "border-ink bg-surface/40" : "bg-card"
+            style={{ rotate: `${TILTS[index % TILTS.length]}deg` }}
+            className={`group relative text-left px-4 pt-[22px] pb-3.5 bg-sheet border border-rule-strong before:absolute before:-top-[7px] before:left-1/2 before:-ml-[7px] before:size-3.5 before:rounded-full before:bg-ink ${
+              item.user_id === selectedId ? "outline-2 outline-offset-[3px] outline-ink" : ""
             }`}
           >
-            <span className="flex items-center justify-between gap-2">
-              <span className="text-sm font-medium truncate">{item.title}</span>
-              {item.hidden_at && (
-                <span className="text-xs px-2 py-0.5 rounded-full bg-red-pen/10 text-red-pen shrink-0">
-                  公開停止中
-                </span>
-              )}
+            <span className="block font-hand font-semibold text-[17px] leading-relaxed group-hover:underline underline-offset-4">
+              {item.title}
             </span>
-            <span className="block text-xs text-muted-foreground mt-1">
+            <span className="block mt-1 mb-2 font-hand text-[13px] leading-[1.8] text-muted-foreground line-clamp-2">
+              {item.description}
+            </span>
+            <span className="flex items-center gap-2 text-xs text-muted-foreground">
               {item.student_number ?? "教員"}
+              {item.hidden_at && <span className="font-semibold text-red-pen">公開停止中</span>}
             </span>
           </button>
         ))}
       </div>
 
       {selected ? (
-        <div className="rounded-lg border bg-card p-4 space-y-4 min-w-0">
-          <div className="flex flex-wrap items-start justify-between gap-2">
-            <div>
-              <h2 className="text-lg font-bold">{selected.title}</h2>
-              <p className="text-xs text-muted-foreground">
-                作者: {selected.student_number ?? "教員"}
-              </p>
+        <div className="mt-8 grid grid-cols-[minmax(0,1fr)_minmax(0,1.1fr)] gap-7 px-6 py-5 bg-sheet border border-rule-strong">
+          <div className="min-w-0">
+            <div className="flex flex-wrap items-start justify-between gap-2">
+              <div>
+                <h2 className="font-hand font-semibold text-[22px]">{selected.title}</h2>
+                <p className="text-xs text-muted-foreground">{selected.student_number ?? "教員"}</p>
+              </div>
+              {isTeacher && (
+                <SubmitButton
+                  loading={updating}
+                  loadingLabel="変更中..."
+                  onClick={() => toggleHidden(selected)}
+                  className="px-3 py-1.5 text-xs rounded-sm border border-ink hover:bg-surface transition-colors disabled:opacity-50"
+                >
+                  {selected.hidden_at ? "公開を再開" : "公開停止"}
+                </SubmitButton>
+              )}
             </div>
-            {isTeacher && (
-              <SubmitButton
-                loading={updating}
-                loadingLabel="変更中..."
-                onClick={() => toggleHidden(selected)}
-                className="px-3 py-1.5 text-xs rounded-md border hover:bg-muted transition-colors disabled:opacity-50"
-              >
-                {selected.hidden_at ? "公開を再開" : "公開停止"}
-              </SubmitButton>
-            )}
-          </div>
-          {updateError && <p className="text-xs text-red-pen">{updateError}</p>}
-          <p className="text-sm leading-relaxed whitespace-pre-wrap">{selected.description}</p>
-
-          {loadError && <p className="text-sm text-red-pen">{loadError}</p>}
-          {code !== null && (
-            <>
-              <MakerConsole key={selected.user_id} code={code} />
-              <details>
-                <summary className="cursor-pointer text-sm font-semibold">コードを見る</summary>
-                <pre className="mt-2 text-xs font-mono bg-muted/40 rounded p-3 overflow-x-auto">
+            {updateError && <p className="mt-2 text-xs text-red-pen">{updateError}</p>}
+            <p className="mt-2 font-hand leading-loose whitespace-pre-wrap">{selected.description}</p>
+            {code !== null && (
+              <details className="mt-3">
+                <summary className="cursor-pointer text-xs text-muted-foreground">コードを見る</summary>
+                <pre className="mt-2 px-3.5 py-2.5 font-mono text-xs leading-5 bg-paper border border-rule max-h-60 overflow-auto">
                   {code}
                 </pre>
               </details>
-            </>
-          )}
+            )}
+          </div>
+          <div className="min-w-0">
+            {loadError && <p className="text-sm text-red-pen">{loadError}</p>}
+            {code !== null && <MakerConsole key={selected.user_id} code={code} />}
+          </div>
         </div>
       ) : (
-        <p className="py-16 text-center text-sm text-muted-foreground">
+        <p className="mt-8 text-center text-sm text-muted-foreground">
           作品を選ぶと、説明と実行ボタンが表示されます
         </p>
       )}

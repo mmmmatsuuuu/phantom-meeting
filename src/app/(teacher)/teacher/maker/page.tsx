@@ -14,7 +14,7 @@ export default async function TeacherMakerPage() {
   return (
     <div className="max-w-4xl mx-auto px-4 py-8 space-y-6">
       <div>
-        <h1 className="text-2xl font-bold mb-1">🛠 自由制作</h1>
+        <h1 className="font-hand font-semibold text-[26px] leading-normal mb-1">自由制作</h1>
         <p className="text-sm text-muted-foreground">
           生徒が作るものを自分で決めて制作・提出し、作品を共有する課題を配信します。
         </p>

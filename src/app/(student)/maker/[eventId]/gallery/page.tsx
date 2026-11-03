@@ -3,6 +3,7 @@ import { notFound } from "next/navigation";
 import { getUserProfile } from "@/lib/supabase/server";
 import { canViewMakerGallery, getMakerEvent, getMakerGalleryItems } from "@/lib/db/maker";
 import MakerGallery from "@/components/maker/maker-gallery";
+import Mascot from "@/components/shared/mascot";
 
 type Props = {
   params: Promise<{ eventId: string }>;
@@ -26,14 +27,17 @@ export default async function MakerGalleryPage({ params }: Props) {
         >
           ← {event.title}
         </Link>
-        <h1 className="text-2xl font-bold mt-1">🎮 みんなの作品</h1>
+        <h1 className="font-hand font-semibold text-[28px] leading-normal mt-1">作品展</h1>
       </div>
       {canView ? (
         <MakerGallery eventId={eventId} initialItems={items} isTeacher={isTeacher} />
       ) : (
-        <p className="py-16 text-center text-sm text-muted-foreground">
-          まだ公開されていません。先生が公開すると、ここで作品を見られるようになります。
-        </p>
+        <div className="flex items-center gap-4 py-6 border-b border-rule">
+          <Mascot pose="rest" size={96} />
+          <p className="text-sm text-muted-foreground">
+            まだ公開されていません。先生が公開するまで、のんびり待ちましょう。
+          </p>
+        </div>
       )}
     </div>
   );
