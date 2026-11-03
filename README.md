@@ -98,6 +98,8 @@ docker exec -i supabase_db_phantom_meeting psql -U postgres -d postgres < supaba
 
 自由制作のダミーデータ（課題1件と提出物。内容はファイル冒頭に記載）も `db reset` で入る。reset せずに入れる、または初期状態に戻すには `supabase/seeds/maker.sql` を同様に流す。
 
+ノートのひな形のダミーデータ（「CPUとメモリの役割」「2進数と情報量」の 2 レッスン）も同様で、`supabase/seeds/note-templates.sql` を流すと入る。
+
 ### よく使うコマンド
 
 ```bash
