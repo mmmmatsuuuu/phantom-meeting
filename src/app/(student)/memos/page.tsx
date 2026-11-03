@@ -51,13 +51,13 @@ export default async function MemosPage() {
 
       {tree.length === 0 ? (
         <div className="flex flex-col items-center justify-center py-20 text-center">
-          <div className="w-16 h-16 rounded-full bg-indigo-50 flex items-center justify-center mb-4">
+          <div className="w-16 h-16 rounded-full bg-surface flex items-center justify-center mb-4">
             <svg
               viewBox="0 0 24 24"
               fill="none"
               stroke="currentColor"
               strokeWidth={1.5}
-              className="w-8 h-8 text-indigo-400"
+              className="w-8 h-8 text-ink"
             >
               <path
                 strokeLinecap="round"
@@ -135,19 +135,19 @@ export default async function MemosPage() {
                                     href={lesson.youtube_url}
                                     target="_blank"
                                     rel="noopener noreferrer"
-                                    className="text-xs text-indigo-600 hover:underline block mb-3"
+                                    className="text-xs text-ink hover:underline block mb-3"
                                   >
                                     動画
                                   </a>
                                 )}
-                                <div className="space-y-3 pl-4 border-l-2 border-indigo-100">
+                                <div className="space-y-3 pl-4 border-l-2 border-rule">
                                   {lesson.memos.map((memo) => (
                                     <div
                                       key={memo.id}
                                       className="bg-card rounded-lg border p-4"
                                     >
                                       {memo.timestamp_seconds !== null && (
-                                        <div className="text-xs text-indigo-600 font-mono mb-2">
+                                        <div className="text-xs text-ink font-mono mb-2">
                                           ⏱ {formatTime(memo.timestamp_seconds)}
                                         </div>
                                       )}

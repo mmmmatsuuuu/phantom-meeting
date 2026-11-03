@@ -97,7 +97,7 @@ export default function MakerConsole({ code }: Props) {
       <div
         className={`rounded-md border p-3 text-xs font-mono min-h-[96px] max-h-96 overflow-y-auto whitespace-pre-wrap ${
           error
-            ? "border-red-300 bg-red-50 dark:bg-red-950/20 text-red-700 dark:text-red-400"
+            ? "border-red-pen/50 bg-red-pen/10 text-red-pen"
             : "bg-muted/40 text-foreground"
         }`}
       >

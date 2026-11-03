@@ -72,7 +72,7 @@ export default function ReviewPromptDialog({ unitId, unitName }: Props) {
         {loading && (
           <div className="h-64 rounded-md border bg-muted/40 animate-pulse" />
         )}
-        {error && <p className="text-sm text-red-500">{error}</p>}
+        {error && <p className="text-sm text-red-pen">{error}</p>}
 
         {prompt && (
           <div className="space-y-3">

@@ -318,7 +318,7 @@ export default function Playground({
             </button>
           </div>
           <p
-            className={`text-[11px] -mt-1 ${saveError ? "text-red-600 dark:text-red-400" : "text-muted-foreground"}`}
+            className={`text-[11px] -mt-1 ${saveError ? "text-red-pen" : "text-muted-foreground"}`}
           >
             {saveError ??
               (isDirty(activeSnippet.id)
@@ -330,7 +330,7 @@ export default function Playground({
           <div
             className={`rounded-md border p-3 text-xs font-mono min-h-[72px] whitespace-pre-wrap ${
               runError
-                ? "border-red-300 bg-red-50 dark:bg-red-950/20 text-red-700 dark:text-red-400"
+                ? "border-red-pen/50 bg-red-pen/10 text-red-pen"
                 : "bg-muted/40 text-foreground"
             }`}
           >

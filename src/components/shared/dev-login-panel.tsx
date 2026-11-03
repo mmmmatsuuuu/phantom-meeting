@@ -10,9 +10,9 @@ export default function DevLoginPanel({ hasError }: Props) {
     <form
       action="/login/dev"
       method="post"
-      className="rounded-2xl border border-dashed border-amber-400 bg-amber-50 dark:bg-amber-950/20 p-4 space-y-3"
+      className="rounded-2xl border border-dashed border-rule-strong bg-surface p-4 space-y-3"
     >
-      <p className="text-xs font-semibold text-amber-800 dark:text-amber-300">
+      <p className="text-xs font-semibold text-ink">
         🧪 開発環境のみ：ダミーアカウントでログイン
       </p>
       <select

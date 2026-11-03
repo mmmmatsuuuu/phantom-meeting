@@ -16,7 +16,7 @@ export default function NextActions({ actions }: Props) {
           <Link
             key={`${action.type}-${action.lessonId}`}
             href={`/lessons/${action.lessonId}`}
-            className="flex items-center justify-between gap-3 p-3 rounded-lg border bg-background hover:border-indigo-400 hover:shadow-sm transition-all group"
+            className="flex items-center justify-between gap-3 p-3 rounded-lg border bg-background hover:border-ink hover:shadow-sm transition-all group"
           >
             <div className="flex items-center gap-2.5 min-w-0">
               {action.type === "review" ? (
@@ -30,7 +30,7 @@ export default function NextActions({ actions }: Props) {
                   {action.type === "review" ? (
                     <>
                       直近{" "}
-                      <span className="text-red-500 font-semibold">
+                      <span className="text-red-pen font-semibold">
                         {action.latestRate}%
                       </span>{" "}
                       — もう一度挑戦しよう
@@ -46,7 +46,7 @@ export default function NextActions({ actions }: Props) {
               fill="none"
               stroke="currentColor"
               strokeWidth={2}
-              className="w-4 h-4 text-muted-foreground group-hover:text-indigo-500 transition-colors shrink-0"
+              className="w-4 h-4 text-muted-foreground group-hover:text-ink transition-colors shrink-0"
             >
               <path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7 7" />
             </svg>

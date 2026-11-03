@@ -416,7 +416,7 @@ export default function LessonAnalytics({ subjects }: Props) {
                             <td className="sticky left-0 z-10 bg-card px-2 py-1 rounded-md group-hover:bg-muted/60 transition-colors">
                               <Link
                                 href={`/teacher/students/${row.userId}`}
-                                className="flex items-baseline gap-2 hover:text-indigo-600 transition-colors"
+                                className="flex items-baseline gap-2 hover:text-ink transition-colors"
                               >
                                 <span className="text-xs text-muted-foreground font-mono tabular-nums">
                                   {row.studentNumber ?? "—"}
@@ -430,7 +430,7 @@ export default function LessonAnalytics({ subjects }: Props) {
                               <>
                                 <td className="p-0">
                                   <div
-                                    className={`${TILE} w-16 text-sm font-bold tabular-nums ring-1 ring-inset ring-black/5 dark:ring-white/10 ${levelOf(scoreRate).tile}`}
+                                    className={`${TILE} w-16 text-sm font-bold tabular-nums ring-1 ring-inset ring-black/5 ${levelOf(scoreRate).tile}`}
                                   >
                                     {scoreRate !== null ? `${row.score}/${row.maxScore}` : "—"}
                                   </div>
@@ -457,7 +457,7 @@ export default function LessonAnalytics({ subjects }: Props) {
                             </td>
                             <td className="p-0">
                               {row.memoCount > 0 ? (
-                                <div className={`${TILE} w-14 bg-indigo-50 text-indigo-700 dark:bg-indigo-500/20 dark:text-indigo-300`}>
+                                <div className={`${TILE} w-14 bg-surface text-ink`}>
                                   📝 {row.memoCount}
                                 </div>
                               ) : (

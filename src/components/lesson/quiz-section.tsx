@@ -118,9 +118,9 @@ function QuestionCard({ question, index, answer, onAnswerChange, state }: Questi
     <div
       className={`border rounded-lg p-4 space-y-3 ${
         isSubmitted && isCorrect === true
-          ? "border-green-500 bg-green-50 dark:bg-green-950/20"
+          ? "border-ink bg-surface"
           : isSubmitted && isCorrect === false
-          ? "border-red-500 bg-red-50 dark:bg-red-950/20"
+          ? "border-red-pen bg-red-pen/10"
           : "bg-card"
       }`}
     >
@@ -130,10 +130,10 @@ function QuestionCard({ question, index, answer, onAnswerChange, state }: Questi
           <RichContent content={question.content as Record<string, unknown>} />
         </div>
         {isSubmitted && isCorrect === true && (
-          <span className="text-green-600 font-bold shrink-0">○</span>
+          <span className="text-ink font-bold shrink-0">○</span>
         )}
         {isSubmitted && isCorrect === false && (
-          <span className="text-red-600 font-bold shrink-0">✕</span>
+          <span className="text-red-pen font-bold shrink-0">✕</span>
         )}
       </div>
 
@@ -151,9 +151,9 @@ function QuestionCard({ question, index, answer, onAnswerChange, state }: Questi
                 key={i}
                 className={`flex items-center gap-2 px-3 py-1.5 rounded-md cursor-pointer transition-colors ${
                   isCorrectChoice
-                    ? "bg-green-100 dark:bg-green-900/30 text-green-800 dark:text-green-300"
+                    ? "bg-surface text-ink"
                     : isWrong
-                    ? "bg-red-100 dark:bg-red-900/30 text-red-800 dark:text-red-300"
+                    ? "bg-red-pen/10 text-red-pen"
                     : isSelected
                     ? "bg-primary/10"
                     : "hover:bg-muted"
@@ -172,7 +172,7 @@ function QuestionCard({ question, index, answer, onAnswerChange, state }: Questi
                 />
                 <span className="text-sm">{opt}</span>
                 {isCorrectChoice && (
-                  <span className="ml-auto text-xs text-green-600 font-medium">正解</span>
+                  <span className="ml-auto text-xs text-ink font-medium">正解</span>
                 )}
               </label>
             );
@@ -232,8 +232,8 @@ function QuestionCard({ question, index, answer, onAnswerChange, state }: Questi
                     key={item}
                     className={`flex items-center gap-2 px-3 py-2 rounded-md border text-sm ${
                       isItemCorrect
-                        ? "bg-green-50 border-green-300 dark:bg-green-900/20"
-                        : "bg-red-50 border-red-300 dark:bg-red-900/20"
+                        ? "bg-surface border-ink"
+                        : "bg-red-pen/10 border-red-pen/50"
                     }`}
                   >
                     <span className="text-muted-foreground w-4">{i + 1}.</span>
@@ -446,7 +446,7 @@ export default function QuizSection({ quiz, otherReviewCount = 0, onCompleted }:
               {frequentlyMissed.map((label) => (
                 <span
                   key={label}
-                  className="inline-block px-2 py-0.5 rounded-full bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400 text-xs font-medium"
+                  className="inline-block px-2 py-0.5 rounded-full bg-red-pen/10 text-red-pen text-xs font-medium"
                 >
                   {label}
                 </span>
@@ -474,7 +474,7 @@ export default function QuizSection({ quiz, otherReviewCount = 0, onCompleted }:
           {otherReviewCount > 0 && (
             <Link
               href="/quiz-results"
-              className="inline-flex items-center gap-1.5 text-sm text-red-600 dark:text-red-400 hover:underline pt-1"
+              className="inline-flex items-center gap-1.5 text-sm text-red-pen hover:underline pt-1"
             >
               ⚠ ほかに要復習のレッスンが {otherReviewCount} 件あります → 小テスト結果で確認
             </Link>

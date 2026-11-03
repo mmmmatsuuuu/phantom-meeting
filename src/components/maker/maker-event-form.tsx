@@ -285,13 +285,13 @@ export default function MakerEventForm({
         </a>
         <button
           onClick={() => setDeleteOpen(true)}
-          className="px-4 py-2 text-sm rounded-md border text-red-600 dark:text-red-400 hover:bg-muted transition-colors"
+          className="px-4 py-2 text-sm rounded-md border text-red-pen hover:bg-muted transition-colors"
         >
           課題を削除
         </button>
         {message && (
           <p
-            className={`text-xs ${message.isError ? "text-red-600 dark:text-red-400" : "text-muted-foreground"}`}
+            className={`text-xs ${message.isError ? "text-red-pen" : "text-muted-foreground"}`}
           >
             {message.text}
           </p>

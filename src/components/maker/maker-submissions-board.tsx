@@ -14,15 +14,15 @@ import {
 const STATUS_LABELS: Record<MakerRosterStatus, { label: string; className: string }> = {
   submitted: {
     label: "提出済み",
-    className: "bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400",
+    className: "bg-surface text-ink",
   },
   hidden: {
     label: "公開停止中",
-    className: "bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400",
+    className: "bg-red-pen/10 text-red-pen",
   },
   draft: {
     label: "下書き中",
-    className: "bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400",
+    className: "bg-surface text-ink",
   },
   not_started: { label: "未着手", className: "bg-muted text-muted-foreground" },
 };
@@ -136,9 +136,9 @@ export default function MakerSubmissionsBoard({ eventId, classes, roster: initia
             <button
               key={entry.userId}
               onClick={() => openStudent(entry.userId)}
-              className={`text-left rounded-lg border p-3 transition-colors hover:border-indigo-400 ${
+              className={`text-left rounded-lg border p-3 transition-colors hover:border-ink ${
                 entry.userId === selectedId
-                  ? "border-indigo-500 bg-indigo-50/40 dark:bg-indigo-950/40"
+                  ? "border-ink bg-surface/40"
                   : "bg-card"
               }`}
             >
@@ -187,8 +187,8 @@ export default function MakerSubmissionsBoard({ eventId, classes, roster: initia
                 </SubmitButton>
               )}
             </div>
-            {updateError && <p className="text-xs text-red-600 dark:text-red-400">{updateError}</p>}
-            {loadError && <p className="text-sm text-red-600 dark:text-red-400">{loadError}</p>}
+            {updateError && <p className="text-xs text-red-pen">{updateError}</p>}
+            {loadError && <p className="text-sm text-red-pen">{loadError}</p>}
 
             {detail && !shown && (
               <p className="py-8 text-center text-sm text-muted-foreground">

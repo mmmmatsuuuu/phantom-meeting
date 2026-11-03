@@ -25,7 +25,7 @@ export default async function TeacherMakerPage() {
           <Link
             key={event.id}
             href={`/teacher/maker/${event.id}`}
-            className="flex items-center justify-between gap-2 rounded-lg border bg-card p-3 hover:border-indigo-400 transition-colors"
+            className="flex items-center justify-between gap-2 rounded-lg border bg-card p-3 hover:border-ink transition-colors"
           >
             <span className="text-sm font-medium truncate">{event.title}</span>
             <span className="text-xs text-muted-foreground shrink-0">

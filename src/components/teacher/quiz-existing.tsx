@@ -42,7 +42,7 @@ function QuestionDetail({ question }: { question: QuizQuestion }) {
                 key={i}
                 className={`flex items-center gap-2 px-2 py-1 rounded text-xs ${
                   i === correct
-                    ? "bg-green-100 dark:bg-green-900/30 text-green-800 dark:text-green-300 font-medium"
+                    ? "bg-surface text-ink font-medium"
                     : "text-muted-foreground"
                 }`}
               >

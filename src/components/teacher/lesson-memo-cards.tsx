@@ -71,7 +71,7 @@ export default function LessonMemoCards({ lessonId, grade, classNum, active }: P
         <div className="flex-1 min-w-[200px] space-y-2">
           <div className="h-2.5 rounded-full bg-muted overflow-hidden">
             <div
-              className="h-full rounded-full bg-indigo-500"
+              className="h-full rounded-full bg-ink"
               style={{ width: `${Math.round(memoRate * 100)}%` }}
             />
           </div>
@@ -94,14 +94,14 @@ export default function LessonMemoCards({ lessonId, grade, classNum, active }: P
               </span>
               <Link
                 href={`/teacher/students/${student.id}`}
-                className="flex-1 text-sm font-medium truncate hover:text-indigo-600 transition-colors"
+                className="flex-1 text-sm font-medium truncate hover:text-ink transition-colors"
               >
                 {student.display_name}
               </Link>
               <span
                 className={`text-[10px] font-semibold px-1.5 py-0.5 rounded shrink-0 tabular-nums ${
                   student.memos.length > 0
-                    ? "bg-indigo-50 text-indigo-700 dark:bg-indigo-500/20 dark:text-indigo-300"
+                    ? "bg-surface text-ink"
                     : "bg-muted text-muted-foreground"
                 }`}
               >

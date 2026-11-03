@@ -11,9 +11,9 @@ type Props = {
 };
 
 function rateColor(rate: number): string {
-  if (rate >= 80) return "text-green-600";
-  if (rate >= 60) return "text-amber-600";
-  return "text-red-500";
+  if (rate >= 80) return "text-ink";
+  if (rate >= 60) return "text-ink";
+  return "text-red-pen";
 }
 
 export default async function StudentDetailPage({ params }: Props) {
@@ -61,7 +61,7 @@ export default async function StudentDetailPage({ params }: Props) {
       label: "要復習",
       value: `${summary.reviewCount}`,
       sub: "レッスン",
-      valueClass: summary.reviewCount > 0 ? "text-red-500" : "text-green-600",
+      valueClass: summary.reviewCount > 0 ? "text-red-pen" : "text-ink",
     },
     {
       label: "メモ",

@@ -51,11 +51,11 @@ export default async function HomePage() {
       <div className="bg-gradient-to-r from-indigo-600 to-indigo-500 text-white overflow-hidden">
         <div className="max-w-4xl mx-auto px-4 py-8 flex items-center justify-between gap-4">
           <div className="shrink-0">
-            <p className="text-indigo-200 text-sm mb-1">
+            <p className="text-sheet text-sm mb-1">
               {displayName ? `こんにちは、${displayName} さん` : "ようこそ"}
             </p>
             <h1 className="text-2xl font-bold mb-2">今日も学習を進めましょう</h1>
-            <p className="text-indigo-100 text-sm">
+            <p className="text-sheet text-sm">
               動画を視聴して、発問に答え、気づきをメモしましょう。
             </p>
           </div>
@@ -84,13 +84,13 @@ export default async function HomePage() {
 
         {subjects.length === 0 ? (
           <div className="flex flex-col items-center justify-center py-20 text-center">
-            <div className="w-16 h-16 rounded-full bg-indigo-50 dark:bg-indigo-950 flex items-center justify-center mb-4">
+            <div className="w-16 h-16 rounded-full bg-surface flex items-center justify-center mb-4">
               <svg
                 viewBox="0 0 24 24"
                 fill="none"
                 stroke="currentColor"
                 strokeWidth={1.5}
-                className="w-8 h-8 text-indigo-400"
+                className="w-8 h-8 text-ink"
               >
                 <path
                   strokeLinecap="round"

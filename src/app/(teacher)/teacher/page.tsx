@@ -50,11 +50,11 @@ function CardGrid({ cards }: { cards: HubCard[] }) {
         <Link
           key={card.href}
           href={card.href}
-          className="bg-card border rounded-xl p-5 hover:border-indigo-400 hover:shadow-sm transition-all group"
+          className="bg-card border rounded-xl p-5 hover:border-ink hover:shadow-sm transition-all group"
         >
           <div className="flex items-center gap-2.5 mb-2">
             <span className="text-2xl">{card.emoji}</span>
-            <h3 className="font-semibold group-hover:text-indigo-600 transition-colors">
+            <h3 className="font-semibold group-hover:text-ink transition-colors">
               {card.title}
             </h3>
           </div>

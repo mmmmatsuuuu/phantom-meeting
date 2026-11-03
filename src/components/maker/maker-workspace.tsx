@@ -133,7 +133,7 @@ export default function MakerWorkspace({
     <div className="max-w-5xl mx-auto px-4 py-8 space-y-6">
       <div className="flex flex-wrap items-start justify-between gap-3">
         <div>
-          <p className="text-xs font-semibold text-indigo-600 mb-1">🛠 自由制作</p>
+          <p className="text-xs font-semibold text-ink mb-1">🛠 自由制作</p>
           <h1 className="text-2xl font-bold">{eventTitle}</h1>
         </div>
         <Link
@@ -154,7 +154,7 @@ export default function MakerWorkspace({
         </p>
       )}
       {isOpen && !hasStudentNumber && (
-        <p className="rounded-md border border-amber-300 bg-amber-50 dark:bg-amber-950/20 p-3 text-sm">
+        <p className="rounded-md border border-rule-strong bg-surface p-3 text-sm">
           提出には学籍番号が必要です。
           <Link href="/profile" className="underline ml-1">
             プロフィール
@@ -163,7 +163,7 @@ export default function MakerWorkspace({
         </p>
       )}
       {isHidden && (
-        <p className="rounded-md border border-red-300 bg-red-50 dark:bg-red-950/20 p-3 text-sm">
+        <p className="rounded-md border border-red-pen/50 bg-red-pen/10 p-3 text-sm">
           この作品は先生により公開停止されています。先生に確認してください。
         </p>
       )}
@@ -292,7 +292,7 @@ export default function MakerWorkspace({
             {submittedAt ? "🚀 再提出" : "🚀 提出"}
           </SubmitButton>
           <p
-            className={`text-xs ${message?.isError ? "text-red-600 dark:text-red-400" : "text-muted-foreground"}`}
+            className={`text-xs ${message?.isError ? "text-red-pen" : "text-muted-foreground"}`}
           >
             {message?.text ??
               (isDirty

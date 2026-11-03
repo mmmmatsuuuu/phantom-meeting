@@ -16,9 +16,9 @@ function toRate(score: number, maxScore: number): number {
 }
 
 function rateColor(rate: number): string {
-  if (rate >= 80) return "text-green-600";
-  if (rate >= 60) return "text-amber-600";
-  return "text-red-500";
+  if (rate >= 80) return "text-ink";
+  if (rate >= 60) return "text-ink";
+  return "text-red-pen";
 }
 
 function formatDate(dateStr: string): string {
@@ -37,7 +37,7 @@ export default function LessonAttemptHistory({ attempts, frequentlyMissed }: Pro
           {frequentlyMissed.map((q) => (
             <span
               key={q.label}
-              className="inline-block px-2 py-0.5 rounded-full bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400 text-xs font-medium"
+              className="inline-block px-2 py-0.5 rounded-full bg-red-pen/10 text-red-pen text-xs font-medium"
             >
               {q.label}
             </span>
@@ -105,9 +105,9 @@ export default function LessonAttemptHistory({ attempts, frequentlyMissed }: Pro
                         key={ans.id}
                         className={`inline-flex items-center gap-0.5 text-xs px-1.5 py-0.5 rounded ${
                           ans.is_correct === true
-                            ? "bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400"
+                            ? "bg-surface text-ink"
                             : ans.is_correct === false
-                            ? "bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400"
+                            ? "bg-red-pen/10 text-red-pen"
                             : "bg-muted text-muted-foreground"
                         }`}
                       >

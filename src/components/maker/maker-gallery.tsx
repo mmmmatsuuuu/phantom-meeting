@@ -76,14 +76,14 @@ export default function MakerGallery({ eventId, initialItems, isTeacher }: Props
           <button
             key={item.user_id}
             onClick={() => openItem(item.user_id)}
-            className={`text-left rounded-lg border p-3 transition-colors hover:border-indigo-400 ${
-              item.user_id === selectedId ? "border-indigo-500 bg-indigo-50/40 dark:bg-indigo-950/40" : "bg-card"
+            className={`text-left rounded-lg border p-3 transition-colors hover:border-ink ${
+              item.user_id === selectedId ? "border-ink bg-surface/40" : "bg-card"
             }`}
           >
             <span className="flex items-center justify-between gap-2">
               <span className="text-sm font-medium truncate">{item.title}</span>
               {item.hidden_at && (
-                <span className="text-xs px-2 py-0.5 rounded-full bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400 shrink-0">
+                <span className="text-xs px-2 py-0.5 rounded-full bg-red-pen/10 text-red-pen shrink-0">
                   公開停止中
                 </span>
               )}
@@ -115,10 +115,10 @@ export default function MakerGallery({ eventId, initialItems, isTeacher }: Props
               </SubmitButton>
             )}
           </div>
-          {updateError && <p className="text-xs text-red-600 dark:text-red-400">{updateError}</p>}
+          {updateError && <p className="text-xs text-red-pen">{updateError}</p>}
           <p className="text-sm leading-relaxed whitespace-pre-wrap">{selected.description}</p>
 
-          {loadError && <p className="text-sm text-red-600 dark:text-red-400">{loadError}</p>}
+          {loadError && <p className="text-sm text-red-pen">{loadError}</p>}
           {code !== null && (
             <>
               <MakerConsole key={selected.user_id} code={code} />

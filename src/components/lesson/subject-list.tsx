@@ -62,11 +62,11 @@ function LessonStatusBadges({ badge }: { badge: LessonBadge }) {
       {badge.hasQuiz &&
         (badge.attempted ? (
           badge.needsReview ? (
-            <span className="text-xs px-2 py-0.5 rounded-full bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400 font-medium">
+            <span className="text-xs px-2 py-0.5 rounded-full bg-red-pen/10 text-red-pen font-medium">
               ⚠ {badge.latestRate}%
             </span>
           ) : (
-            <span className="text-xs px-2 py-0.5 rounded-full bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400 font-medium">
+            <span className="text-xs px-2 py-0.5 rounded-full bg-surface text-ink font-medium">
               ✓ {badge.latestRate !== null ? `${badge.latestRate}%` : "済"}
             </span>
           )
@@ -163,10 +163,10 @@ export default function SubjectList({
                           <Link
                             key={lesson.id}
                             href={`/lessons/${lesson.id}`}
-                            className="flex items-center justify-between p-3 rounded-lg border bg-background hover:border-indigo-400 hover:bg-indigo-50/40 dark:hover:bg-indigo-950/40 hover:shadow-sm transition-all group"
+                            className="flex items-center justify-between p-3 rounded-lg border bg-background hover:border-ink hover:bg-surface/40 hover:shadow-sm transition-all group"
                           >
                             <div className="flex items-center gap-3">
-                              <span className="flex items-center justify-center w-7 h-7 rounded-full bg-indigo-50 dark:bg-indigo-950 text-indigo-600 shrink-0">
+                              <span className="flex items-center justify-center w-7 h-7 rounded-full bg-surface text-ink shrink-0">
                                 <svg
                                   viewBox="0 0 24 24"
                                   fill="currentColor"
@@ -193,7 +193,7 @@ export default function SubjectList({
                                 fill="none"
                                 stroke="currentColor"
                                 strokeWidth={2}
-                                className="w-4 h-4 text-muted-foreground group-hover:text-indigo-500 transition-colors shrink-0"
+                                className="w-4 h-4 text-muted-foreground group-hover:text-ink transition-colors shrink-0"
                               >
                                 <path
                                   strokeLinecap="round"
@@ -208,7 +208,7 @@ export default function SubjectList({
                           <Link
                             key={event.id}
                             href={`/maker/${event.id}`}
-                            className="flex items-center gap-3 p-3 rounded-lg border border-amber-300 bg-amber-50/60 dark:bg-amber-950/20 hover:border-amber-500 hover:shadow-sm transition-all"
+                            className="flex items-center gap-3 p-3 rounded-lg border border-rule-strong bg-surface/60 hover:border-ink hover:shadow-sm transition-all"
                           >
                             <span className="text-lg shrink-0">🛠</span>
                             <span className="text-sm font-medium">{event.title}</span>

@@ -7,9 +7,9 @@ type Props = {
 };
 
 function rateColor(rate: number): string {
-  if (rate >= 80) return "text-green-600";
-  if (rate >= 60) return "text-amber-600";
-  return "text-red-500";
+  if (rate >= 80) return "text-ink";
+  if (rate >= 60) return "text-ink";
+  return "text-red-pen";
 }
 
 export default function LessonStatusBar({
