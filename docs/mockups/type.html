@@ -61,8 +61,8 @@ input::placeholder, textarea::placeholder { color: #8a897f; }
 .v2 input:focus { border-bottom-width: 2.5px; background: var(--sheet); }
 .v2 textarea:focus { border-color: var(--ink); }
 /* 3：方眼の用紙 */
-.v3 input, .v3 textarea { border: 1px solid var(--rule-strong); border-radius: 2px; padding: 6px 10px; background-color: var(--sheet);
-  background-image: linear-gradient(var(--rule) 1px, transparent 1px), linear-gradient(90deg, var(--rule) 1px, transparent 1px); background-size: 16px 16px; }
+.v3 input, .v3 textarea { border: 1px solid var(--rule-strong); border-radius: 2px; padding: 0 16px; line-height: 32px; background-color: var(--sheet);
+  background-image: linear-gradient(rgba(29, 43, 63, .055) 1px, transparent 1px), linear-gradient(90deg, rgba(29, 43, 63, .055) 1px, transparent 1px); background-size: 16px 16px; background-position: -1px -1px; }
 .v3 textarea { min-height: 130px; }
 .v3 :focus { outline: none; border-color: var(--ink); box-shadow: inset 0 0 0 1px var(--ink); }
 .v1 textarea { min-height: 130px; }
@@ -90,7 +90,7 @@ input::placeholder, textarea::placeholder { color: #8a897f; }
       <div class="field"><label>作品名</label><input placeholder="例：じゃんけん勝負"></div>
       <div class="field"><label>説明</label><textarea placeholder="どのように使うのか"></textarea></div>
       <p class="static"><b>普通の文章</b>　入力欄ではない文章は、紙の上にそのまま置く。</p></div>
-    <div class="cell v3"><h3>3：方眼の用紙 <small>方眼ノートのように</small></h3>
+    <div class="cell v3"><h3>3：方眼の用紙（採用・線を薄くした） <small>方眼ノートのように</small></h3>
       <div class="field"><label>作品名</label><input placeholder="例：じゃんけん勝負"></div>
       <div class="field"><label>説明</label><textarea placeholder="どのように使うのか"></textarea></div>
       <p class="static"><b>普通の文章</b>　入力欄ではない文章は、紙の上にそのまま置く。</p></div>

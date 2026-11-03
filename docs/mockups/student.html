@@ -4,6 +4,9 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>ruminy モック</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Klee+One:wght@400;600&display=swap" rel="stylesheet">
 <style>
 :root {
   color-scheme: light;
@@ -14,7 +17,9 @@
   --rule: #d6d3c7;
   --rule-strong: #b3afa2;
   --red: #b93a2b;
-  --serif: "Hiragino Mincho ProN", "Yu Mincho", "Noto Serif JP", serif;
+  --hand: "Klee One", system-ui, sans-serif;
+  --sheet: #f8f7f2;
+  --grid: rgba(29, 43, 63, .055);
   --sans: system-ui, -apple-system, "Hiragino Sans", "Noto Sans JP", sans-serif;
   --mono: ui-monospace, SFMono-Regular, Menlo, monospace;
 }
@@ -25,14 +30,14 @@ body { margin: 0; background: var(--paper); color: var(--ink); font: 16px/1.8 va
 button { font: inherit; color: inherit; cursor: pointer; }
 a { color: inherit; }
 :focus-visible { outline: 2px solid var(--ink); outline-offset: 2px; }
-h1, h2, h3 { font-family: var(--serif); font-weight: 600; margin: 0; line-height: 1.5; }
+h1, h2, h3 { font-family: var(--hand); font-weight: 600; margin: 0; line-height: 1.5; }
 
 .mock-bar { display: flex; flex-wrap: wrap; gap: 4px 14px; padding: 6px 16px; background: var(--ink); color: var(--paper); font-size: 12px; }
 .mock-bar a { text-decoration: none; opacity: .7; }
 .mock-bar a.on { opacity: 1; text-decoration: underline; text-underline-offset: 3px; }
 
 .site-head { display: flex; justify-content: space-between; align-items: baseline; max-width: 1240px; margin: 0 auto; padding: 18px 16px 10px; border-bottom: 2px solid var(--ink); }
-.site-name { font: 600 21px var(--serif); letter-spacing: .02em; text-decoration: none; }
+.site-name { font: 600 21px var(--hand); letter-spacing: .02em; text-decoration: none; }
 .site-user { font-size: 13px; color: var(--pencil); }
 main { max-width: 1240px; margin: 0 auto; padding: 0 16px 80px; }
 .screen { display: none; }
@@ -42,7 +47,7 @@ main { max-width: 1240px; margin: 0 auto; padding: 0 16px 80px; }
 .toc { max-width: 760px; margin: 0 auto; }
 .continue { display: block; padding: 28px 0 24px; border-bottom: 1px solid var(--rule-strong); text-decoration: none; }
 .continue small { display: block; font-size: 13px; color: var(--pencil); }
-.continue b { font: 600 clamp(22px, 5vw, 28px)/1.5 var(--serif); }
+.continue b { font: 600 clamp(22px, 5vw, 28px)/1.5 var(--hand); }
 .continue span { display: block; margin-top: 4px; font-size: 14px; }
 .continue u { text-underline-offset: 4px; }
 .subject { margin: 36px 0 0; font-size: 13px; color: var(--pencil); letter-spacing: .1em; }
@@ -53,7 +58,7 @@ main { max-width: 1240px; margin: 0 auto; padding: 0 16px 80px; }
 .row-marks { font-size: 12px; color: var(--pencil); white-space: nowrap; }
 .row-marks b { color: var(--ink); font-weight: 600; }
 .row-marks .red { color: var(--red); font-weight: 600; margin-left: 10px; }
-.row.special .row-title { font-family: var(--serif); font-weight: 600; }
+.row.special .row-title { font-family: var(--hand); font-weight: 600; }
 
 /* レッスン */
 .lesson-head { padding: 20px 0 14px; }
@@ -62,7 +67,7 @@ main { max-width: 1240px; margin: 0 auto; padding: 0 16px 80px; }
 .lesson-grid { display: grid; grid-template-columns: minmax(0, 1.15fr) minmax(0, 1fr); gap: 32px; align-items: start; }
 .video-col { position: sticky; top: 12px; }
 .video { position: relative; aspect-ratio: 16/9; background: #17202c; color: #e9edf1; display: flex; align-items: center; justify-content: center; border: 0; width: 100%; padding: 0; }
-.video span { font: 15px var(--serif); opacity: .75; padding: 16px; text-align: center; }
+.video span { font: 15px var(--hand); opacity: .75; padding: 16px; text-align: center; }
 .steps { margin: 16px 0 0; padding: 0; list-style: none; border-top: 1px solid var(--rule-strong); }
 .steps li { display: grid; grid-template-columns: 1fr auto; gap: 8px; align-items: baseline; padding: 9px 0; border-bottom: 1px solid var(--rule); font-size: 14px; }
 .steps a { font-size: 13px; text-underline-offset: 3px; }
@@ -77,17 +82,20 @@ main { max-width: 1240px; margin: 0 auto; padding: 0 16px 80px; }
 .btn-ink:hover { background: #2c3e57; }
 .toolbar { display: flex; flex-wrap: wrap; gap: 4px; padding: 6px 0; border-bottom: 1px solid var(--rule); font-size: 13px; color: var(--pencil); }
 .toolbar span { padding: 0 8px; border: 1px solid var(--rule); border-radius: 2px; }
-.sheet { min-height: 400px; padding: 14px 2px 22px; }
-.sheet:focus { outline: none; }
-.sheet h3 { font-size: 17px; margin: 18px 0 6px; }
+/* 方眼の用紙。目は 16px で、行の高さと余白をすべて 16px の倍数にそろえる */
+.sheet { min-height: 416px; padding: 16px 16px 32px; background-color: var(--sheet); border: 1px solid var(--rule-strong);
+  background-image: linear-gradient(var(--grid) 1px, transparent 1px), linear-gradient(90deg, var(--grid) 1px, transparent 1px);
+  background-size: 16px 16px; background-position: -1px -1px; font-family: var(--hand); font-size: 16px; line-height: 32px; }
+.sheet:focus { outline: none; border-color: var(--ink); box-shadow: inset 0 0 0 1px var(--ink); }
+.sheet h3 { font-size: 20px; line-height: 32px; margin: 32px 0 0; }
 .sheet h3:first-child { margin-top: 0; }
-.sheet p { margin: 0 0 8px; }
-.sheet figure { margin: 10px 0; }
+.sheet p { margin: 0; }
+.sheet figure { margin: 16px 0; }
 .sheet svg { display: block; width: 100%; max-width: 380px; height: auto; }
-.sheet figcaption { font-size: 12px; color: var(--pencil); }
-.sheet blockquote { margin: 12px 0 8px; padding-left: 12px; border-left: 3px solid var(--ink); font-family: var(--serif); font-weight: 600; }
-.sheet hr { border: 0; border-top: 1px solid var(--rule-strong); margin: 18px 0; }
-.memo-actions { display: flex; flex-wrap: wrap; gap: 10px; align-items: center; padding-top: 12px; border-top: 1px solid var(--ink); }
+.sheet figcaption { font-size: 12px; line-height: 32px; color: var(--pencil); }
+.sheet blockquote { margin: 0; padding-left: 12px; border-left: 3px solid var(--ink); font-weight: 600; }
+.sheet hr { border: 0; border-top: 1px solid var(--rule-strong); margin: 15px 0 16px; }
+.memo-actions { margin-top: 12px; display: flex; flex-wrap: wrap; gap: 10px; align-items: center; }
 .memo-actions small { color: var(--pencil); font-size: 12px; }
 
 /* ヤギ：白い塗りに紙の色が透けるよう乗算で重ねる */
