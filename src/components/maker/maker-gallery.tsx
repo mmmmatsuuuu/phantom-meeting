@@ -4,6 +4,12 @@ import { useState } from "react";
 import MakerConsole from "@/components/maker/maker-console";
 import SubmitButton from "@/components/shared/submit-button";
 import Mascot from "@/components/shared/mascot";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogTitle,
+} from "@/components/ui/dialog";
 import type { MakerGalleryItem } from "@/lib/db/maker";
 
 type Props = {
@@ -73,7 +79,7 @@ export default function MakerGallery({ eventId, initialItems, isTeacher }: Props
     return (
       <div className="flex items-center gap-4 py-6 border-b border-rule">
         <Mascot pose="rest" size={96} />
-        <p className="text-sm text-muted-foreground">まだ作品がありません。のんびり待ちましょう。</p>
+        <p className="text-sm text-muted-foreground">このクラスの作品はまだありません。のんびり待ちましょう。</p>
       </div>
     );
   }
@@ -105,46 +111,53 @@ export default function MakerGallery({ eventId, initialItems, isTeacher }: Props
         ))}
       </div>
 
-      {selected ? (
-        <div className="mt-8 grid grid-cols-[minmax(0,1fr)_minmax(0,1.1fr)] gap-7 px-6 py-5 bg-sheet border border-rule-strong">
-          <div className="min-w-0">
-            <div className="flex flex-wrap items-start justify-between gap-2">
-              <div>
-                <h2 className="font-hand font-semibold text-[22px]">{selected.title}</h2>
-                <p className="text-xs text-muted-foreground">{selected.student_number ?? "教員"}</p>
+      {/* 作品を開くとモーダルで表示する（一覧の下に出すと、作品が多いときにスクロールが大変なため） */}
+      <Dialog open={selected !== null} onOpenChange={(open) => !open && setSelectedId(null)}>
+        <DialogContent className="sm:max-w-4xl max-h-[90vh] overflow-y-auto bg-sheet">
+          {selected && (
+            <div className="grid grid-cols-[minmax(0,1fr)_minmax(0,1.1fr)] gap-7">
+              <div className="min-w-0">
+                <div className="flex flex-wrap items-start justify-between gap-2 pr-6">
+                  <div>
+                    <DialogTitle className="font-hand font-semibold text-[22px]">{selected.title}</DialogTitle>
+                    <p className="text-xs text-muted-foreground">
+                      {selected.student_number ?? "教員"}
+                      {selected.hidden_at && <span className="ml-2 font-semibold text-red-pen">公開停止中</span>}
+                    </p>
+                  </div>
+                  {isTeacher && (
+                    <SubmitButton
+                      loading={updating}
+                      loadingLabel="変更中..."
+                      onClick={() => toggleHidden(selected)}
+                      className="px-3 py-1.5 text-xs rounded-sm border border-ink hover:bg-surface transition-colors disabled:opacity-50"
+                    >
+                      {selected.hidden_at ? "公開を再開" : "公開停止"}
+                    </SubmitButton>
+                  )}
+                </div>
+                {updateError && <p className="mt-2 text-xs text-red-pen">{updateError}</p>}
+                <DialogDescription className="mt-2 font-hand text-base leading-loose text-foreground whitespace-pre-wrap">
+                  {selected.description}
+                </DialogDescription>
+                {code !== null && (
+                  <details className="mt-3">
+                    <summary className="cursor-pointer text-xs text-muted-foreground">コードを見る</summary>
+                    <pre className="mt-2 px-3.5 py-2.5 font-mono text-xs leading-5 bg-paper border border-rule max-h-60 overflow-auto">
+                      {code}
+                    </pre>
+                  </details>
+                )}
               </div>
-              {isTeacher && (
-                <SubmitButton
-                  loading={updating}
-                  loadingLabel="変更中..."
-                  onClick={() => toggleHidden(selected)}
-                  className="px-3 py-1.5 text-xs rounded-sm border border-ink hover:bg-surface transition-colors disabled:opacity-50"
-                >
-                  {selected.hidden_at ? "公開を再開" : "公開停止"}
-                </SubmitButton>
-              )}
+              <div className="min-w-0">
+                {loadError && <p className="text-sm text-red-pen">{loadError}</p>}
+                {code === null && !loadError && <p className="text-sm text-muted-foreground">読み込み中...</p>}
+                {code !== null && <MakerConsole key={selected.user_id} code={code} />}
+              </div>
             </div>
-            {updateError && <p className="mt-2 text-xs text-red-pen">{updateError}</p>}
-            <p className="mt-2 font-hand leading-loose whitespace-pre-wrap">{selected.description}</p>
-            {code !== null && (
-              <details className="mt-3">
-                <summary className="cursor-pointer text-xs text-muted-foreground">コードを見る</summary>
-                <pre className="mt-2 px-3.5 py-2.5 font-mono text-xs leading-5 bg-paper border border-rule max-h-60 overflow-auto">
-                  {code}
-                </pre>
-              </details>
-            )}
-          </div>
-          <div className="min-w-0">
-            {loadError && <p className="text-sm text-red-pen">{loadError}</p>}
-            {code !== null && <MakerConsole key={selected.user_id} code={code} />}
-          </div>
-        </div>
-      ) : (
-        <p className="mt-8 text-center text-sm text-muted-foreground">
-          作品を選ぶと、説明と実行ボタンが表示されます
-        </p>
-      )}
+          )}
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

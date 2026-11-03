@@ -42,15 +42,13 @@
 
 | 層 | 処理 | 場所 |
 |---|---|---|
-| SC | 科目ツリー・受験状況・ノート件数・最後に更新したノートを取得 | `app/(student)/page.tsx` |
+| SC | 科目ツリー・受験状況・ノート件数を取得 | `app/(student)/page.tsx` |
 | lib/db | 科目→単元→レッスンをネスト select で取得 | `contents.ts` `getContents` |
 | lib/db | 自分の受験記録から、クイズごとの最新得点率・受験回数を集計 | `quizzes.ts` `getStudentQuizStatuses` |
 | lib/db | 自分のレッスンごとのノート件数を集計 | `memos.ts` `getMemoCountsByLesson` |
-| lib/db | 最後に更新したノートのレッスンを取得（「続きから」の付箋） | `memos.ts` `getLatestMemoLessonId` |
 | lib | レッスンの状況（ノートの有無・小テストの得点）を算出。学習状況のまとめと「つぎにやること」も算出するが、画面には出していない | `lib/student-dashboard.ts` `buildStudentDashboard` |
 | SC | 科目の折りたたみ状態を Cookie から復元 | `app/(student)/page.tsx` |
 | フロント | 単元ごとのルーズリーフ表示、科目の折りたたみ操作と Cookie への保存 | `components/lesson/subject-list.tsx` |
-| フロント | 「続きから」の付箋 | `components/lesson/continue-note.tsx` |
 | フロント | 単元を新しい順に並べる（表示のみ）。単元内のレッスンは授業の順 | `lib/contents-order.ts` `sortUnitsNewestFirst` |
 
 ### レッスンページ（`/lessons/[lessonId]`）
@@ -156,10 +154,10 @@
 | フロント | 科目タブの表示・切り替え（科目の追加後は新しい科目のページへ、削除後は `/teacher/contents` へ移動） | `components/teacher/subject-tabs.tsx`、`contents-manager.tsx` |
 | フロント | 単元を新しい順（order の降順、同じ order なら作成日時の新しい順）に並べる。単元内のレッスンは授業の順 | `lib/contents-order.ts` `sortUnitsNewestFirst` |
 | フロント | 科目・単元の作成・名前変更・削除、レッスン削除の操作 | `components/teacher/contents-manager.tsx` |
-| フロント | レッスン登録フォーム（YouTube URL・発問・初期コード）。発問は生徒のレッスンページには表示せず、ノートのひな形に入れる | `components/teacher/lesson-new-form.tsx` |
+| フロント | レッスン登録フォーム（YouTube URL・初期コード）。発問はノートのひな形に入れるため、登録フォームでは扱わない | `components/teacher/lesson-new-form.tsx` |
 | API | 教師確認と入力値の検証 | `api/contents/**/route.ts` |
 | lib/db | 科目・単元の作成・更新・削除 | `contents.ts` |
-| lib/db | レッスンの作成：単元内のレッスン数から表示順を決め、レッスン→発問→初期コードの順に挿入 | `contents.ts` `createLesson` |
+| lib/db | レッスンの作成：単元内のレッスン数から表示順を決め、レッスン→初期コードの順に挿入 | `contents.ts` `createLesson` |
 | DB | コンテンツの作成・更新・削除は教師のみ、閲覧は認証ユーザー全員 | RLS（`subjects`・`units`・`lessons`・`questions`） |
 | DB | レッスン削除時に、メモ・投稿・小テストなどを連鎖削除 | 外部キーの `on delete cascade` |
 
