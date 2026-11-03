@@ -345,7 +345,8 @@
   font-weight: 600;
   line-height: 32px;
 }
-.note-content > :first-child {
+.note-content > :first-child,
+.note-content .rich-content > :first-child {
   margin-top: 0;
 }
 .note-content ul,
