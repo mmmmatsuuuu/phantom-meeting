@@ -57,8 +57,8 @@
 
 | 層 | 処理 | 場所 |
 |---|---|---|
-| SC | レッスン・小テスト・ノートのひな形・受験状況を並列取得し、要復習件数を算出 | `app/(student)/lessons/[lessonId]/page.tsx` |
-| lib/db | レッスンをネスト select で取得（発問も取得するが、レッスンページには表示しない） | `contents.ts` `getLessonWithQuestions` |
+| SC | レッスン・小テスト・ノートのひな形を並列取得し、続けて受験状況とコード例を並列取得して、要復習件数を算出 | `app/(student)/lessons/[lessonId]/page.tsx` |
+| lib/db | レッスンを単元・科目つきでネスト select で取得（発問は取得しない） | `contents.ts` `getLessonWithUnit` |
 | lib/db | 小テストと設問をネスト select で取得 | `quizzes.ts` `getQuizWithQuestions` |
 | lib/db | ノートのひな形を取得 | `memo-templates.ts` `getMemoTemplate` |
 | フロント | 動画・小テストのタブ切り替え、ノート・コードの紙の端のインデックス | `components/lesson/lesson-content.tsx`、`lesson-tabs.tsx`、`lesson-side-panel.tsx` |
@@ -71,7 +71,7 @@
 | フロント | 最後に更新したノートを開く。まだなければ、ひな形の読み込みか白紙から始める | `components/lesson/note-section.tsx` |
 | フロント | tiptap エディタでの編集（方眼・Klee One）。保存しても入力欄を空にせず続きを書ける。複数ノートの切り替え。画像の貼り付けは受け付けない | `components/lesson/note-section.tsx`、`memo-toolbar.tsx`、`lib/tiptap/note-extensions.ts` |
 | API | ノートの一覧取得・作成・更新・削除（ログイン確認） | `api/memos/route.ts`、`api/memos/[memoId]/route.ts` |
-| API / lib | 保存する内容の検証：tiptap の文書であること、画像はそのレッスンのひな形にあるものだけ | `memo-templates.ts` `validateMemoContent` → `lib/tiptap-utils.ts` `findDisallowedImages` |
+| API / lib | 保存する内容の検証：tiptap の文書であること、256KB 以下であること、画像はそのレッスンのひな形にあるものだけ | `memo-templates.ts` `validateMemoContent` → `lib/tiptap-utils.ts` `findDisallowedImages` |
 | lib/db | ノートの取得・作成・更新・削除 | `memos.ts` `getMemosByLessonId` / `createMemo` / `updateMemo` / `deleteMemo` |
 | DB | 本人のノートのみ読み書き可（教師・管理者は閲覧可） | RLS（`memos`） |
 | DB | 更新時に `updated_at` を自動更新 | トリガー `memos_set_updated_at` |
@@ -165,9 +165,9 @@
 
 | 層 | 処理 | 場所 |
 |---|---|---|
-| SC | レッスンとひな形を取得 | `app/(teacher)/teacher/lessons/[lessonId]/note-template/page.tsx` |
+| SC | レッスンとひな形を並列取得 | `app/(teacher)/teacher/lessons/[lessonId]/note-template/page.tsx` |
 | フロント | 生徒のノートと同じ見た目のエディタで編集、画像の貼り付け（アップロード）、JSON の読み込み | `components/teacher/note-template-editor.tsx` |
-| API | 教師確認と tiptap の文書かの検証、保存・削除 | `api/lessons/[lessonId]/memo-template/route.ts` |
+| API | 教師確認と tiptap の文書か・256KB 以下かの検証、保存・削除 | `api/lessons/[lessonId]/memo-template/route.ts` |
 | API | 画像のアップロード（教師のみ） | `api/images/upload/route.ts` |
 | lib/db | ひな形の取得・保存（upsert）・削除 | `memo-templates.ts` |
 | DB | 閲覧は認証ユーザー全員、作成・更新・削除は教師・管理者 | RLS（`memo_templates`） |

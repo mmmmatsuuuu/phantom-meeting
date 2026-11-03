@@ -1,6 +1,6 @@
 import { notFound } from "next/navigation";
 import Link from "next/link";
-import { getLessonWithQuestions } from "@/lib/db/contents";
+import { getLessonWithUnit } from "@/lib/db/contents";
 import { getMemoTemplate } from "@/lib/db/memo-templates";
 import NoteTemplateEditor from "@/components/teacher/note-template-editor";
 
@@ -12,7 +12,7 @@ export default async function NoteTemplatePage({ params }: Props) {
   const { lessonId } = await params;
 
   const [lesson, template] = await Promise.all([
-    getLessonWithQuestions(lessonId),
+    getLessonWithUnit(lessonId),
     getMemoTemplate(lessonId),
   ]);
 
