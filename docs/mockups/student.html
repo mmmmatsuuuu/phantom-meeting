@@ -20,6 +20,8 @@
   --hand: "Klee One", system-ui, sans-serif;
   --sheet: #f8f7f2;
   --grid: rgba(29, 43, 63, .055);
+  --note: #efe4b4;
+  --note-pencil: #5c5a50;
   --sans: system-ui, -apple-system, "Hiragino Sans", "Noto Sans JP", sans-serif;
   --mono: ui-monospace, SFMono-Regular, Menlo, monospace;
 }
@@ -45,11 +47,17 @@ main { max-width: 1240px; margin: 0 auto; padding: 0 16px 80px; }
 
 /* 目次：単元ごとに 1 枚のルーズリーフ。行の高さ（40px）を罫線の間隔にそろえる */
 .toc { max-width: 780px; margin: 0 auto; }
-.continue { display: block; padding: 28px 0 8px; text-decoration: none; }
-.continue small { display: block; font-size: 13px; color: var(--pencil); }
-.continue b { font: 600 clamp(22px, 5vw, 28px)/1.5 var(--hand); }
-.continue span { display: block; margin-top: 2px; font-size: 14px; }
-.continue u { text-underline-offset: 4px; }
+/* 続きから：付箋。上端の帯はのり、右下の三角は少しめくれた角 */
+.continue { position: relative; display: block; width: min(100%, 380px); margin: 32px 0 8px; padding: 22px 22px 18px; text-decoration: none;
+  background: linear-gradient(to bottom, rgba(29, 43, 63, .05) 0 14px, transparent 14px), var(--note);
+  transform: rotate(-1.2deg); clip-path: polygon(0 0, 100% 0, 100% calc(100% - 18px), calc(100% - 18px) 100%, 0 100%); }
+.continue::after { content: ""; position: absolute; right: 0; bottom: 0; width: 18px; height: 18px;
+  background: linear-gradient(135deg, rgba(29, 43, 63, .16) 50%, transparent 50%); }
+.continue:hover b { text-decoration: underline; text-underline-offset: 5px; }
+.continue small { display: block; font-size: 12px; color: var(--note-pencil); }
+.continue b { display: block; font: 600 24px/1.5 var(--hand); }
+.continue span { display: block; margin-top: 4px; font-size: 13px; color: var(--note-pencil); }
+.continue u { color: var(--ink); text-underline-offset: 4px; }
 .subject { margin: 28px 0 0; font-size: 13px; color: var(--pencil); letter-spacing: .1em; }
 .leaf { position: relative; margin-top: 12px; padding: 0 28px 40px 64px; background-color: var(--sheet); border: 1px solid var(--rule-strong);
   background-image:
@@ -179,7 +187,7 @@ img[src*="mascot"] { mix-blend-mode: multiply; }
   <a class="continue" href="#lesson">
     <small>続きから</small>
     <b>CPUとメモリの役割</b>
-    <span>メモの途中です <u>続ける</u></span>
+    <span>メモの途中です　<u>続ける</u></span>
   </a>
   <p class="subject">情報Ⅰ</p>
   <div class="leaf">
