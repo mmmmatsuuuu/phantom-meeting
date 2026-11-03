@@ -197,7 +197,6 @@ src/
 │   │   ├── playground.tsx                               # コーディングプレイグラウンド本体（実行・実行結果・ノートに貼る）
 │   │   ├── code-editor.tsx                              # CodeMirror 6 ラッパー
 │   │   ├── note-section.tsx                      # ノート（DB では memos）。ひな形の読み込み・保存して続きを書く・複数ノートの切り替え
-│   │   ├── continue-note.tsx                     # 目次の「続きから」の付箋
 │   │   ├── memo-toolbar.tsx
 │   │   ├── quiz-section.tsx                             # 小テスト（答案用紙と赤ペンの答え合わせ・DnD対応・提出後の要復習ナッジ）
 │   │   ├── subject-list.tsx                             # 目次（単元ごとのルーズリーフ。ノートの有無と小テストの得点）
@@ -251,7 +250,7 @@ src/
 │   ├── db/                                              # データアクセス層
 │   │   ├── code-snippets.ts                             # 初期コードCRUD・並び替え・生徒の編集内容の保存
 │   │   ├── contents.ts                                  # 科目・単元・レッスン・発問
-│   │   ├── memos.ts                                     # ノート（memos）の CRUD（生徒・教師向け）・件数集計・最後に更新したノート
+│   │   ├── memos.ts                                     # ノート（memos）の CRUD（生徒・教師向け）・件数集計
 │   │   ├── memo-templates.ts                     # ノートのひな形の取得・保存・削除、ノートの内容の検証（画像はひな形のものだけ）
 │   │   ├── quizzes.ts                                   # 小テスト・提出記録・分析・エクスポート集計
 │   │   ├── review.ts                                    # AIで振り返る：本人の1単元分の学習データ

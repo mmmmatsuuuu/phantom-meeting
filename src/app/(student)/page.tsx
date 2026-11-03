@@ -1,13 +1,12 @@
 import { cookies } from "next/headers";
 import { getContents } from "@/lib/db/contents";
 import { getStudentQuizStatuses, getQuizLessonPairs } from "@/lib/db/quizzes";
-import { getLatestMemoLessonId, getMemoCountsByLesson } from "@/lib/db/memos";
+import { getMemoCountsByLesson } from "@/lib/db/memos";
 import { getMakerEventsByUnit } from "@/lib/db/maker";
 import { buildStudentDashboard } from "@/lib/student-dashboard";
 import type { StudentDashboard } from "@/lib/student-dashboard";
 import { getUserProfile } from "@/lib/supabase/server";
 import SubjectList from "@/components/lesson/subject-list";
-import ContinueNote from "@/components/lesson/continue-note";
 import Mascot from "@/components/shared/mascot";
 
 export default async function HomePage() {
@@ -21,23 +20,14 @@ export default async function HomePage() {
   // 目次の各行に出すノートの有無と小テストの得点に使う。
   // 学習状況のまとめ（DashboardSummaryCards・NextActions）は、機能として残したまま画面には出していない
   let dashboard: StudentDashboard | null = null;
-  let latestLessonId: string | null = null;
   if (profile) {
-    const [quizPairs, statuses, memoCounts, latest] = await Promise.all([
+    const [quizPairs, statuses, memoCounts] = await Promise.all([
       getQuizLessonPairs(),
       getStudentQuizStatuses(profile.userId),
       getMemoCountsByLesson(profile.userId),
-      getLatestMemoLessonId(profile.userId),
     ]);
     dashboard = buildStudentDashboard(subjects, quizPairs, statuses, memoCounts);
-    latestLessonId = latest;
   }
-
-  const latestLesson = latestLessonId
-    ? subjects
-        .flatMap((s) => s.units.flatMap((u) => u.lessons))
-        .find((l) => l.id === latestLessonId)
-    : undefined;
 
   // cookie から折りたたまれている科目IDを取得
   let initialCollapsedIds: string[] = [];
@@ -53,8 +43,6 @@ export default async function HomePage() {
 
   return (
     <div className="max-w-3xl mx-auto px-4 pb-16">
-      {latestLesson && <ContinueNote lessonId={latestLesson.id} title={latestLesson.title} />}
-
       {subjects.length === 0 ? (
         <div className="flex items-center gap-4 py-16">
           <Mascot pose="rest" size={96} />

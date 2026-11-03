@@ -40,7 +40,6 @@
   --color-rule: var(--rule);
   --color-rule-strong: var(--rule-strong);
   --color-red-pen: var(--red-pen);
-  --color-note: var(--note);
 
   /* 操作と状態は端末標準のサンセリフ、内容（先生や生徒が書いたもの）は Klee One */
   --font-sans: system-ui, -apple-system, "Hiragino Sans", "Noto Sans JP", sans-serif;
@@ -65,8 +64,6 @@
   --rule-strong: #b3afa2;
   /* 赤ペン：答え合わせと、直すところ・気をつけるところにだけ使う */
   --red-pen: #b93a2b;
-  /* 付箋：目次の「続きから」にだけ使う */
-  --note: #efe4b4;
   /* 方眼の線 */
   --grid: rgb(29 43 63 / 0.055);
 

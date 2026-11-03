@@ -35,7 +35,6 @@ export default function LessonContent({
         youtubeUrl={youtubeUrl}
         quiz={quiz}
         otherReviewCount={otherReviewCount}
-        enablePlayground={enablePlayground}
       />
       <LessonSidePanel
         lessonId={lessonId}

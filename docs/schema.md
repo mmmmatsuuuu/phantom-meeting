@@ -94,7 +94,7 @@ maker_events（自由制作。既存テーブルへは unit_id の一方向の�
 | content | jsonb | tiptap JSON |
 | timestamp_seconds | int | nullable、動画タイムスタンプ（画面からは記録しなくなった） |
 | created_at | timestamptz | |
-| updated_at | timestamptz | 「続きから」で最後に更新したノートを探すのに使う |
+| updated_at | timestamptz | レッスンを開いたときに、最後に更新したノートを開くのに使う |
 
 画像は、そのレッスンの `memo_templates` にあるものだけを保存できる（API で検証）。
 
