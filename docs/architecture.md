@@ -20,7 +20,7 @@
 |---|---|
 | `src/lib/db/` | Supabaseクエリを関数として集約。Server Component・API Route 両方から呼ぶ |
 | Server Component | `lib/db/` を直接呼び出してSSRでデータ取得（一覧・詳細の表示） |
-| API Route | Client Component からの mutation（メモ・投稿・レッスン登録）、秘匿キーが必要な処理（画像アップロード等）、Client Component のフィルタ操作に応じた読み取り（分析・エクスポート）、操作したときだけ必要になるデータの読み取り（「AIで振り返る」ダイアログ） |
+| API Route | Client Component からの mutation（ノート・レッスン登録）、秘匿キーが必要な処理（画像アップロード等）、Client Component のフィルタ操作に応じた読み取り（分析・エクスポート）、操作したときだけ必要になるデータの読み取り（「AIで振り返る」ダイアログ） |
 | Client Component | API Route 経由で読み書き、または Server Component から props を受け取る |
 
 ### API Route が必要なケース
@@ -126,11 +126,12 @@ src/
 │   │       │   ├── new/page.tsx                         # レッスン登録
 │   │       │   └── [lessonId]/
 │   │       │       ├── quiz/new/page.tsx                # 小テスト作成
-│   │       │       └── code-snippets/page.tsx           # コーディングプレイグラウンド管理（有効化・初期コード）
+│   │       │       ├── code-snippets/page.tsx           # コーディングプレイグラウンド管理（有効化・初期コード）
+│   │       │       └── note-template/page.tsx          # ノートのひな形の編集
 │   │       ├── analytics/                                # 分析（タブ統合。/analytics 自体は next.config.ts で /analytics/units へリダイレクト）
 │   │       │   ├── layout.tsx                            # タブ切り替えUI（単元別／レッスン別／生徒別）
 │   │       │   ├── units/page.tsx                         # 単元別：授業×設問の正答率ヒートマップ（小テスト・単元・科目の平均つき）
-│   │       │   ├── lessons/page.tsx                       # レッスン別：📝小テスト/💻コード/📋メモのサブタブ
+│   │       │   ├── lessons/page.tsx                       # レッスン別：小テスト/コード/ノートのサブタブ
 │   │       │   └── students/page.tsx                      # 生徒別：検索付き生徒リスト→個人詳細へ
 │   │       ├── students/
 │   │       │   ├── page.tsx                               # 生徒一覧（検索・インライン編集）
@@ -157,15 +158,13 @@ src/
 │   │   ├── images/
 │   │   │   ├── upload/route.ts                          # ImageKit アップロード（認証済みのみ）
 │   │   │   └── [fileId]/route.ts                        # ImageKit 削除
+│   │   ├── lessons/[lessonId]/memo-template/route.ts    # ノートのひな形の保存・削除（teacher/admin）
 │   │   ├── lessons/[lessonId]/code-snippets/
 │   │   │   ├── route.ts                                 # 初期コード追加（teacher/admin）
 │   │   │   └── [snippetId]/move/route.ts                # 初期コードの並び替え（teacher/admin）
 │   │   ├── memos/
 │   │   │   ├── route.ts                                 # メモ一覧・作成
 │   │   │   └── [memoId]/route.ts                        # メモ削除
-│   │   ├── posts/
-│   │   │   ├── route.ts                                 # 投稿一覧・作成
-│   │   │   └── [postId]/route.ts                        # 投稿削除
 │   │   ├── profile/route.ts                             # プロフィール更新
 │   │   ├── quiz-questions/[questionId]/route.ts         # 問題削除
 │   │   ├── quizzes/
@@ -184,7 +183,9 @@ src/
 │   │       └── units/[unitId]/
 │   │           ├── memo-export/route.ts                   # メモ CSV エクスポート
 │   │           └── quiz-export/route.ts                   # 小テスト結果 CSV エクスポート
-│   ├── icon.tsx                                         # Favicon（SVG）
+│   ├── icon.tsx                                  # Favicon（ヤギの顔を切り出して生成。src/lib/mascot-icon.tsx）
+│   ├── apple-icon.tsx                            # ホーム画面用アイコン（紙の色の背景つき）
+│   ├── not-found.tsx                             # 404（ヤギが食べてしまったページ）
 │   ├── layout.tsx                                       # ルートレイアウト
 │   └── globals.css
 ├── components/
@@ -192,16 +193,14 @@ src/
 │   ├── lesson/                                          # レッスンページ用
 │   │   ├── lesson-content.tsx
 │   │   ├── lesson-tabs.tsx
-│   │   ├── lesson-status-bar.tsx                        # 生徒本人の学習状況バー
-│   │   ├── lesson-side-panel.tsx                        # メモ/コード切り替えタブ（enable_playgroundで出し分け）
-│   │   ├── playground.tsx                               # コーディングプレイグラウンド本体（実行・コンソール・メモに保存）
+│   │   ├── lesson-side-panel.tsx                        # ノート/コードを紙の端のインデックスで切り替え（enable_playgroundで出し分け）
+│   │   ├── playground.tsx                               # コーディングプレイグラウンド本体（実行・実行結果・ノートに貼る）
 │   │   ├── code-editor.tsx                              # CodeMirror 6 ラッパー
-│   │   ├── memo-section.tsx                             # tiptap メモエディタ（prefillContentでコード事前入力に対応）
+│   │   ├── note-section.tsx                      # ノート（DB では memos）。ひな形の読み込み・保存して続きを書く・複数ノートの切り替え
+│   │   ├── continue-note.tsx                     # 目次の「続きから」の付箋
 │   │   ├── memo-toolbar.tsx
-│   │   ├── post-list.tsx                                # 共有投稿一覧（Realtime）
-│   │   ├── question-section.tsx                         # 発問
-│   │   ├── quiz-section.tsx                             # 小テスト（DnD対応・提出後の要復習ナッジ）
-│   │   ├── subject-list.tsx                             # 科目別レッスン一覧（受験・メモ状況バッジ付き）
+│   │   ├── quiz-section.tsx                             # 小テスト（答案用紙と赤ペンの答え合わせ・DnD対応・提出後の要復習ナッジ）
+│   │   ├── subject-list.tsx                             # 目次（単元ごとのルーズリーフ。ノートの有無と小テストの得点）
 │   │   └── video-player.tsx
 │   ├── student/
 │   │   ├── dashboard-summary.tsx                        # ホームの学習状況サマリー4カード
@@ -215,12 +214,15 @@ src/
 │   │   └── profile-edit-form.tsx
 │   ├── shared/
 │   │   ├── nav-bar.tsx
+│   │   ├── site-logo.tsx                         # ヘッダーのロゴ（ヤギの顔と ruminy）
+│   │   ├── mascot.tsx                            # ヤギの絵（場面ごとのポーズ。docs/mascot.md）
 │   │   ├── login-button.tsx
 │   │   ├── submit-button.tsx                            # 送信系ボタン共通コンポーネント（多重送信防止）
 │   │   ├── rich-content.tsx                             # tiptap JSON 表示（読み取り専用）
 │   │   ├── resizable-image-node.tsx                     # 画像リサイズ対応ノード
-│   │   └── user-menu.tsx                                # DropdownMenu（ロール別表示・ロールアイコン）
+│   │   └── user-menu.tsx                                # DropdownMenu（ロール別表示）
 │   └── teacher/
+│       ├── note-template-editor.tsx                     # ノートのひな形の編集（画像の貼り付け・JSON の読み込み）
 │       ├── contents-manager.tsx                         # 1科目分の単元・レッスン管理UI（単元は新しい順）
 │       ├── subject-tabs.tsx                             # コンテンツ管理の科目タブ（＋科目追加）
 │       ├── lesson-new-form.tsx
@@ -249,8 +251,8 @@ src/
 │   ├── db/                                              # データアクセス層
 │   │   ├── code-snippets.ts                             # 初期コードCRUD・並び替え・生徒の編集内容の保存
 │   │   ├── contents.ts                                  # 科目・単元・レッスン・発問
-│   │   ├── memos.ts                                     # メモ CRUD（生徒・教師向け）・メモ件数集計
-│   │   ├── posts.ts                                     # 共有投稿 CRUD
+│   │   ├── memos.ts                                     # ノート（memos）の CRUD（生徒・教師向け）・件数集計・最後に更新したノート
+│   │   ├── memo-templates.ts                     # ノートのひな形の取得・保存・削除、ノートの内容の検証（画像はひな形のものだけ）
 │   │   ├── quizzes.ts                                   # 小テスト・提出記録・分析・エクスポート集計
 │   │   ├── review.ts                                    # AIで振り返る：本人の1単元分の学習データ
 │   │   └── users.ts                                     # プロフィール・生徒一覧
@@ -264,8 +266,10 @@ src/
 │   ├── pyodide-runner.ts                                # Pyodide による Python 実行（jsDelivr CDNから読み込み）
 │   ├── js-runner.ts                                     # サンドボックスiframeによる JavaScript 実行
 │   ├── tiptap/
+│   │   ├── note-extensions.ts                         # ノートとひな形のエディタで共通の拡張機能
 │   │   └── resizable-image-extension.ts                 # 画像リサイズ拡張
-│   ├── tiptap-utils.ts                                  # tiptap JSON ⇔ プレーンテキスト変換
+│   ├── tiptap-utils.ts                                  # tiptap JSON ⇔ プレーンテキスト変換、画像の抽出と検証
+│   ├── mascot-icon.tsx                                  # アイコン用にヤギの顔を切り出す（next/og）
 │   └── utils.ts                                         # shadcn/ui ユーティリティ
 └── proxy.ts                                             # middleware.ts のエントリポイント
 ```

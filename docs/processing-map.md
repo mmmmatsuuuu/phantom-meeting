@@ -42,56 +42,50 @@
 
 | 層 | 処理 | 場所 |
 |---|---|---|
-| SC | 科目ツリー・受験状況・メモ件数の取得 | `app/(student)/page.tsx` |
+| SC | 科目ツリー・受験状況・ノート件数・最後に更新したノートを取得 | `app/(student)/page.tsx` |
 | lib/db | 科目→単元→レッスンをネスト select で取得 | `contents.ts` `getContents` |
 | lib/db | 自分の受験記録から、クイズごとの最新得点率・受験回数を集計 | `quizzes.ts` `getStudentQuizStatuses` |
-| lib/db | 自分のレッスンごとのメモ件数を集計 | `memos.ts` `getMemoCountsByLesson` |
-| lib | サマリー（受験数・平均得点率・要復習数）、レッスンのバッジ、「つぎにやること」の算出 | `lib/student-dashboard.ts` `buildStudentDashboard` |
+| lib/db | 自分のレッスンごとのノート件数を集計 | `memos.ts` `getMemoCountsByLesson` |
+| lib/db | 最後に更新したノートのレッスンを取得（「続きから」の付箋） | `memos.ts` `getLatestMemoLessonId` |
+| lib | レッスンの状況（ノートの有無・小テストの得点）を算出。学習状況のまとめと「つぎにやること」も算出するが、画面には出していない | `lib/student-dashboard.ts` `buildStudentDashboard` |
 | SC | 科目の折りたたみ状態を Cookie から復元 | `app/(student)/page.tsx` |
-| フロント | 科目の折りたたみ操作と Cookie への保存 | `components/lesson/subject-list.tsx` |
-| フロント | 単元を新しい順に並べる（表示のみ。「つぎにやること」は昇順のツリーから算出）。単元内のレッスンは授業の順 | `lib/contents-order.ts` `sortUnitsNewestFirst` |
+| フロント | 単元ごとのルーズリーフ表示、科目の折りたたみ操作と Cookie への保存 | `components/lesson/subject-list.tsx` |
+| フロント | 「続きから」の付箋 | `components/lesson/continue-note.tsx` |
+| フロント | 単元を新しい順に並べる（表示のみ）。単元内のレッスンは授業の順 | `lib/contents-order.ts` `sortUnitsNewestFirst` |
 
 ### レッスンページ（`/lessons/[lessonId]`）
 
-**ページ表示・ステータスバー**
+**ページ表示**
 
 | 層 | 処理 | 場所 |
 |---|---|---|
-| SC | レッスン・発問・小テスト・受験状況・メモ件数を並列取得し、ステータスバー（直近得点率・受験回数・メモ件数）と要復習件数を算出 | `app/(student)/lessons/[lessonId]/page.tsx` |
-| lib/db | レッスンと発問をネスト select で取得 | `contents.ts` `getLessonWithQuestions` |
+| SC | レッスン・小テスト・ノートのひな形・受験状況を並列取得し、要復習件数を算出 | `app/(student)/lessons/[lessonId]/page.tsx` |
+| lib/db | レッスンをネスト select で取得（発問も取得するが、レッスンページには表示しない） | `contents.ts` `getLessonWithQuestions` |
 | lib/db | 小テストと設問をネスト select で取得 | `quizzes.ts` `getQuizWithQuestions` |
-| フロント | 動画・小テストのタブ切り替え、小テスト完了による共有メモ一覧のアンロック表示 | `components/lesson/lesson-content.tsx`、`lesson-tabs.tsx` |
+| lib/db | ノートのひな形を取得 | `memo-templates.ts` `getMemoTemplate` |
+| フロント | 動画・小テストのタブ切り替え、ノート・コードの紙の端のインデックス | `components/lesson/lesson-content.tsx`、`lesson-tabs.tsx`、`lesson-side-panel.tsx` |
 | フロント | YouTube の埋め込み再生 | `components/lesson/video-player.tsx` |
 
-**メモ**
+**ノート**（DB とコードでは `memos`）
 
 | 層 | 処理 | 場所 |
 |---|---|---|
-| フロント | tiptap エディタでの編集、動画の再生位置の記録 | `components/lesson/memo-section.tsx`、`memo-toolbar.tsx` |
-| API | メモの一覧取得・作成・削除 | `api/memos/route.ts`、`api/memos/[memoId]/route.ts` |
-| lib/db | メモの取得・作成・削除 | `memos.ts` `getMemosByLessonId` / `createMemo` / `deleteMemo` |
-| DB | 本人のメモのみ読み書き可 | RLS（`memos`） |
+| フロント | 最後に更新したノートを開く。まだなければ、ひな形の読み込みか白紙から始める | `components/lesson/note-section.tsx` |
+| フロント | tiptap エディタでの編集（方眼・Klee One）。保存しても入力欄を空にせず続きを書ける。複数ノートの切り替え。画像の貼り付けは受け付けない | `components/lesson/note-section.tsx`、`memo-toolbar.tsx`、`lib/tiptap/note-extensions.ts` |
+| API | ノートの一覧取得・作成・更新・削除（ログイン確認） | `api/memos/route.ts`、`api/memos/[memoId]/route.ts` |
+| API / lib | 保存する内容の検証：tiptap の文書であること、画像はそのレッスンのひな形にあるものだけ | `memo-templates.ts` `validateMemoContent` → `lib/tiptap-utils.ts` `findDisallowedImages` |
+| lib/db | ノートの取得・作成・更新・削除 | `memos.ts` `getMemosByLessonId` / `createMemo` / `updateMemo` / `deleteMemo` |
+| DB | 本人のノートのみ読み書き可（教師・管理者は閲覧可） | RLS（`memos`） |
 | DB | 更新時に `updated_at` を自動更新 | トリガー `memos_set_updated_at` |
-
-**共有投稿**
-
-| 層 | 処理 | 場所 |
-|---|---|---|
-| フロント | メモを投稿として共有 | `components/lesson/memo-section.tsx` |
-| API | 投稿の一覧取得（教師は投稿者情報つき）・作成（同じメモの二重投稿を確認）・削除 | `api/posts/route.ts`、`api/posts/[postId]/route.ts` |
-| lib/db | 投稿の取得・存在確認・作成・削除 | `posts.ts` |
-| フロント | 新規投稿・削除をリアルタイムで一覧に反映（ブラウザから Supabase Realtime を直接購読） | `components/lesson/post-list.tsx` |
-| DB | 閲覧は認証ユーザー全員、作成は自分のメモからのみ、削除は本人または教師 | RLS（`posts`） |
-| DB | 投稿の変更を Realtime に配信 | `supabase_realtime` publication |
 
 **小テスト**
 
 | 層 | 処理 | 場所 |
 |---|---|---|
-| フロント | 選択肢のシャッフル、並び替え問題のドラッグ操作、回答の入力 | `components/lesson/quiz-section.tsx` |
+| フロント | 選択肢のシャッフル、並び替え問題のドラッグ操作、回答の入力（答案用紙） | `components/lesson/quiz-section.tsx` |
 | API | 提出された回答の**採点**（選択式・並び替えを正誤判定、記述式は判定なし）と保存 | `api/quizzes/[quizId]/attempts/route.ts`（POST） |
 | lib/db | 受験記録と回答詳細の保存 | `quizzes.ts` `createQuizAttempt` |
-| フロント | 提出後の正誤・解説表示、要復習のナッジ | `components/lesson/quiz-section.tsx` |
+| フロント | 提出後の赤ペンの答え合わせ（○×・正解・解説・模範解答）、要復習のナッジ | `components/lesson/quiz-section.tsx` |
 | API / lib/db | 直近10回の受験履歴を回答詳細つきで取得 | `api/quizzes/[quizId]/attempts/route.ts`（GET）→ `quizzes.ts` `getRecentQuizAttemptsWithAnswers` |
 | DB | 受験記録・回答は本人のみ作成・閲覧可（教師は全件閲覧可） | RLS（`quiz_attempts`・`quiz_attempt_answers`） |
 
@@ -103,16 +97,16 @@
 | lib/db | 初期コード一覧、自分の保存済みコード・実行結果の取得 | `code-snippets.ts` `getCodeSnippetsByLesson` / `getStudentCodeStatesByLesson` |
 | フロント | Python の実行（Pyodide を jsDelivr から読み込み、メインスレッドで実行） | `lib/pyodide-runner.ts` |
 | フロント | JavaScript の実行（sandbox 属性つき iframe 内で実行） | `lib/js-runner.ts` |
-| フロント | 「保存」ボタンで編集内容・実行結果を保存、メモへの貼り付け | `components/lesson/playground.tsx` |
+| フロント | 「保存」ボタンで編集内容・実行結果を保存。「ノートに貼る」で開いているノートの末尾に追記 | `components/lesson/playground.tsx` |
 | API / lib/db | 編集内容・実行結果の保存（存在すれば更新・なければ作成） | `api/code-snippets/[snippetId]/state/route.ts` → `code-snippets.ts` `saveStudentCodeState` |
 | DB | 生徒×初期コードで1行（一意制約）。本人のみ読み書き可、教師は閲覧可 | 一意制約・RLS（`code_states`） |
 
-### メモ一覧（`/memos`）
+### ノート一覧（`/memos`）
 
 | 層 | 処理 | 場所 |
 |---|---|---|
-| lib/db | 自分の全メモを取得 | `memos.ts` `getAllMemos` |
-| SC | メモを科目→単元→レッスンのツリーに振り分け、メモのないレッスンを除外 | `app/(student)/memos/page.tsx` |
+| lib/db | 自分の全ノートを取得 | `memos.ts` `getAllMemos` |
+| SC | ノートを科目→単元→レッスンのツリーに振り分け、ノートのないレッスンを除外 | `app/(student)/memos/page.tsx` |
 | フロント | 目次のスクロール連動 | `components/memos/memo-toc.tsx` |
 | フロント | Markdown ファイルの生成とダウンロード | `components/memos/memo-download-button.tsx` |
 
@@ -162,12 +156,23 @@
 | フロント | 科目タブの表示・切り替え（科目の追加後は新しい科目のページへ、削除後は `/teacher/contents` へ移動） | `components/teacher/subject-tabs.tsx`、`contents-manager.tsx` |
 | フロント | 単元を新しい順（order の降順、同じ order なら作成日時の新しい順）に並べる。単元内のレッスンは授業の順 | `lib/contents-order.ts` `sortUnitsNewestFirst` |
 | フロント | 科目・単元の作成・名前変更・削除、レッスン削除の操作 | `components/teacher/contents-manager.tsx` |
-| フロント | レッスン登録フォーム（YouTube URL・発問・初期コード） | `components/teacher/lesson-new-form.tsx` |
+| フロント | レッスン登録フォーム（YouTube URL・発問・初期コード）。発問は生徒のレッスンページには表示せず、ノートのひな形に入れる | `components/teacher/lesson-new-form.tsx` |
 | API | 教師確認と入力値の検証 | `api/contents/**/route.ts` |
 | lib/db | 科目・単元の作成・更新・削除 | `contents.ts` |
 | lib/db | レッスンの作成：単元内のレッスン数から表示順を決め、レッスン→発問→初期コードの順に挿入 | `contents.ts` `createLesson` |
 | DB | コンテンツの作成・更新・削除は教師のみ、閲覧は認証ユーザー全員 | RLS（`subjects`・`units`・`lessons`・`questions`） |
 | DB | レッスン削除時に、メモ・投稿・小テストなどを連鎖削除 | 外部キーの `on delete cascade` |
+
+### ノートのひな形（`/teacher/lessons/[lessonId]/note-template`）
+
+| 層 | 処理 | 場所 |
+|---|---|---|
+| SC | レッスンとひな形を取得 | `app/(teacher)/teacher/lessons/[lessonId]/note-template/page.tsx` |
+| フロント | 生徒のノートと同じ見た目のエディタで編集、画像の貼り付け（アップロード）、JSON の読み込み | `components/teacher/note-template-editor.tsx` |
+| API | 教師確認と tiptap の文書かの検証、保存・削除 | `api/lessons/[lessonId]/memo-template/route.ts` |
+| API | 画像のアップロード（教師のみ） | `api/images/upload/route.ts` |
+| lib/db | ひな形の取得・保存（upsert）・削除 | `memo-templates.ts` |
+| DB | 閲覧は認証ユーザー全員、作成・更新・削除は教師・管理者 | RLS（`memo_templates`） |
 
 ### 小テスト作成・編集（`/teacher/lessons/[lessonId]/quiz/new`）
 
@@ -286,7 +291,8 @@
 | `quizzes`・`quiz_questions` | 認証ユーザー全員 | 教師・管理者のみ |
 | `code_snippets` | 認証ユーザー全員 | 教師・管理者のみ |
 | `memos` | 本人／教師・管理者は全件 | 本人のみ |
-| `posts` | 認証ユーザー全員 | 作成は本人のメモからのみ／削除は本人または教師・管理者 |
+| `memo_templates` | 認証ユーザー全員 | 教師・管理者のみ |
+| `posts` | 認証ユーザー全員 | 作成は本人のメモからのみ／削除は本人または教師・管理者（画面と API からは使っていない。テーブルは削除予定） |
 | `quiz_attempts`・`quiz_attempt_answers` | 本人／教師・管理者は全件 | 作成は本人のみ（更新・削除なし） |
 | `code_states` | 本人／教師・管理者は全件 | 作成・更新は本人のみ |
 
