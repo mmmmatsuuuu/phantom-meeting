@@ -43,22 +43,31 @@ main { max-width: 1240px; margin: 0 auto; padding: 0 16px 80px; }
 .screen { display: none; }
 .screen.on { display: block; }
 
-/* 目次 */
-.toc { max-width: 760px; margin: 0 auto; }
-.continue { display: block; padding: 28px 0 24px; border-bottom: 1px solid var(--rule-strong); text-decoration: none; }
+/* 目次：単元ごとに 1 枚のルーズリーフ。行の高さ（40px）を罫線の間隔にそろえる */
+.toc { max-width: 780px; margin: 0 auto; }
+.continue { display: block; padding: 28px 0 8px; text-decoration: none; }
 .continue small { display: block; font-size: 13px; color: var(--pencil); }
 .continue b { font: 600 clamp(22px, 5vw, 28px)/1.5 var(--hand); }
-.continue span { display: block; margin-top: 4px; font-size: 14px; }
+.continue span { display: block; margin-top: 2px; font-size: 14px; }
 .continue u { text-underline-offset: 4px; }
-.subject { margin: 36px 0 0; font-size: 13px; color: var(--pencil); letter-spacing: .1em; }
-.unit { margin-top: 6px; font-size: 21px; padding-bottom: 6px; border-bottom: 1px solid var(--ink); }
-.row { display: grid; grid-template-columns: 34px minmax(0, 1fr) auto; gap: 8px; align-items: baseline; padding: 11px 0; border-bottom: 1px solid var(--rule); text-decoration: none; }
-.row:hover .row-title { text-decoration: underline; text-underline-offset: 4px; }
-.row-no { font: 13px var(--mono); color: var(--pencil); }
+.subject { margin: 28px 0 0; font-size: 13px; color: var(--pencil); letter-spacing: .1em; }
+.leaf { position: relative; margin-top: 12px; padding: 0 28px 40px 64px; background-color: var(--sheet); border: 1px solid var(--rule-strong);
+  background-image:
+    radial-gradient(circle at 22px 20px, var(--paper) 0 6px, var(--rule-strong) 6.5px 7.5px, transparent 8px),
+    linear-gradient(90deg, transparent 47px, rgba(29, 43, 63, .22) 47px 48px, transparent 48px),
+    repeating-linear-gradient(to bottom, transparent 0 39px, rgba(29, 43, 63, .09) 39px 40px);
+  background-size: 44px 40px, 100% 100%, 100% 100%;
+  background-repeat: repeat-y, no-repeat, repeat; }
+.leaf + .leaf { margin-top: 24px; }
+.leaf h2 { height: 80px; display: flex; align-items: flex-end; padding-bottom: 8px; font-size: 22px; }
+.row { display: grid; grid-template-columns: 44px minmax(0, 1fr) auto; gap: 8px; height: 40px; line-height: 40px; text-decoration: none; }
+.row-title { font-family: var(--hand); font-size: 17px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.row:hover .row-title { text-decoration: underline; text-underline-offset: 5px; }
+.row-no { font: 13px/40px var(--mono); color: var(--pencil); }
 .row-marks { font-size: 12px; color: var(--pencil); white-space: nowrap; }
 .row-marks b { color: var(--ink); font-weight: 600; }
 .row-marks .red { color: var(--red); font-weight: 600; margin-left: 10px; }
-.row.special .row-title { font-family: var(--hand); font-weight: 600; }
+.row.special .row-title { font-weight: 600; }
 
 /* レッスン */
 .lesson-head { padding: 20px 0 14px; }
@@ -173,14 +182,18 @@ img[src*="mascot"] { mix-blend-mode: multiply; }
     <span>メモの途中です <u>続ける</u></span>
   </a>
   <p class="subject">情報Ⅰ</p>
-  <h2 class="unit">プログラミング入門</h2>
-  <a class="row" href="#lesson"><span class="row-no">01</span><span class="row-title">プログラミングとアルゴリズム</span><span class="row-marks"><b>メモあり</b><span class="red">80</span></span></a>
-  <a class="row" href="#lesson"><span class="row-no">02</span><span class="row-title">順次・選択・反復</span><span class="row-marks"><b>メモあり</b><span class="red">60</span></span></a>
-  <a class="row" href="#lesson"><span class="row-no">03</span><span class="row-title">変数と配列</span><span class="row-marks">まだ</span></a>
-  <a class="row special" href="#home"><span class="row-no">自由</span><span class="row-title">自由制作：作りたいプログラムを作ろう</span><span class="row-marks">受付中</span></a>
-  <h2 class="unit" style="margin-top:34px">コンピュータの仕組み</h2>
-  <a class="row" href="#lesson"><span class="row-no">01</span><span class="row-title">CPUとメモリの役割</span><span class="row-marks"><b>メモの途中</b></span></a>
-  <a class="row" href="#lesson"><span class="row-no">02</span><span class="row-title">2進数と情報量</span><span class="row-marks">まだ</span></a>
+  <div class="leaf">
+    <h2>プログラミング入門</h2>
+    <a class="row" href="#lesson"><span class="row-no">01</span><span class="row-title">プログラミングとアルゴリズム</span><span class="row-marks"><b>メモあり</b><span class="red">80</span></span></a>
+    <a class="row" href="#lesson"><span class="row-no">02</span><span class="row-title">順次・選択・反復</span><span class="row-marks"><b>メモあり</b><span class="red">60</span></span></a>
+    <a class="row" href="#lesson"><span class="row-no">03</span><span class="row-title">変数と配列</span><span class="row-marks">まだ</span></a>
+    <a class="row special" href="#gallery"><span class="row-no">自由</span><span class="row-title">自由制作：作りたいプログラムを作ろう</span><span class="row-marks">受付中</span></a>
+  </div>
+  <div class="leaf">
+    <h2>コンピュータの仕組み</h2>
+    <a class="row" href="#lesson"><span class="row-no">01</span><span class="row-title">CPUとメモリの役割</span><span class="row-marks"><b>メモの途中</b></span></a>
+    <a class="row" href="#lesson"><span class="row-no">02</span><span class="row-title">2進数と情報量</span><span class="row-marks">まだ</span></a>
+  </div>
 </section>
 
 <section class="screen" id="lesson">
