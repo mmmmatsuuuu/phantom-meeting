@@ -1,0 +1,141 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>ruminy マスコット比較</title>
+<style>
+:root {
+  color-scheme: light;
+  --paper: #fbfbf8;
+  --paper-2: #f0f1ec;
+  --ink: #1d2b3f;
+  --pencil: #666b73;
+  --rule: #d8dce1;
+  --rule-strong: #aeb5bd;
+  --serif: "Hiragino Mincho ProN", "Yu Mincho", "Noto Serif JP", serif;
+  --sans: system-ui, -apple-system, "Hiragino Sans", "Noto Sans JP", sans-serif;
+}
+* { box-sizing: border-box; }
+body { margin: 0; background: var(--paper); color: var(--ink); font: 15px/1.8 var(--sans); }
+h1, h2, h3 { font-family: var(--serif); font-weight: 600; margin: 0; line-height: 1.5; }
+main { max-width: 1240px; margin: 0 auto; padding: 24px 16px 80px; }
+.lead { color: var(--pencil); font-size: 13px; margin: 4px 0 0; }
+.style { margin-top: 40px; border-top: 2px solid var(--ink); padding-top: 14px; }
+.style-head { display: flex; flex-wrap: wrap; gap: 4px 16px; align-items: baseline; }
+.style-head h2 { font-size: 22px; }
+.style-head p { margin: 0; font-size: 13px; color: var(--pencil); }
+.grid { display: grid; grid-template-columns: 220px repeat(4, minmax(0, 1fr)); gap: 20px; margin-top: 16px; align-items: start; }
+.cell h3 { font: 12px var(--sans); color: var(--pencil); margin-bottom: 6px; }
+.frame { border: 1px solid var(--rule); background: var(--paper); padding: 14px; min-height: 180px; }
+.big svg { width: 100%; height: auto; display: block; }
+.header-sample { display: flex; align-items: center; gap: 6px; padding-bottom: 8px; border-bottom: 2px solid var(--ink); }
+.header-sample svg { width: 34px; height: 34px; }
+.header-sample b { font: 600 20px var(--serif); }
+.login { text-align: center; }
+.login svg { width: 110px; height: 110px; }
+.login b { display: block; font: 600 22px var(--serif); }
+.login small { display: block; color: var(--pencil); font-size: 12px; margin-bottom: 10px; }
+.btn { display: inline-block; padding: 7px 12px; border: 1px solid var(--ink); font-size: 13px; border-radius: 2px; }
+.btn-ink { background: var(--ink); color: var(--paper); }
+.memo { display: grid; grid-template-columns: 76px minmax(0, 1fr); gap: 8px; align-items: center; }
+.memo svg { width: 76px; height: 76px; }
+.memo p { margin: 0 0 8px; font-size: 12px; color: var(--pencil); }
+.notfound { text-align: center; }
+.notfound svg { width: 96px; height: 96px; }
+.notfound b { display: block; font: 600 15px var(--serif); }
+.notfound small { color: var(--pencil); font-size: 12px; }
+.empty-line { display: flex; gap: 8px; align-items: center; margin-top: 14px; padding-top: 10px; border-top: 1px solid var(--rule); font-size: 12px; color: var(--pencil); }
+.empty-line svg { width: 40px; height: 40px; flex: none; }
+
+/* A：濃紺インクの線画 */
+.ink .line { fill: none; stroke: var(--ink); stroke-width: 2.4; stroke-linecap: round; stroke-linejoin: round; }
+.ink .fill { fill: var(--paper); stroke: var(--ink); stroke-width: 2.4; stroke-linejoin: round; }
+.ink .eye { fill: var(--ink); }
+.ink .paper { fill: var(--paper); stroke: var(--ink); stroke-width: 2; }
+.ink .paper-line { stroke: var(--rule-strong); stroke-width: 1.4; }
+.ink .cheek { fill: none; }
+
+/* B：切り絵（濃紺の面） */
+.cut .line, .cut .fill { fill: var(--ink); stroke: var(--ink); stroke-width: 2.4; stroke-linecap: round; stroke-linejoin: round; }
+.cut .horn { fill: none; stroke: var(--ink); stroke-width: 5; stroke-linecap: round; }
+.cut .leg { stroke-width: 7; }
+.cut .eye { fill: var(--paper); }
+.cut .paper { fill: var(--paper); stroke: var(--ink); stroke-width: 2; }
+.cut .paper-line { stroke: var(--rule-strong); stroke-width: 1.4; }
+.cut .cheek { fill: none; }
+
+/* C：やわらかい色の絵本調 */
+.soft .line { fill: none; stroke: #6b5644; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
+.soft .fill { fill: #f4eee3; stroke: #6b5644; stroke-width: 2; stroke-linejoin: round; }
+.soft .horn { stroke: #b59d7c; stroke-width: 4; }
+.soft .leg { stroke: #8a735e; stroke-width: 5; }
+.soft .eye { fill: #3d3028; }
+.soft .paper { fill: #ffffff; stroke: #9aa7b6; stroke-width: 1.6; }
+.soft .paper-line { stroke: #b9c4d0; stroke-width: 1.2; }
+.soft .cheek { fill: #f2b9a8; opacity: .8; }
+
+@media (max-width: 900px) { .grid { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+</style>
+</head>
+<body>
+<main>
+  <h1>ruminy のマスコット：絵柄の比較</h1>
+  <p class="lead">絵柄の方向を比べるための仮の絵（SVG の手描き）です。採用した絵柄は、生成 AI で清書します。</p>
+  <div id="styles"></div>
+</main>
+
+<template id="goat">
+  <svg viewBox="0 0 200 180" role="img" aria-label="ヤギ">
+    <path class="line leg" d="M92 128v36M106 130v34M140 130v34M154 126v38"/>
+    <path class="line" d="M170 98c6-4 9-10 8-16"/>
+    <ellipse class="fill" cx="124" cy="108" rx="52" ry="30"/>
+    <path class="fill" d="M84 96c-6-14-10-22-18-30l16-8c8 8 14 18 18 30z"/>
+    <path class="line horn" d="M66 52c4-16 18-24 30-20M60 54c2-14 10-22 20-24"/>
+    <path class="fill" d="M78 66c10-2 18 2 22 8-8 2-16 0-22-8z"/>
+    <path class="fill" d="M50 52c14-6 30 0 32 14 2 12-6 20-18 24-10 4-22 2-28-6-4-6-2-14 2-20 4-6 6-10 12-12z"/>
+    <path class="line" d="M44 90l4 14 6-14"/>
+    <circle class="eye" cx="56" cy="66" r="3"/>
+    <ellipse class="cheek" cx="50" cy="78" rx="5" ry="3"/>
+    <g class="mouth-paper">
+      <rect class="paper" x="8" y="72" width="34" height="26" transform="rotate(-12 25 85)"/>
+      <path class="paper-line" d="M14 80l22-5M15 87l22-5M16 94l14-3" transform="rotate(-12 25 85) rotate(12 25 85)"/>
+    </g>
+  </svg>
+</template>
+
+<script>
+const styles = [
+  { key: "ink", name: "A：濃紺インクの線画", note: "ノートの余白に描いた落書きのような線画。画面の紙とインクの見た目にそのまま溶け込む。" },
+  { key: "cut", name: "B：切り絵", note: "濃紺の面で形を切り抜いたような絵。小さくても形が読め、ロゴとして強い。" },
+  { key: "soft", name: "C：やわらかい色の絵本調", note: "生成りと淡い色で塗った絵本のような絵。親しみやすいが、紙とインクの画面では色が増える。" },
+];
+const goat = (withPaper = true) => {
+  const node = document.getElementById("goat").content.cloneNode(true);
+  if (!withPaper) node.querySelector(".mouth-paper").remove();
+  const wrap = document.createElement("div");
+  wrap.appendChild(node);
+  return wrap.innerHTML;
+};
+document.getElementById("styles").innerHTML = styles.map((s) => `
+  <section class="style ${s.key}">
+    <div class="style-head"><h2>${s.name}</h2><p>${s.note}</p></div>
+    <div class="grid">
+      <div class="cell big"><h3>単体</h3><div class="frame">${goat()}</div></div>
+      <div class="cell"><h3>ヘッダーとログイン</h3><div class="frame">
+        <div class="header-sample">${goat(false)}<b>ruminy</b></div>
+        <div class="login" style="margin-top:12px">${goat(false)}<b>ruminy</b><small>飲み込んで終わりにしない</small><span class="btn btn-ink">Google でログイン</span></div>
+      </div></div>
+      <div class="cell"><h3>メモの空欄</h3><div class="frame">
+        <div class="memo">${goat()}<div><p>先生が用意したメモのひな形があります。</p><span class="btn btn-ink">ひな形を読み込む</span></div></div>
+      </div></div>
+      <div class="cell"><h3>404</h3><div class="frame notfound">${goat()}<b>このページはヤギが食べてしまいました</b><small>目次から探してください</small></div></div>
+      <div class="cell"><h3>何もないとき</h3><div class="frame">
+        <p style="margin:0;font-size:13px">みんなの作品</p>
+        <div class="empty-line">${goat(false)}<span>まだ公開されていません。のんびり待ちましょう。</span></div>
+      </div></div>
+    </div>
+  </section>`).join("");
+</script>
+</body>
+</html>
