@@ -20,7 +20,7 @@ export default function NextActions({ actions }: Props) {
           >
             <div className="flex items-center gap-2.5 min-w-0">
               {action.type === "review" ? (
-                <span className="shrink-0 text-base">⚠️</span>
+                <span className="shrink-0 text-red-pen font-semibold">!</span>
               ) : (
                 <span className="shrink-0 text-base">▶️</span>
               )}

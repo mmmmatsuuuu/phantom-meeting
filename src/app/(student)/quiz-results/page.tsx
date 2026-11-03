@@ -169,7 +169,7 @@ export default async function QuizResultsPage() {
 
   return (
     <div className="max-w-4xl mx-auto px-4 py-8">
-      <h1 className="text-2xl font-bold mb-6">小テスト結果一覧</h1>
+      <h1 className="font-hand font-semibold text-[26px] leading-normal mb-6">小テスト結果一覧</h1>
 
       {tree.length === 0 ? (
         <div className="flex flex-col items-center justify-center py-20 text-center">

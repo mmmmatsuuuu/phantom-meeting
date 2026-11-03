@@ -178,7 +178,7 @@ export default function MemoToolbar({ editor, codeBlockLang, isCodeBlockActive }
         isActive={editor.isActive("link") || showLinkInput}
         title="リンク"
       >
-        🔗
+        リンク
       </ToolbarButton>
 
       {showLinkInput && (
@@ -260,7 +260,7 @@ export default function MemoToolbar({ editor, codeBlockLang, isCodeBlockActive }
             onClick={() => editor.chain().focus().deleteTable().run()}
             title="表を削除"
           >
-            🗑
+            表を削除
           </ToolbarButton>
         </>
       )}

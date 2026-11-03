@@ -6,6 +6,12 @@
   --radius-md: var(--radius);
   --radius-lg: calc(var(--radius) + 1px);
   --radius-xl: calc(var(--radius) + 2px);
+  /* 紙と文具の質感に合わせ、角丸は大きくしない（docs/design.md） */
+  --radius-2xl: calc(var(--radius) + 2px);
+  --radius-3xl: calc(var(--radius) + 2px);
+  /* カードの影は使わない。ダイアログやメニューの影（md 以上）は重なりを示すため残す */
+  --shadow-xs: none;
+  --shadow-sm: none;
   --color-background: var(--background);
   --color-foreground: var(--foreground);
   --color-card: var(--card);

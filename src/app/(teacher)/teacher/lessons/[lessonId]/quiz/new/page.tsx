@@ -31,7 +31,7 @@ export default async function QuizNewPage({ params }: Props) {
         <span className="text-foreground font-medium">小テスト</span>
       </nav>
 
-      <h1 className="text-xl font-bold mb-6">📝 小テスト管理 — {lesson.title}</h1>
+      <h1 className="font-hand font-semibold text-2xl mb-6">小テスト管理：{lesson.title}</h1>
 
       {quiz ? (
         <QuizExisting quiz={quiz} />

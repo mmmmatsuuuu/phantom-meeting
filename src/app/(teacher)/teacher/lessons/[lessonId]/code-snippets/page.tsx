@@ -30,7 +30,7 @@ export default async function CodeSnippetsPage({ params }: Props) {
         <span className="text-foreground font-medium">コーディングプレイグラウンド</span>
       </nav>
 
-      <h1 className="text-xl font-bold mb-6">💻 プレイグラウンド管理 — {lesson.title}</h1>
+      <h1 className="font-hand font-semibold text-2xl mb-6">プレイグラウンド管理：{lesson.title}</h1>
 
       <CodeSnippetsManager
         lessonId={lessonId}

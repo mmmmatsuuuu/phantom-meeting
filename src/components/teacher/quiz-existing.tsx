@@ -431,7 +431,7 @@ export default function QuizExisting({ quiz }: Props) {
           disabled={deletingQuiz}
           className="shrink-0 text-sm px-3 py-1.5 rounded-md border text-destructive hover:bg-destructive/10 transition-colors disabled:opacity-40"
         >
-          {deletingQuiz ? "削除中..." : "🗑️ クイズを削除"}
+          {deletingQuiz ? "削除中..." : "クイズを削除"}
         </button>
       </div>
 

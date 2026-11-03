@@ -235,9 +235,9 @@ export default function LessonAnalytics({ subjects }: Props) {
           <div className="flex gap-1 border-b">
             {(
               [
-                { key: "quiz", label: "📝 小テスト" },
-                ...(playgroundEnabled ? [{ key: "code", label: "💻 コード" } as const] : []),
-                { key: "memo", label: "📋 メモ" },
+                { key: "quiz", label: "小テスト" },
+                ...(playgroundEnabled ? [{ key: "code", label: "コード" } as const] : []),
+                { key: "memo", label: "ノート" },
               ] as { key: Tab; label: string }[]
             ).map((tab) => (
               <button
@@ -458,7 +458,7 @@ export default function LessonAnalytics({ subjects }: Props) {
                             <td className="p-0">
                               {row.memoCount > 0 ? (
                                 <div className={`${TILE} w-14 bg-surface text-ink`}>
-                                  📝 {row.memoCount}
+                                  ノート {row.memoCount}
                                 </div>
                               ) : (
                                 <div className={`${TILE} w-14 text-muted-foreground font-normal`}>—</div>

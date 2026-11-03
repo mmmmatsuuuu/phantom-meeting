@@ -88,7 +88,7 @@ export default async function StudentDetailPage({ params }: Props) {
 
       {/* ヘッダー */}
       <div>
-        <h1 className="text-2xl font-bold mb-1">
+        <h1 className="font-hand font-semibold text-[26px] leading-normal mb-1">
           {profile.display_name}
           <span className="text-base font-normal text-muted-foreground ml-3 font-mono">
             {profile.student_number ?? "学籍番号未設定"}

@@ -57,7 +57,7 @@ export default function ReviewPromptDialog({ unitId, unitName }: Props) {
       </DialogTrigger>
       <DialogContent className="sm:max-w-2xl max-h-[90vh] overflow-y-auto">
         <DialogHeader>
-          <DialogTitle>🤖 AIで振り返る：{unitName}</DialogTitle>
+          <DialogTitle>AIで振り返る：{unitName}</DialogTitle>
           <DialogDescription>
             この単元のあなたの学習データ（小テスト・メモ・コード）を入れたプロンプトです。
             コピーして使いたい AI に貼り付けると、AI がデータを読んで質問してきます。そこから自由に相談してみましょう。
@@ -104,7 +104,7 @@ export default function ReviewPromptDialog({ unitId, unitName }: Props) {
                   </p>
                 )}
               </div>
-              <Button onClick={handleCopy}>📋 コピーする</Button>
+              <Button onClick={handleCopy}>コピーする</Button>
             </div>
           </div>
         )}

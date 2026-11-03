@@ -281,7 +281,7 @@ export default function MakerEventForm({
           href={`/api/maker/events/${eventId}/export`}
           className="px-4 py-2 text-sm rounded-md border hover:bg-muted transition-colors"
         >
-          📤 提出物をJSONで書き出す
+          提出物をJSONで書き出す
         </a>
         <button
           onClick={() => setDeleteOpen(true)}

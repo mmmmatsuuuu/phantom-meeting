@@ -7,7 +7,7 @@ export default async function DataExportPage() {
   return (
     <div className="container max-w-3xl mx-auto px-4 py-8">
       <div className="mb-6">
-        <h1 className="text-2xl font-bold">データエクスポート</h1>
+        <h1 className="font-hand font-semibold text-[26px] leading-normal">データエクスポート</h1>
         <p className="text-muted-foreground text-sm mt-1">
           授業データを生成 AI で活用するための形式でエクスポートします
         </p>

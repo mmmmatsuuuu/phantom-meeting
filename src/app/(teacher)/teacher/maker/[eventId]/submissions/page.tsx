@@ -30,7 +30,7 @@ export default async function TeacherMakerSubmissionsPage({ params }: Props) {
         >
           ← {event.title}
         </Link>
-        <h1 className="text-2xl font-bold mt-1">提出状況</h1>
+        <h1 className="font-hand font-semibold text-[26px] leading-normal mt-1">提出状況</h1>
       </div>
       <MakerSubmissionsBoard
         eventId={eventId}

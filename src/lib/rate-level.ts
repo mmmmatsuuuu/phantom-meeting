@@ -1,6 +1,7 @@
 /**
  * 教師向け分析画面で共通に使う、正答率・得点率の段階と色（Tailwind のクラス）。
  * 段階の境目は 40% / 70% / 90%。
+ * 色はインクの濃さで表し（高いほど濃い）、40% 未満だけを気をつけるところとして赤ペンにする（docs/design.md の「配色」）
  */
 
 /** 正答率の段階。上から順に判定する（min 以上ならその段階） */
@@ -8,23 +9,23 @@ export const RATE_LEVELS = [
   {
     min: 0.9,
     label: "90%以上",
-    tile: "bg-emerald-100 text-emerald-800",
-    bar: "bg-emerald-500",
-    text: "text-emerald-700",
+    tile: "bg-ink text-sheet",
+    bar: "bg-ink",
+    text: "text-ink",
   },
   {
     min: 0.7,
     label: "70〜90%",
-    tile: "bg-yellow-100 text-yellow-800",
-    bar: "bg-yellow-400",
-    text: "text-yellow-700",
+    tile: "bg-ink/30 text-ink",
+    bar: "bg-ink/60",
+    text: "text-ink",
   },
   {
     min: 0.4,
     label: "40〜70%",
-    tile: "bg-orange-100 text-orange-800",
-    bar: "bg-orange-500",
-    text: "text-orange-700",
+    tile: "bg-ink/10 text-ink",
+    bar: "bg-ink/30",
+    text: "text-ink",
   },
   {
     min: 0,

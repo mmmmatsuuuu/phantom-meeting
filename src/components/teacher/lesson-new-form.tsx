@@ -131,9 +131,9 @@ export default function LessonNewForm({ subjects, defaultUnitId }: Props) {
   return (
     <div className="max-w-3xl mx-auto px-4 py-8">
       <div className="mb-8">
-        <h1 className="text-2xl font-bold mb-1">📺 レッスンを登録する</h1>
+        <h1 className="font-hand font-semibold text-2xl mb-1">レッスンを登録する</h1>
         <p className="text-sm text-muted-foreground">
-          動画と ❓ 発問を登録して、生徒の探究を促しましょう。
+          動画と発問を登録します。ノートのひな形は、登録したあとにコンテンツ管理から作れます。
         </p>
       </div>
 
@@ -216,7 +216,7 @@ export default function LessonNewForm({ subjects, defaultUnitId }: Props) {
                 disabled={!videoId}
                 className="px-3 py-2 rounded-md border text-sm hover:bg-muted transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
               >
-                🔍 プレビュー
+                プレビュー
               </button>
             </div>
             {showPreview && videoId && (
@@ -237,7 +237,7 @@ export default function LessonNewForm({ subjects, defaultUnitId }: Props) {
         <div className="p-5 rounded-md border bg-card space-y-4">
           <div>
             <h2 className="text-xs font-semibold text-muted-foreground uppercase tracking-widest mb-1">
-              ❓ 発問
+              発問
             </h2>
             <p className="text-xs text-muted-foreground">
               正解のない問いを設定しましょう。生徒のメモ・思考のきっかけになります。
@@ -265,7 +265,7 @@ export default function LessonNewForm({ subjects, defaultUnitId }: Props) {
                   className="mt-5 p-2 rounded-md text-muted-foreground hover:text-destructive hover:bg-destructive/10 transition-colors disabled:opacity-30 disabled:cursor-not-allowed"
                   aria-label="発問を削除"
                 >
-                  🗑️
+                  削除
                 </button>
               </div>
             ))}
@@ -289,7 +289,7 @@ export default function LessonNewForm({ subjects, defaultUnitId }: Props) {
               className="w-4 h-4"
             />
             <span className="text-xs font-semibold text-muted-foreground uppercase tracking-widest">
-              💻 コーディングプレイグラウンドを有効にする
+              コーディングプレイグラウンドを有効にする
             </span>
           </label>
 
@@ -332,7 +332,7 @@ export default function LessonNewForm({ subjects, defaultUnitId }: Props) {
                         className="p-1.5 rounded-md text-muted-foreground hover:text-destructive hover:bg-destructive/10 transition-colors"
                         aria-label="コード例を削除"
                       >
-                        🗑️
+                        削除
                       </button>
                     </div>
                     <textarea
