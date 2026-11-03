@@ -29,6 +29,8 @@ body { margin: 0; background: #ddd; color: #1d2b3f; font: 14px/1.8 system-ui, -a
 .row .red { color: var(--red); font-weight: 700; }
 .body { display: grid; grid-template-columns: 110px 1fr; gap: 14px; margin-top: 14px; align-items: start; }
 .body img { width: 110px; }
+/* ヤギの白い塗りを紙の色になじませる（乗算） */
+.head img, .body img { mix-blend-mode: multiply; }
 .sheet h3 { margin: 0 0 4px; font: 600 15px "Hiragino Mincho ProN", "Yu Mincho", serif; }
 .sheet p { margin: 0 0 6px; }
 .sheet blockquote { margin: 6px 0; padding-left: 10px; border-left: 3px solid var(--ink); font: 600 13px "Hiragino Mincho ProN", "Yu Mincho", serif; }
@@ -39,16 +41,16 @@ body { margin: 0; background: #ddd; color: #1d2b3f; font: 14px/1.8 system-ui, -a
 </head>
 <body>
 <div class="page-head">
-  <h1>ruminy の配色：紙の色の比較</h1>
-  <p>インク（濃紺）はヤギの線と同じ #1D2B3F で固定。紙の色ごとに、鉛筆（補足の文字）と罫線を調整している。数値は背景とのコントラスト比（4.5 以上が目安）。</p>
+  <h1>ruminy の配色：藁半紙の黄色みの比較</h1>
+  <p>インク（濃紺）はヤギの線と同じ #1D2B3F で固定。紙の色ごとに、鉛筆（補足の文字）と罫線を調整している。数値は背景とのコントラスト比（4.5 以上が目安）。ヤギは乗算で重ね、白い塗りに紙の色が透けるようにしている。</p>
 </div>
 <div class="grid" id="grid"></div>
 <script>
 const candidates = [
-  { name: "A：白い紙", about: "今のモックの色。いちばん明るく、夜はまぶしい", paper: "#fbfbf8", surface: "#f0f1ec", pencil: "#666b73", rule: "#d8dce1" },
-  { name: "B：藁半紙", about: "学校のプリントの色。少し灰色がかった黄土色で、ruminy のプリントの比喩に合う", paper: "#eee9dc", surface: "#e4ddcc", pencil: "#5f5d57", rule: "#d3cab6" },
-  { name: "C：再生紙ノート", about: "わずかに灰色がかった落ち着いた紙。色味を足さずに明るさだけ抑える", paper: "#f1f0eb", surface: "#e6e5de", pencil: "#62656a", rule: "#d6d5cd" },
-  { name: "D：夜向けの暗めの紙", about: "明るさをさらに落とした紙。夜のまぶしさは最も少ないが、昼は沈んで見える", paper: "#e6e2d8", surface: "#dbd6c9", pencil: "#57564f", rule: "#c8c1b0" },
+  { name: "B：藁半紙（前回の案）", about: "黄土色がいちばん強い", paper: "#eee9dc", surface: "#e4ddcc", pencil: "#5f5d57", rule: "#d3cab6" },
+  { name: "B1：黄色みを少し抑える", about: "藁半紙らしさは残しつつ、黄土色を弱めた", paper: "#eeebe1", surface: "#e4e0d3", pencil: "#5f5e59", rule: "#d4cfbf" },
+  { name: "B2：さらに抑える", about: "ほんのり暖かい灰色。黄色というより、古い紙の落ち着き", paper: "#efede6", surface: "#e5e2d8", pencil: "#60605b", rule: "#d6d3c7" },
+  { name: "B3：ほぼ灰色", about: "暖かみをわずかに残した灰色の紙。黄色はほとんど感じない", paper: "#eeede9", surface: "#e4e3de", pencil: "#61615e", rule: "#d6d5cf" },
 ];
 const INK = "#1d2b3f", RED = "#b93a2b";
 const lum = (hex) => {
