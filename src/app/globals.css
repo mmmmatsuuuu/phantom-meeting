@@ -353,10 +353,16 @@
 .note-content ol {
   list-style: decimal;
 }
+/* 既存の .ProseMirror 向けの背景・角丸・余白が残らないよう、ノートでは明示的に打ち消す */
 .note-content blockquote {
   margin: 0;
-  padding-left: 12px;
+  padding: 0 0 0 12px;
   border-left: 3px solid var(--ink);
+  border-radius: 0;
+  background: none;
+  font-weight: 600;
+}
+.note-content blockquote p {
   font-weight: 600;
 }
 .note-content hr {
@@ -369,10 +375,12 @@
   font-size: 13px;
   background: var(--surface);
   padding: 0 4px;
+  border-radius: 0;
 }
 .note-content pre {
   margin: 16px 0;
   padding: 8px 12px;
+  border-radius: 0;
   background: var(--sheet);
   border: 1px solid var(--rule);
   font-size: 13px;
@@ -402,6 +410,7 @@
 .note-content img {
   max-width: 100%;
   margin: 16px 0;
+  border-radius: 0;
   mix-blend-mode: multiply;
 }
 .note-content [data-node-view-wrapper] img {

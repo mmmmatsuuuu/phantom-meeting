@@ -2,14 +2,13 @@ import { notFound } from "next/navigation";
 import Link from "next/link";
 import { getLessonWithQuestions } from "@/lib/db/contents";
 import { getQuizWithQuestions, getStudentQuizStatuses, isReviewNeeded } from "@/lib/db/quizzes";
-import { getMemoCountsByLesson } from "@/lib/db/memos";
+import { getMemoTemplate } from "@/lib/db/memo-templates";
 import {
   getCodeSnippetsByLesson,
   getStudentCodeStatesByLesson,
 } from "@/lib/db/code-snippets";
 import { getUserProfile } from "@/lib/supabase/server";
 import LessonContent from "@/components/lesson/lesson-content";
-import LessonStatusBar from "@/components/lesson/lesson-status-bar";
 
 type Props = {
   params: Promise<{ lessonId: string }>;
@@ -18,31 +17,21 @@ type Props = {
 export default async function LessonPage({ params }: Props) {
   const { lessonId } = await params;
 
-  const [lesson, quiz, profile] = await Promise.all([
+  const [lesson, quiz, profile, template] = await Promise.all([
     getLessonWithQuestions(lessonId),
     getQuizWithQuestions(lessonId),
     getUserProfile(),
+    getMemoTemplate(lessonId),
   ]);
 
   if (!lesson) return notFound();
   if (!profile) return notFound();
 
-  // 自分の受験状況・メモ件数を取得（ステータスバー・ナッジ用）
-  // 全ロールで表示する（教師が生徒向けの表示を確認できるようにするため）
-  const [statuses, memoCounts] = await Promise.all([
-    getStudentQuizStatuses(profile.userId),
-    getMemoCountsByLesson(profile.userId),
-  ]);
-  const current = quiz ? statuses.find((s) => s.quizId === quiz.id) : undefined;
-  const initialIsCompleted = current !== undefined;
+  // 小テストを出したあとに、ほかに見直すべきレッスンがあるかを伝えるため、自分の受験状況を取得する
+  const statuses = await getStudentQuizStatuses(profile.userId);
   const otherReviewCount = statuses.filter(
     (s) => s.quizId !== quiz?.id && isReviewNeeded(s)
   ).length;
-  const statusBar = {
-    latestRate: current?.latestRate ?? null,
-    attemptCount: current?.attemptCount ?? 0,
-    memoCount: memoCounts[lessonId] ?? 0,
-  };
 
   // プレイグラウンドが有効なレッスンのみ、コード例と自分の編集内容を取得
   const [codeSnippets, initialCodeStates] = lesson.enable_playground
@@ -52,41 +41,22 @@ export default async function LessonPage({ params }: Props) {
       ])
     : [[], {}];
 
-  const { unit, questions } = lesson;
-  const subject = unit.subject;
+  const { unit } = lesson;
 
   return (
-    <div className="max-w-7xl mx-auto px-4 py-6">
-      {/* パンくずリスト */}
-      <nav className="flex items-center gap-1.5 text-sm text-muted-foreground mb-3">
-        <Link href="/" className="hover:text-foreground transition-colors">
-          📺 レッスン一覧
+    <div className="max-w-[1240px] mx-auto px-4 pt-5 pb-16">
+      <nav className="text-[13px] text-muted-foreground">
+        <Link href="/" className="underline underline-offset-2 hover:text-foreground transition-colors">
+          {unit.name}
         </Link>
-        <span>/</span>
-        <span>{subject.name}</span>
-        <span>/</span>
-        <span>{unit.name}</span>
-        <span>/</span>
-        <span className="text-foreground font-medium">{lesson.title}</span>
       </nav>
-
-      <h1 className="text-xl font-bold mb-3">{lesson.title}</h1>
-
-      <LessonStatusBar
-        hasQuiz={quiz !== null}
-        latestRate={statusBar.latestRate}
-        attemptCount={statusBar.attemptCount}
-        memoCount={statusBar.memoCount}
-      />
+      <h1 className="font-hand font-semibold text-[28px] leading-normal mb-4">{lesson.title}</h1>
 
       <LessonContent
         lessonId={lessonId}
         youtubeUrl={lesson.youtube_url}
-        questions={questions}
         quiz={quiz}
-        currentUserId={profile.userId}
-        currentUserRole={profile.role}
-        initialIsCompleted={initialIsCompleted}
+        template={template}
         otherReviewCount={otherReviewCount}
         enablePlayground={lesson.enable_playground}
         codeSnippets={codeSnippets}
