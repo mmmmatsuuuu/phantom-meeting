@@ -88,6 +88,28 @@ main { max-width: 1240px; margin: 0 auto; padding: 0 16px 80px; }
 .memo-actions { display: flex; flex-wrap: wrap; gap: 10px; align-items: center; padding-top: 12px; border-top: 1px solid var(--ink); }
 .memo-actions small { color: var(--pencil); font-size: 12px; }
 
+/* ヤギ */
+.site-head[hidden] { display: none; }
+.site-name { display: inline-flex; align-items: center; gap: 6px; }
+.face { width: 34px; height: 34px; overflow: hidden; flex: none; }
+.face img { width: 100%; height: 100%; transform: scale(1.5) translateY(4%); }
+.login { max-width: 360px; margin: 0 auto; padding: 48px 0; text-align: center; }
+.login img { width: 200px; height: 200px; display: block; margin: 0 auto -8px; }
+.login h1 { font-size: 34px; letter-spacing: .02em; }
+.login .tagline { margin: 2px 0 24px; color: var(--pencil); font-size: 14px; }
+.login .btn { width: 100%; padding: 12px; font-size: 15px; }
+.login small { display: block; margin-top: 14px; color: var(--pencil); font-size: 12px; }
+.offer { display: grid; grid-template-columns: 120px minmax(0, 1fr); gap: 14px; align-items: center; }
+.offer img { width: 120px; height: 120px; }
+.lost { max-width: 420px; margin: 0 auto; padding: 56px 0; text-align: center; }
+.lost img { width: 200px; height: 200px; }
+.lost h1 { font-size: 21px; }
+.lost p { color: var(--pencil); font-size: 14px; }
+.waiting { display: flex; gap: 14px; align-items: center; padding: 18px 0; border-bottom: 1px solid var(--rule); color: var(--pencil); font-size: 14px; }
+.waiting img { width: 88px; height: 88px; flex: none; }
+.gallery { max-width: 760px; margin: 0 auto; padding-top: 24px; }
+.gallery h1 { font-size: 24px; padding-bottom: 6px; border-bottom: 1px solid var(--ink); }
+
 @media (max-width: 860px) {
   .lesson-grid { grid-template-columns: minmax(0, 1fr); gap: 24px; }
   .video-col { position: static; }
@@ -97,13 +119,42 @@ main { max-width: 1240px; margin: 0 auto; padding: 0 16px 80px; }
 <body>
 <nav class="mock-bar" aria-label="モックの画面切り替え">
   <strong>モック</strong>
-  <a href="#home">目次</a><a href="#lesson">レッスン</a>
+  <a href="#login">ログイン</a><a href="#home">目次</a><a href="#lesson">レッスン</a><a href="#gallery">何もないとき</a><a href="#lost">404</a>
 </nav>
 <header class="site-head">
-  <a class="site-name" href="#home">ruminy</a>
+  <a class="site-name" href="#home"><span class="face"><img src="../../public/mascot/face.png" alt=""></span>ruminy</a>
   <span class="site-user">1101 テスト生徒</span>
 </header>
 <main>
+
+<section class="screen" id="login">
+  <div class="login">
+    <img src="../../public/mascot/login.png" alt="">
+    <h1>ruminy</h1>
+    <p class="tagline">飲み込んで終わりにしない</p>
+    <span class="btn btn-ink">Google でログイン</span>
+    <small>学校の Google アカウントを使います</small>
+  </div>
+</section>
+
+<section class="screen" id="lost">
+  <div class="lost">
+    <img src="../../public/mascot/not-found.png" alt="">
+    <h1>このページはヤギが食べてしまいました</h1>
+    <p>アドレスが間違っているか、ページがなくなっています。</p>
+    <a class="btn" href="#home">目次へ戻る</a>
+  </div>
+</section>
+
+<section class="screen" id="gallery">
+  <div class="gallery">
+    <h1>みんなの作品</h1>
+    <div class="waiting">
+      <img src="../../public/mascot/mascot.png" alt="">
+      <span>まだ公開されていません。先生が公開するまで、のんびり待ちましょう。<br><small>（rest.png が未生成のため、仮に mascot.png を表示）</small></span>
+    </div>
+  </div>
+</section>
 
 <section class="screen toc" id="home">
   <a class="continue" href="#lesson">
@@ -138,10 +189,13 @@ main { max-width: 1240px; margin: 0 auto; padding: 0 16px 80px; }
     </div>
     <div>
       <h2 class="memo-title">メモ</h2>
-      <div class="blank-state" id="blank-state">
-        <p>先生が用意したメモのひな形があります。読み込むと、穴を埋めたり、自由に書き換えたりできます。</p>
-        <button class="btn btn-ink" id="load">ひな形を読み込む</button>
-        <button class="btn" id="free">白紙から書く</button>
+      <div class="blank-state offer" id="blank-state">
+        <img src="../../public/mascot/offer.png" alt="">
+        <div>
+          <p>先生が用意したメモのひな形があります。読み込むと、穴を埋めたり、自由に書き換えたりできます。</p>
+          <button class="btn btn-ink" id="load">ひな形を読み込む</button>
+          <button class="btn" id="free">白紙から書く</button>
+        </div>
       </div>
       <div id="editor" hidden>
         <div class="toolbar" aria-hidden="true"><span>B</span><span>I</span><span>見出し</span><span>箇条書き</span><span>表</span><span>コード</span></div>
@@ -184,9 +238,11 @@ const $ = (s) => document.querySelector(s);
 function show() {
   const route = location.hash.slice(1) || "home";
   document.querySelectorAll(".mock-bar a").forEach((a) => a.classList.toggle("on", a.getAttribute("href") === `#${route}`));
-  $("#home").classList.toggle("on", route === "home");
-  $("#lesson").classList.toggle("on", route === "lesson");
-  window.scrollTo(0, 0);
+  ["login", "home", "lesson", "gallery", "lost"].forEach((name) => $(`#${name}`).classList.toggle("on", route === name));
+  // ログイン画面ではヘッダーを出さない
+  $(".site-head").hidden = route === "login";
+  // ハッシュと同じ id の要素へブラウザがスクロールするため、そのあとで先頭に戻す
+  setTimeout(() => window.scrollTo(0, 0));
 }
 function openEditor(useTemplate) {
   $("#sheet").innerHTML = useTemplate ? $("#template").innerHTML : "<p><br></p>";
