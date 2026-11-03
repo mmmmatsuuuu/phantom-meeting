@@ -423,3 +423,17 @@
   pointer-events: none;
   height: 0;
 }
+
+/* 小テストの問題文と解説。内容なので Klee One で書き、解説は赤ペンにする */
+.quiz-question .rich-content p,
+.quiz-question .rich-content li {
+  font-family: var(--font-hand);
+  font-size: 17px;
+  line-height: 1.9;
+}
+.quiz-explanation .rich-content p,
+.quiz-explanation .rich-content li {
+  font-family: var(--font-hand);
+  font-size: 16px;
+  color: var(--red-pen);
+}
