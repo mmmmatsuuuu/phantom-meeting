@@ -88,7 +88,12 @@ export default function NoteTemplateEditor({ lessonId, initialContent }: Props) 
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ content: editor.getJSON() }),
       });
-      if (!res.ok) throw new Error();
+      if (!res.ok) {
+        // 長すぎるときなど、直し方が分かる文言はそのまま出す
+        const json = (await res.json().catch(() => null)) as { error?: string } | null;
+        toast.error(json?.error ?? "保存に失敗しました。もう一度お試しください");
+        return;
+      }
       setExists(true);
       toast.success("ひな形を保存しました");
       router.refresh();

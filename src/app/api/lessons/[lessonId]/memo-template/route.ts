@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { requireTeacher } from "@/lib/api/auth";
 import { deleteMemoTemplate, saveMemoTemplate } from "@/lib/db/memo-templates";
-import { isTiptapDoc } from "@/lib/tiptap-utils";
+import { isTiptapDoc, isWithinNoteSize } from "@/lib/tiptap-utils";
 
 type Params = { params: Promise<{ lessonId: string }> };
 
@@ -15,6 +15,12 @@ export async function PUT(req: NextRequest, { params }: Params) {
   if (!isTiptapDoc(body.content)) {
     return NextResponse.json(
       { data: null, error: "content must be a tiptap document" },
+      { status: 400 }
+    );
+  }
+  if (!isWithinNoteSize(body.content)) {
+    return NextResponse.json(
+      { data: null, error: "ひな形が長すぎます。いくつかの見出しに分けて短くしてください" },
       { status: 400 }
     );
   }
