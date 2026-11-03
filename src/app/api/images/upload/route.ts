@@ -1,10 +1,12 @@
 import { NextRequest, NextResponse } from "next/server";
-import { requireUser } from "@/lib/api/auth";
+import { requireTeacher } from "@/lib/api/auth";
 
 const MAX_FILE_SIZE = 5 * 1024 * 1024; // 5MB
 
+// 画像を入れられるのは教師だけ（小テストとノートのひな形）。
+// 生徒のノートに入る画像は、ひな形にあるものに限る（docs/design.md）
 export async function POST(req: NextRequest) {
-  const { errorResponse } = await requireUser();
+  const { errorResponse } = await requireTeacher();
   if (errorResponse) return errorResponse;
 
   const formData = await req.formData();

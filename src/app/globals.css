@@ -315,3 +315,102 @@
 .hljs-strong {
   font-weight: bold;
 }
+
+/*
+ * ノートの本文。方眼（16px）に合わせて、行の高さと余白をすべて 16px の倍数にそろえる。
+ * 内容なので Klee One で書く。図や表は高さが自由なのでずれるが、方眼なら気にならない
+ */
+.note-content {
+  font-family: var(--font-hand);
+  font-size: 16px;
+  line-height: 32px;
+}
+.note-content p,
+.note-content li {
+  margin: 0;
+  font-size: 16px;
+  line-height: 32px;
+}
+.note-content h1,
+.note-content h2,
+.note-content h3 {
+  margin: 32px 0 0;
+  font-size: 20px;
+  font-weight: 600;
+  line-height: 32px;
+}
+.note-content > :first-child {
+  margin-top: 0;
+}
+.note-content ul,
+.note-content ol {
+  margin: 0;
+  padding-left: 24px;
+}
+.note-content ul {
+  list-style: disc;
+}
+.note-content ol {
+  list-style: decimal;
+}
+.note-content blockquote {
+  margin: 0;
+  padding-left: 12px;
+  border-left: 3px solid var(--ink);
+  font-weight: 600;
+}
+.note-content hr {
+  margin: 15px 0 16px;
+  border: 0;
+  border-top: 1px solid var(--rule-strong);
+}
+.note-content code {
+  font-family: var(--font-mono);
+  font-size: 13px;
+  background: var(--surface);
+  padding: 0 4px;
+}
+.note-content pre {
+  margin: 16px 0;
+  padding: 8px 12px;
+  background: var(--sheet);
+  border: 1px solid var(--rule);
+  font-size: 13px;
+  line-height: 24px;
+  overflow-x: auto;
+}
+.note-content pre code {
+  background: transparent;
+  padding: 0;
+}
+.note-content table {
+  margin: 16px 0;
+  border-collapse: collapse;
+  width: 100%;
+}
+.note-content td,
+.note-content th {
+  border: 1px solid var(--rule-strong);
+  padding: 0 8px;
+  vertical-align: top;
+  min-width: 40px;
+}
+.note-content th {
+  background: var(--surface);
+  font-weight: 600;
+}
+.note-content img {
+  max-width: 100%;
+  margin: 16px 0;
+  mix-blend-mode: multiply;
+}
+.note-content [data-node-view-wrapper] img {
+  margin: 0;
+}
+.note-content p.is-editor-empty:first-child::before {
+  color: var(--pencil);
+  content: attr(data-placeholder);
+  float: left;
+  pointer-events: none;
+  height: 0;
+}

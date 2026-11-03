@@ -415,6 +415,12 @@ export default function ContentsManager({ subjects: initialSubjects, initialSubj
                         📺 {lesson.title}
                       </span>
                       <Link
+                        href={`/teacher/lessons/${lesson.id}/note-template`}
+                        className="text-xs px-2 py-1 rounded border hover:bg-muted transition-colors"
+                      >
+                        ノートのひな形
+                      </Link>
+                      <Link
                         href={`/teacher/lessons/${lesson.id}/quiz/new`}
                         className="text-xs px-2 py-1 rounded border hover:bg-muted transition-colors"
                       >

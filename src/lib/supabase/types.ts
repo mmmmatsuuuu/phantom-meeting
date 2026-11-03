@@ -325,6 +325,42 @@ export type Database = {
           },
         ]
       }
+      memo_templates: {
+        Row: {
+          content: Json
+          lesson_id: string
+          updated_at: string
+          updated_by: string | null
+        }
+        Insert: {
+          content: Json
+          lesson_id: string
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Update: {
+          content?: Json
+          lesson_id?: string
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "memo_templates_lesson_id_fkey"
+            columns: ["lesson_id"]
+            isOneToOne: true
+            referencedRelation: "lessons"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "memo_templates_updated_by_fkey"
+            columns: ["updated_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       memos: {
         Row: {
           content: Json

@@ -35,3 +35,36 @@ export function textToTiptapDoc(text: string | undefined | null): Record<string,
 
   return { type: "doc", content: paragraphs };
 }
+
+export type TiptapDoc = { type: "doc"; content: unknown[] };
+
+/** tiptap の文書 JSON（最上位が type: "doc" で content が配列）かどうか */
+export function isTiptapDoc(value: unknown): value is TiptapDoc {
+  if (!value || typeof value !== "object") return false;
+  const obj = value as Record<string, unknown>;
+  return obj.type === "doc" && Array.isArray(obj.content);
+}
+
+/** 文書に含まれる画像の src を、出てきた順にすべて返す */
+export function collectImageSrcs(node: unknown): string[] {
+  if (!node || typeof node !== "object") return [];
+  const obj = node as Record<string, unknown>;
+  const srcs: string[] = [];
+  if (obj.type === "image") {
+    const attrs = obj.attrs as Record<string, unknown> | undefined;
+    srcs.push(typeof attrs?.src === "string" ? attrs.src : "");
+  }
+  if (Array.isArray(obj.content)) {
+    for (const child of obj.content) srcs.push(...collectImageSrcs(child));
+  }
+  return srcs;
+}
+
+/**
+ * ノートに含まれる画像のうち、許可されていないもの（ひな形にない画像）を返す。
+ * 生徒のノートで使える画像は、教師がひな形に入れたものだけにする（docs/design.md）
+ */
+export function findDisallowedImages(doc: unknown, allowedSrcs: string[]): string[] {
+  const allowed = new Set(allowedSrcs);
+  return collectImageSrcs(doc).filter((src) => !allowed.has(src));
+}
