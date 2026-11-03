@@ -1,0 +1,152 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>ruminy モック：小テスト</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Klee+One:wght@400;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="ruminy.css">
+<style>
+/* 答案用紙 */
+.answer { background: var(--sheet); border: 1px solid var(--rule-strong); padding: 0 28px 28px; }
+.answer-head { display: grid; grid-template-columns: 1fr auto auto; gap: 0; align-items: stretch; margin: 0 -28px 8px; border-bottom: 2px solid var(--ink); }
+.answer-head > div { padding: 10px 16px; border-right: 1px solid var(--rule-strong); }
+.answer-head > div:first-child { padding-left: 28px; }
+.answer-head > div:last-child { border-right: 0; min-width: 120px; text-align: center; }
+.answer-head small { display: block; font-size: 11px; color: var(--pencil); }
+.answer-head b { font: 600 18px var(--hand); }
+.score { position: relative; color: var(--red); font: 600 26px var(--hand); }
+.q { position: relative; padding: 20px 0 20px 96px; border-bottom: 1px solid var(--rule); }
+.q:last-of-type { border-bottom: 0; }
+.q-no { position: absolute; left: 56px; top: 18px; width: 32px; text-align: center; font: 600 17px var(--hand); }
+.q-text { font: 17px/1.9 var(--hand); margin: 0 0 10px; }
+/* 赤ペンの○と× */
+/* 採点の欄：問題番号の左。○と×が文字にかからないようにする */
+.mark { position: absolute; left: 4px; top: 14px; width: 40px; height: 40px; pointer-events: none; }
+.mark.ok { border: 2.5px solid var(--red); border-radius: 50%; transform: rotate(-8deg); }
+.mark.ng::before, .mark.ng::after { content: ""; position: absolute; left: 50%; top: 2px; width: 2.5px; height: 36px; margin-left: -1px; background: var(--red); border-radius: 2px; transform: rotate(40deg); }
+.mark.ng::after { transform: rotate(-40deg); }
+/* 選択肢：選ぶと記号を丸で囲む */
+.choices { display: grid; gap: 4px; margin: 0; padding: 0; list-style: none; }
+.choices button { display: grid; grid-template-columns: 34px 1fr; align-items: center; width: 100%; padding: 4px 8px; border: 0; background: none; text-align: left; font: 16px var(--hand); border-radius: 2px; }
+.choices button:hover { background: var(--surface); }
+.choices .sym { width: 28px; height: 28px; display: grid; place-items: center; border-radius: 50%; border: 1.5px solid transparent; }
+.choices .on .sym { border-color: var(--ink); }
+.choices .correct::after { content: "正解"; justify-self: end; color: var(--red); font: 600 13px var(--hand); }
+.choices button { grid-template-columns: 34px 1fr auto; }
+/* 並べ替え：短冊 */
+.strips { display: grid; gap: 6px; }
+.strip { display: grid; grid-template-columns: 22px 1fr auto; align-items: center; gap: 8px; padding: 6px 10px; background: var(--paper); border: 1px solid var(--rule-strong); font: 16px var(--hand); }
+.strip .grip { color: var(--pencil); font-family: var(--sans); cursor: grab; }
+.strip .move { display: flex; gap: 2px; }
+.strip .move button { padding: 0 6px; border: 1px solid var(--rule-strong); background: var(--sheet); font-size: 11px; border-radius: 2px; }
+/* 赤ペンの解説 */
+.red-note { margin-top: 12px; padding: 4px 0 4px 12px; border-left: 2px solid var(--red); color: var(--red); font: 15px/1.9 var(--hand); }
+.red-note b { font-weight: 600; margin-right: 6px; }
+.answer-foot { display: flex; align-items: center; gap: 12px; margin-top: 20px; }
+.binder p { margin: 0; font: 15px/32px var(--hand); }
+</style>
+</head>
+<body>
+<nav class="mock-bar">
+  <strong>モック</strong><a href="index.html">一覧</a><span class="sep">|</span>
+  <a href="#answer" id="m-answer">解いている</a><a href="#graded" id="m-graded">答え合わせ後</a>
+</nav>
+<header class="site-head">
+  <a class="site-name" href="student.html#home"><span class="face"><img src="../../public/mascot/face.png" alt=""></span>ruminy</a>
+  <span class="site-user">1101 テスト生徒</span>
+</header>
+<main>
+  <div class="lesson-head">
+    <div class="crumb"><a href="student.html#home">コンピュータの仕組み</a> / 01</div>
+    <h1>CPUとメモリの役割</h1>
+  </div>
+  <div class="lesson-grid">
+    <div>
+      <nav class="tabs"><a href="#">動画</a><a href="#answer" class="on">小テスト</a></nav>
+      <div class="answer" id="sheet">
+        <div class="answer-head">
+          <div><small>小テスト</small><b>CPUとメモリの役割</b></div>
+          <div><small>番号</small><b>1101</b></div>
+          <div><small>得点</small><span class="score" id="score" hidden>2 / 2</span></div>
+        </div>
+
+        <section class="q" data-ok="true">
+          <span class="q-no">1</span><span class="mark" hidden></span>
+          <p class="q-text">CPUが命令を読み出して実行するとき、命令が置かれている記憶装置はどれか。</p>
+          <ul class="choices">
+            <li><button><span class="sym">ア</span>ハードディスク</button></li>
+            <li><button class="on" data-correct><span class="sym">イ</span>メインメモリ</button></li>
+            <li><button><span class="sym">ウ</span>USBメモリ</button></li>
+            <li><button><span class="sym">エ</span>キーボード</button></li>
+          </ul>
+          <p class="red-note" hidden><b>解説</b>CPUはメインメモリから命令を読み出して実行する。ハードディスクの内容は、いったんメモリに読み込まれてから使われる。</p>
+        </section>
+
+        <section class="q" data-ok="none">
+          <span class="q-no">2</span>
+          <p class="q-text">電源を切ると記憶していた内容が消える性質を何というか。</p>
+          <label class="field"><input class="graph" value="揮発性" aria-label="解答"></label>
+          <p class="red-note" hidden><b>模範解答</b>揮発性<br><small>記述の問題は自分で見比べて確かめよう（採点はしない）</small></p>
+        </section>
+
+        <section class="q" data-ok="false">
+          <span class="q-no">3</span><span class="mark" hidden></span>
+          <p class="q-text">読み書きが速い順に並べ替えなさい。</p>
+          <div class="strips">
+            <div class="strip"><span class="grip">≡</span><span>レジスタ</span><span class="move"><button>↑</button><button>↓</button></span></div>
+            <div class="strip"><span class="grip">≡</span><span>SSD</span><span class="move"><button>↑</button><button>↓</button></span></div>
+            <div class="strip"><span class="grip">≡</span><span>メインメモリ</span><span class="move"><button>↑</button><button>↓</button></span></div>
+          </div>
+          <p class="red-note" hidden><b>正しい順</b>レジスタ → メインメモリ → SSD<br><b>解説</b>CPUに近いほど速く、容量は小さい。</p>
+        </section>
+
+        <div class="answer-foot" id="foot-answer">
+          <button class="btn btn-ink" onclick="location.hash='graded'">答え合わせ</button>
+          <span class="hint">答え合わせのあとも、何度でも解き直せます</span>
+        </div>
+        <div class="answer-foot" id="foot-graded" hidden>
+          <button class="btn" onclick="location.hash='answer'">もう一度解く</button>
+          <span class="hint">間違えたところはノートを見直してから解き直そう</span>
+        </div>
+      </div>
+    </div>
+    <div>
+      <nav class="index-tabs"><a href="#" class="on">ノート</a></nav>
+      <div class="binder graph">
+        <p>1. CPUとメモリの関係</p>
+        <p>CPUは【 メモリ 】から命令を読み出して実行する。</p>
+        <p class="hint">（ノートは、小テストを解いている間も見られる）</p>
+      </div>
+    </div>
+  </div>
+</main>
+<script>
+const $ = (s) => document.querySelector(s);
+const $$ = (s) => document.querySelectorAll(s);
+$$(".choices button").forEach((b) => b.addEventListener("click", () => {
+  if (location.hash === "#graded") return;
+  b.closest(".choices").querySelectorAll("button").forEach((x) => x.classList.toggle("on", x === b));
+}));
+function show() {
+  const graded = location.hash === "#graded";
+  $("#m-answer").classList.toggle("on", !graded);
+  $("#m-graded").classList.toggle("on", graded);
+  $("#score").hidden = !graded;
+  $("#foot-answer").hidden = graded;
+  $("#foot-graded").hidden = !graded;
+  $$(".red-note").forEach((n) => (n.hidden = !graded));
+  $$(".q").forEach((q) => {
+    const mark = q.querySelector(".mark");
+    if (mark) { mark.hidden = !graded; mark.className = "mark " + (q.dataset.ok === "true" ? "ok" : "ng"); }
+  });
+  $$("[data-correct]").forEach((b) => b.classList.toggle("correct", graded));
+  $("#score").textContent = "1 / 2";
+}
+window.addEventListener("hashchange", show);
+show();
+</script>
+</body>
+</html>

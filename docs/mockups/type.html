@@ -1,0 +1,118 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>ruminy 書体と入力欄の比較</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Klee+One:wght@400;600&family=Yomogi&family=Zen+Kurenaido&display=swap" rel="stylesheet">
+<style>
+:root {
+  color-scheme: light;
+  --paper: #efede6;
+  --surface: #e5e2d8;
+  --sheet: #f8f7f2;
+  --ink: #1d2b3f;
+  --pencil: #60605b;
+  --rule: #d6d3c7;
+  --rule-strong: #b3afa2;
+  --sans: system-ui, -apple-system, "Hiragino Sans", "Noto Sans JP", sans-serif;
+}
+* { box-sizing: border-box; }
+body { margin: 0; background: var(--paper); color: var(--ink); font: 15px/1.8 var(--sans); }
+main { max-width: 1240px; margin: 0 auto; padding: 24px 16px 80px; }
+h1 { margin: 0; font-size: 20px; }
+.lead { margin: 2px 0 0; font-size: 13px; color: var(--pencil); }
+h2 { margin: 36px 0 4px; font-size: 17px; padding-bottom: 4px; border-bottom: 2px solid var(--ink); }
+.note { margin: 0 0 12px; font-size: 12px; color: var(--pencil); }
+.grid { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 20px; }
+.grid.three { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+.cell h3 { margin: 0 0 6px; font-size: 13px; }
+.cell h3 small { font-weight: 400; color: var(--pencil); }
+
+/* 書体の比較：UI はサンセリフ、内容だけ書体を変える */
+.memo { background: var(--sheet); border: 1px solid var(--rule-strong); padding: 12px 14px; }
+.memo .ui { display: flex; gap: 4px; margin: -4px 0 10px; font: 12px var(--sans); color: var(--pencil); }
+.memo .ui span { padding: 0 6px; border: 1px solid var(--rule); border-radius: 2px; }
+.memo .content h4 { margin: 0 0 4px; font-size: 18px; font-weight: 600; }
+.memo .content p { margin: 0 0 6px; font-size: 16px; line-height: 1.9; }
+.memo .content blockquote { margin: 6px 0; padding-left: 10px; border-left: 3px solid var(--ink); font-weight: 600; font-size: 15px; }
+.memo .content code { font: 13px ui-monospace, Menlo, monospace; background: var(--surface); padding: 0 4px; }
+.memo .save { margin-top: 10px; display: inline-block; padding: 6px 12px; background: var(--ink); color: var(--sheet); font: 13px var(--sans); border-radius: 2px; }
+.f-system { font-family: var(--sans); }
+.f-klee { font-family: "Klee One", var(--sans); }
+.f-yomogi { font-family: "Yomogi", var(--sans); }
+.f-kurenaido { font-family: "Zen Kurenaido", var(--sans); }
+
+/* 入力欄の比較 */
+.field label { display: block; font-size: 13px; font-weight: 600; margin-bottom: 4px; }
+.field + .field { margin-top: 14px; }
+input, textarea { font: 16px/1.8 "Klee One", var(--sans); color: var(--ink); width: 100%; }
+input::placeholder, textarea::placeholder { color: #8a897f; }
+/* 1：一段明るい紙を重ねる */
+.v1 input, .v1 textarea { background: var(--sheet); border: 1px solid var(--rule-strong); border-radius: 2px; padding: 6px 10px; }
+.v1 :focus { outline: none; border-color: var(--ink); box-shadow: inset 0 0 0 1px var(--ink); }
+/* 2：記入欄の下線と、罫線の用紙 */
+.v2 input { background: transparent; border: 0; border-bottom: 1.5px solid var(--ink); padding: 4px 2px; border-radius: 0; }
+.v2 textarea { background-color: var(--sheet); border: 1px solid var(--rule-strong); padding: 0 10px; line-height: 32px; min-height: 130px;
+  background-image: repeating-linear-gradient(to bottom, transparent 0 31px, var(--rule) 31px 32px); background-attachment: local; }
+.v2 :focus { outline: none; }
+.v2 input:focus { border-bottom-width: 2.5px; background: var(--sheet); }
+.v2 textarea:focus { border-color: var(--ink); }
+/* 3：方眼の用紙 */
+.v3 input, .v3 textarea { border: 1px solid var(--rule-strong); border-radius: 2px; padding: 0 16px; line-height: 32px; background-color: var(--sheet);
+  background-image: linear-gradient(rgba(29, 43, 63, .055) 1px, transparent 1px), linear-gradient(90deg, rgba(29, 43, 63, .055) 1px, transparent 1px); background-size: 16px 16px; background-position: -1px -1px; }
+.v3 textarea { min-height: 130px; }
+.v3 :focus { outline: none; border-color: var(--ink); box-shadow: inset 0 0 0 1px var(--ink); }
+.v1 textarea { min-height: 130px; }
+.static { margin-top: 14px; padding-top: 10px; border-top: 1px dashed var(--rule-strong); font-size: 12px; color: var(--pencil); }
+.static b { color: var(--ink); }
+</style>
+</head>
+<body>
+<main>
+  <h1>ruminy：書体と入力欄の比較</h1>
+  <p class="lead">ボタンやラベルなどの UI は端末標準のサンセリフのまま。メモの内容だけ書体を変えている。</p>
+
+  <h2>1. メモの内容の書体</h2>
+  <p class="note">いずれも Google Fonts で無料・商用可（SIL Open Font License）。日本語は文字ごとに分割して配信されるため、使った文字の分だけ読み込まれる。</p>
+  <div class="grid" id="fonts"></div>
+
+  <h2>2. 入力欄の見せ方</h2>
+  <p class="note">紙（背景）より一段明るい「用紙」を入力欄にして、書ける場所を見分けやすくする。クリックすると、選択中の見た目も確かめられる。下の破線より下は、入力欄ではない普通の文章。</p>
+  <div class="grid three">
+    <div class="cell v1"><h3>1：明るい用紙を重ねる <small>枠と色の差で示す</small></h3>
+      <div class="field"><label>作品名</label><input placeholder="例：じゃんけん勝負"></div>
+      <div class="field"><label>説明</label><textarea placeholder="どのように使うのか"></textarea></div>
+      <p class="static"><b>普通の文章</b>　入力欄ではない文章は、紙の上にそのまま置く。</p></div>
+    <div class="cell v2"><h3>2：記入欄と罫線 <small>プリントの記入欄のように</small></h3>
+      <div class="field"><label>作品名</label><input placeholder="例：じゃんけん勝負"></div>
+      <div class="field"><label>説明</label><textarea placeholder="どのように使うのか"></textarea></div>
+      <p class="static"><b>普通の文章</b>　入力欄ではない文章は、紙の上にそのまま置く。</p></div>
+    <div class="cell v3"><h3>3：方眼の用紙（採用・線を薄くした） <small>方眼ノートのように</small></h3>
+      <div class="field"><label>作品名</label><input placeholder="例：じゃんけん勝負"></div>
+      <div class="field"><label>説明</label><textarea placeholder="どのように使うのか"></textarea></div>
+      <p class="static"><b>普通の文章</b>　入力欄ではない文章は、紙の上にそのまま置く。</p></div>
+  </div>
+</main>
+<script>
+const fonts = [
+  ["f-system", "比較：端末の標準（今のまま）", "読みやすいが、ノートらしさはない"],
+  ["f-klee", "Klee One（おすすめ）", "教科書体（硬筆の楷書）を元にした書体。整っていて読みやすい"],
+  ["f-yomogi", "Yomogi", "鉛筆で書いたような丸い手書き。親しみやすいが、長文はやや読みにくい"],
+  ["f-kurenaido", "Zen Kurenaido", "筆ペンで書いたような手書き。味はあるが、細くて小さい字は読みにくい"],
+];
+const sample = `
+  <h4>1. CPUとメモリの関係</h4>
+  <p>CPUは【 メモリ 】から命令を読み出して実行する。</p>
+  <p>メモリは電源を切ると内容が【 消える 】記憶装置である。</p>
+  <blockquote>考えてみよう：メモリを増やすと、なぜ速くなることがあるのだろう？</blockquote>
+  <p>自分の考え：作業する机が広くなると、何度も片づけなくてよくなるから。0と1、Oとo、lと1、<code>print("A")</code></p>`;
+document.getElementById("fonts").innerHTML = fonts.map(([cls, name, about]) => `
+  <div class="cell"><h3>${name}<br><small>${about}</small></h3>
+    <div class="memo"><div class="ui"><span>B</span><span>I</span><span>見出し</span><span>表</span></div>
+      <div class="content ${cls}">${sample}</div><span class="save">保存</span></div></div>`).join("");
+</script>
+</body>
+</html>

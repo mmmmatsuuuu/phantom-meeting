@@ -1,0 +1,292 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>ruminy モック</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Klee+One:wght@400;600&display=swap" rel="stylesheet">
+<style>
+:root {
+  color-scheme: light;
+  --paper: #efede6;
+  --paper-2: #e5e2d8;
+  --ink: #1d2b3f;
+  --pencil: #60605b;
+  --rule: #d6d3c7;
+  --rule-strong: #b3afa2;
+  --red: #b93a2b;
+  --hand: "Klee One", system-ui, sans-serif;
+  --sheet: #f8f7f2;
+  --grid: rgba(29, 43, 63, .055);
+  --note: #efe4b4;
+  --note-pencil: #5c5a50;
+  --sans: system-ui, -apple-system, "Hiragino Sans", "Noto Sans JP", sans-serif;
+  --mono: ui-monospace, SFMono-Regular, Menlo, monospace;
+}
+* { box-sizing: border-box; }
+/* display を指定した要素でも hidden 属性で隠れるようにする */
+[hidden] { display: none !important; }
+body { margin: 0; background: var(--paper); color: var(--ink); font: 16px/1.8 var(--sans); }
+button { font: inherit; color: inherit; cursor: pointer; }
+a { color: inherit; }
+:focus-visible { outline: 2px solid var(--ink); outline-offset: 2px; }
+h1, h2, h3 { font-family: var(--hand); font-weight: 600; margin: 0; line-height: 1.5; }
+
+.mock-bar { display: flex; flex-wrap: wrap; gap: 4px 14px; padding: 6px 16px; background: var(--ink); color: var(--paper); font-size: 12px; }
+.mock-bar a { text-decoration: none; opacity: .7; }
+.mock-bar a.on { opacity: 1; text-decoration: underline; text-underline-offset: 3px; }
+
+.site-head { display: flex; justify-content: space-between; align-items: baseline; max-width: 1240px; margin: 0 auto; padding: 18px 16px 10px; border-bottom: 2px solid var(--ink); }
+.site-name { font: 600 21px var(--hand); letter-spacing: .02em; text-decoration: none; }
+.site-user { font-size: 13px; color: var(--pencil); }
+main { max-width: 1240px; margin: 0 auto; padding: 0 16px 80px; }
+.screen { display: none; }
+.screen.on { display: block; }
+
+/* 目次：単元ごとに 1 枚のルーズリーフ。行の高さ（40px）を罫線の間隔にそろえる */
+.toc { max-width: 780px; margin: 0 auto; }
+/* 続きから：付箋。上端の帯はのり、右下の三角は少しめくれた角 */
+.continue { position: relative; display: block; width: min(100%, 380px); margin: 32px 0 8px; padding: 22px 22px 18px; text-decoration: none;
+  background: linear-gradient(to bottom, rgba(29, 43, 63, .05) 0 14px, transparent 14px), var(--note);
+  transform: rotate(-1.2deg); clip-path: polygon(0 0, 100% 0, 100% calc(100% - 18px), calc(100% - 18px) 100%, 0 100%); }
+.continue::after { content: ""; position: absolute; right: 0; bottom: 0; width: 18px; height: 18px;
+  background: linear-gradient(135deg, rgba(29, 43, 63, .16) 50%, transparent 50%); }
+.continue:hover b { text-decoration: underline; text-underline-offset: 5px; }
+.continue small { display: block; font-size: 12px; color: var(--note-pencil); }
+.continue b { display: block; font: 600 24px/1.5 var(--hand); }
+.continue span { display: block; margin-top: 4px; font-size: 13px; color: var(--note-pencil); }
+.continue u { color: var(--ink); text-underline-offset: 4px; }
+.subject { margin: 28px 0 0; font-size: 13px; color: var(--pencil); letter-spacing: .1em; }
+.leaf { position: relative; margin-top: 12px; padding: 0 28px 40px 64px; background-color: var(--sheet); border: 1px solid var(--rule-strong);
+  background-image:
+    radial-gradient(circle at 22px 20px, var(--paper) 0 6px, var(--rule-strong) 6.5px 7.5px, transparent 8px),
+    linear-gradient(90deg, transparent 47px, rgba(29, 43, 63, .22) 47px 48px, transparent 48px),
+    repeating-linear-gradient(to bottom, transparent 0 39px, rgba(29, 43, 63, .09) 39px 40px);
+  background-size: 44px 40px, 100% 100%, 100% 100%;
+  background-repeat: repeat-y, no-repeat, repeat; }
+.leaf + .leaf { margin-top: 24px; }
+.leaf h2 { height: 80px; display: flex; align-items: flex-end; padding-bottom: 8px; font-size: 22px; }
+.row { display: grid; grid-template-columns: 44px minmax(0, 1fr) auto; gap: 8px; height: 40px; line-height: 40px; text-decoration: none; }
+.row-title { font-family: var(--hand); font-size: 17px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.row:hover .row-title { text-decoration: underline; text-underline-offset: 5px; }
+.row-no { font: 13px/40px var(--mono); color: var(--pencil); }
+.row-marks { font-size: 12px; color: var(--pencil); white-space: nowrap; }
+.row-marks b { color: var(--ink); font-weight: 600; }
+.row-marks .red { color: var(--red); font-weight: 600; margin-left: 10px; }
+.row.special .row-title { font-weight: 600; }
+
+/* レッスン */
+.lesson-head { padding: 20px 0 14px; }
+.crumb { font-size: 13px; color: var(--pencil); }
+.lesson-head h1 { font-size: clamp(22px, 5vw, 28px); }
+.lesson-grid { display: grid; grid-template-columns: minmax(0, 1.15fr) minmax(0, 1fr); gap: 32px; align-items: start; }
+.video-col { position: sticky; top: 12px; }
+.video { position: relative; aspect-ratio: 16/9; background: #17202c; color: #e9edf1; display: flex; align-items: center; justify-content: center; border: 0; width: 100%; padding: 0; }
+.video span { font: 15px var(--hand); opacity: .75; padding: 16px; text-align: center; }
+.steps { margin: 16px 0 0; padding: 0; list-style: none; border-top: 1px solid var(--rule-strong); }
+.steps li { display: grid; grid-template-columns: 1fr auto; gap: 8px; align-items: baseline; padding: 9px 0; border-bottom: 1px solid var(--rule); font-size: 14px; }
+.steps a { font-size: 13px; text-underline-offset: 3px; }
+.steps small { color: var(--pencil); font-size: 12px; }
+
+.memo-title { font-size: 18px; padding-bottom: 6px; border-bottom: 1px solid var(--ink); }
+.blank-state { padding: 22px 0; border-bottom: 1px solid var(--rule); }
+.blank-state p { margin: 0 0 12px; font-size: 14px; color: var(--pencil); }
+.btn { padding: 9px 14px; border: 1px solid var(--ink); background: transparent; font-size: 14px; border-radius: 2px; }
+.btn:hover { background: var(--paper-2); }
+.btn-ink { background: var(--ink); color: var(--paper); }
+.btn-ink:hover { background: #2c3e57; }
+.toolbar { display: flex; flex-wrap: wrap; gap: 4px; padding: 6px 0; border-bottom: 1px solid var(--rule); font-size: 13px; color: var(--pencil); }
+.toolbar span { padding: 0 8px; border: 1px solid var(--rule); border-radius: 2px; }
+/* 方眼の用紙。目は 16px で、行の高さと余白をすべて 16px の倍数にそろえる */
+.sheet { min-height: 416px; padding: 16px 16px 32px; background-color: var(--sheet); border: 1px solid var(--rule-strong);
+  background-image: linear-gradient(var(--grid) 1px, transparent 1px), linear-gradient(90deg, var(--grid) 1px, transparent 1px);
+  background-size: 16px 16px; background-position: -1px -1px; font-family: var(--hand); font-size: 16px; line-height: 32px; }
+.sheet:focus { outline: none; border-color: var(--ink); box-shadow: inset 0 0 0 1px var(--ink); }
+.sheet h3 { font-size: 20px; line-height: 32px; margin: 32px 0 0; }
+.sheet h3:first-child { margin-top: 0; }
+.sheet p { margin: 0; }
+.sheet figure { margin: 16px 0; }
+.sheet svg { display: block; width: 100%; max-width: 380px; height: auto; }
+.sheet figcaption { font-size: 12px; line-height: 32px; color: var(--pencil); }
+.sheet blockquote { margin: 0; padding-left: 12px; border-left: 3px solid var(--ink); font-weight: 600; }
+.sheet hr { border: 0; border-top: 1px solid var(--rule-strong); margin: 15px 0 16px; }
+.memo-actions { margin-top: 12px; display: flex; flex-wrap: wrap; gap: 10px; align-items: center; }
+.memo-actions small { color: var(--pencil); font-size: 12px; }
+
+/* ヤギ：白い塗りに紙の色が透けるよう乗算で重ねる */
+img[src*="mascot"] { mix-blend-mode: multiply; }
+.site-name { display: inline-flex; align-items: center; gap: 6px; }
+.face { width: 34px; height: 34px; overflow: hidden; flex: none; }
+.face img { width: 100%; height: 100%; transform: scale(1.5) translateY(4%); }
+.login { max-width: 360px; margin: 0 auto; padding: 48px 0; text-align: center; }
+.login img { width: 200px; height: 200px; display: block; margin: 0 auto -8px; }
+.login h1 { font-size: 34px; letter-spacing: .02em; }
+.login .tagline { margin: 2px 0 24px; color: var(--pencil); font-size: 14px; }
+.login .btn { width: 100%; padding: 12px; font-size: 15px; }
+.login small { display: block; margin-top: 14px; color: var(--pencil); font-size: 12px; }
+.offer { display: grid; grid-template-columns: 120px minmax(0, 1fr); gap: 14px; align-items: center; }
+.offer img { width: 120px; height: 120px; }
+.lost { max-width: 420px; margin: 0 auto; padding: 56px 0; text-align: center; }
+.lost img { width: 200px; height: 200px; }
+.lost h1 { font-size: 21px; }
+.lost p { color: var(--pencil); font-size: 14px; }
+.waiting { display: flex; gap: 14px; align-items: center; padding: 18px 0; border-bottom: 1px solid var(--rule); color: var(--pencil); font-size: 14px; }
+.waiting img { width: 88px; height: 88px; flex: none; }
+.gallery { max-width: 760px; margin: 0 auto; padding-top: 24px; }
+.gallery h1 { font-size: 24px; padding-bottom: 6px; border-bottom: 1px solid var(--ink); }
+
+@media (max-width: 860px) {
+  .lesson-grid { grid-template-columns: minmax(0, 1fr); gap: 24px; }
+  .video-col { position: static; }
+}
+</style>
+</head>
+<body>
+<nav class="mock-bar" aria-label="モックの画面切り替え">
+  <strong>モック</strong>
+  <a href="#login">ログイン</a><a href="#home">目次</a><a href="#lesson">レッスン</a><a href="#gallery">何もないとき</a><a href="#lost">404</a>
+</nav>
+<header class="site-head">
+  <a class="site-name" href="#home"><span class="face"><img src="../../public/mascot/face.png" alt=""></span>ruminy</a>
+  <span class="site-user">1101 テスト生徒</span>
+</header>
+<main>
+
+<section class="screen" id="login">
+  <div class="login">
+    <img src="../../public/mascot/login.png" alt="">
+    <h1>ruminy</h1>
+    <p class="tagline">飲み込んで終わりにしない。反芻する学習サイト</p>
+    <span class="btn btn-ink">Google でログイン</span>
+    <small>学校の Google アカウントを使います</small>
+  </div>
+</section>
+
+<section class="screen" id="lost">
+  <div class="lost">
+    <img src="../../public/mascot/not-found.png" alt="">
+    <h1>このページはヤギが食べてしまいました</h1>
+    <p>アドレスが間違っているか、ページがなくなっています。</p>
+    <a class="btn" href="#home">目次へ戻る</a>
+  </div>
+</section>
+
+<section class="screen" id="gallery">
+  <div class="gallery">
+    <h1>みんなの作品</h1>
+    <div class="waiting">
+      <img src="../../public/mascot/mascot.png" alt="">
+      <span>まだ公開されていません。先生が公開するまで、のんびり待ちましょう。<br><small>（rest.png が未生成のため、仮に mascot.png を表示）</small></span>
+    </div>
+  </div>
+</section>
+
+<section class="screen toc" id="home">
+  <a class="continue" href="#lesson">
+    <small>続きから</small>
+    <b>CPUとメモリの役割</b>
+    <span>ノートの途中です　<u>続ける</u></span>
+  </a>
+  <p class="subject">情報Ⅰ</p>
+  <div class="leaf">
+    <h2>プログラミング入門</h2>
+    <a class="row" href="#lesson"><span class="row-no">01</span><span class="row-title">プログラミングとアルゴリズム</span><span class="row-marks"><b>ノートあり</b><span class="red">80</span></span></a>
+    <a class="row" href="#lesson"><span class="row-no">02</span><span class="row-title">順次・選択・反復</span><span class="row-marks"><b>ノートあり</b><span class="red">60</span></span></a>
+    <a class="row" href="#lesson"><span class="row-no">03</span><span class="row-title">変数と配列</span><span class="row-marks">まだ</span></a>
+    <a class="row special" href="#gallery"><span class="row-no">自由</span><span class="row-title">自由制作：作りたいプログラムを作ろう</span><span class="row-marks">受付中</span></a>
+  </div>
+  <div class="leaf">
+    <h2>コンピュータの仕組み</h2>
+    <a class="row" href="#lesson"><span class="row-no">01</span><span class="row-title">CPUとメモリの役割</span><span class="row-marks"><b>ノートの途中</b></span></a>
+    <a class="row" href="#lesson"><span class="row-no">02</span><span class="row-title">2進数と情報量</span><span class="row-marks">まだ</span></a>
+  </div>
+</section>
+
+<section class="screen" id="lesson">
+  <div class="lesson-head">
+    <div class="crumb"><a href="#home">コンピュータの仕組み</a> / 01</div>
+    <h1>CPUとメモリの役割</h1>
+  </div>
+  <div class="lesson-grid">
+    <div class="video-col">
+      <div class="video"><span>授業動画</span></div>
+      <ol class="steps">
+        <li><span>動画で学ぶ</span><small>見ながらノートの穴を埋める</small></li>
+        <li><span>ノートで広げ、深める</span><small>問いに自分の考えを書く</small></li>
+        <li><span>小テストで確かめる</span><a href="#lesson">小テストへ</a></li>
+      </ol>
+    </div>
+    <div>
+      <h2 class="memo-title">ノート</h2>
+      <div class="blank-state offer" id="blank-state">
+        <img src="../../public/mascot/offer.png" alt="">
+        <div>
+          <p>先生が用意したノートのひな形があります。読み込むと、穴を埋めたり、自由に書き換えたりできます。</p>
+          <button class="btn btn-ink" id="load">ひな形を読み込む</button>
+          <button class="btn" id="free">白紙から書く</button>
+        </div>
+      </div>
+      <div id="editor" hidden>
+        <div class="toolbar" aria-hidden="true"><span>B</span><span>I</span><span>見出し</span><span>箇条書き</span><span>表</span><span>コード</span></div>
+        <div class="sheet" id="sheet" contenteditable="true" role="textbox" aria-multiline="true" aria-label="ノート"></div>
+        <div class="memo-actions">
+          <button class="btn btn-ink" id="save">保存</button>
+          <small id="saved">保存しても、あとから続きを書けます</small>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+</main>
+<template id="template">
+  <h3>1. CPUとメモリの関係</h3>
+  <p>CPUは【　　　　】から命令を読み出して実行する。</p>
+  <p>メモリは電源を切ると内容が【　　　　】記憶装置である。</p>
+  <figure>
+    <svg viewBox="0 0 380 110" role="img" aria-label="CPUとメモリとストレージの関係図">
+      <g fill="none" stroke="#1d2b3f" stroke-width="1.5">
+        <rect x="10" y="30" width="90" height="50"/><rect x="145" y="30" width="90" height="50"/><rect x="280" y="30" width="90" height="50"/>
+        <path d="M100 55h45M235 55h45"/>
+      </g>
+      <g fill="#1d2b3f" font-size="14" text-anchor="middle" font-family="sans-serif">
+        <text x="55" y="60">CPU</text><text x="190" y="60">メモリ</text><text x="325" y="60">【　　】</text>
+      </g>
+    </svg>
+    <figcaption>図1 データの流れ（先生が用意した図）</figcaption>
+  </figure>
+  <blockquote>考えてみよう：メモリを増やすと、なぜ速くなることがあるのだろう？</blockquote>
+  <p>自分の考え：</p>
+  <hr>
+  <h3>2. 記憶装置の使い分け</h3>
+  <p>速い順に並べると、【　　　　】→ メモリ → 【　　　　】となる。</p>
+  <blockquote>考えてみよう：すべてを一番速い記憶装置で作らないのはなぜだろう？</blockquote>
+  <p>自分の考え：</p>
+</template>
+<script>
+const $ = (s) => document.querySelector(s);
+function show() {
+  const route = location.hash.slice(1) || "home";
+  document.querySelectorAll(".mock-bar a").forEach((a) => a.classList.toggle("on", a.getAttribute("href") === `#${route}`));
+  ["login", "home", "lesson", "gallery", "lost"].forEach((name) => $(`#${name}`).classList.toggle("on", route === name));
+  // ログイン画面ではヘッダーを出さない
+  $(".site-head").hidden = route === "login";
+  // ハッシュと同じ id の要素へブラウザがスクロールするため、そのあとで先頭に戻す
+  setTimeout(() => window.scrollTo(0, 0));
+}
+function openEditor(useTemplate) {
+  $("#sheet").innerHTML = useTemplate ? $("#template").innerHTML : "<p><br></p>";
+  $("#blank-state").hidden = true;
+  $("#editor").hidden = false;
+  $("#sheet").focus();
+}
+$("#load").addEventListener("click", () => openEditor(true));
+$("#free").addEventListener("click", () => openEditor(false));
+$("#save").addEventListener("click", () => { $("#saved").textContent = "保存しました（モックのため実際には保存されません）"; });
+window.addEventListener("hashchange", show);
+if (location.search.includes("loaded")) openEditor(true);
+show();
+</script>
+</body>
+</html>
