@@ -202,8 +202,6 @@ src/
 │   │   ├── subject-list.tsx                             # 目次（単元ごとのルーズリーフ。ノートの有無と小テストの得点）
 │   │   └── video-player.tsx
 │   ├── student/
-│   │   ├── dashboard-summary.tsx                        # ホームの学習状況サマリー4カード
-│   │   ├── next-actions.tsx                             # 「つぎにやること」（要復習・未受験レッスン）
 │   │   ├── lesson-attempt-history.tsx                   # 小テスト結果一覧の受験履歴表示
 │   │   └── review-prompt-dialog.tsx                     # 「AIで振り返る」ダイアログ（プロンプトのプレビュー・コピー）
 │   ├── memos/
@@ -257,7 +255,7 @@ src/
 │   │   └── users.ts                                     # プロフィール・生徒一覧
 │   ├── contents-order.ts                                # コンテンツ管理：単元を新しい順に並べる（純粋関数）
 │   ├── review-prompt.ts                                 # AIで振り返る：プロンプトの組み立てと上限処理（純粋関数）
-│   ├── student-dashboard.ts                             # 生徒ダッシュボード・個人詳細の集計ロジック（純粋関数）
+│   ├── student-dashboard.ts                             # 生徒の目次のバッジ・教員の生徒個人詳細の集計ロジック（純粋関数）
 │   ├── student-number.ts                                # 学籍番号（GCNN 形式）の範囲算出・学年／クラスの取り出し
 │   ├── rate-level.ts                                    # 分析画面共通：正答率の段階（40/70/90%）と色・表示形式
 │   ├── hooks/

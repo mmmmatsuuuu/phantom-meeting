@@ -46,7 +46,7 @@
 | lib/db | 科目→単元→レッスンをネスト select で取得 | `contents.ts` `getContents` |
 | lib/db | 自分の受験記録から、クイズごとの最新得点率・受験回数を集計 | `quizzes.ts` `getStudentQuizStatuses` |
 | lib/db | 自分のレッスンごとのノート件数を集計 | `memos.ts` `getMemoCountsByLesson` |
-| lib | レッスンの状況（ノートの有無・小テストの得点）を算出。学習状況のまとめと「つぎにやること」も算出するが、画面には出していない | `lib/student-dashboard.ts` `buildStudentDashboard` |
+| lib | レッスンの状況（ノートの有無・小テストの得点）を算出 | `lib/student-dashboard.ts` `buildStudentDashboard` |
 | SC | 科目の折りたたみ状態を Cookie から復元 | `app/(student)/page.tsx` |
 | フロント | 単元ごとのルーズリーフ表示、科目の折りたたみ操作と Cookie への保存 | `components/lesson/subject-list.tsx` |
 | フロント | 単元を新しい順に並べる（表示のみ）。単元内のレッスンは授業の順 | `lib/contents-order.ts` `sortUnitsNewestFirst` |
