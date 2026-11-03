@@ -127,13 +127,13 @@ export async function deleteLesson(id: string): Promise<boolean> {
 }
 
 /**
- * レッスンと発問・初期コードを一括作成する（teacher/admin のみ）
+ * レッスンと初期コードを一括作成する（teacher/admin のみ）。
+ * 発問はノートのひな形の中に置くため、ここでは登録しない
  */
 export async function createLesson(params: {
   unitId: string;
   title: string;
   youtubeUrl: string;
-  questions: string[];
   enablePlayground?: boolean;
   codeSnippets?: { title: string; language: "python" | "javascript"; initialCode: string }[];
 }): Promise<Lesson | null> {
@@ -158,22 +158,6 @@ export async function createLesson(params: {
     .single();
 
   if (lessonError || !lesson) return null;
-
-  const questionRows = params.questions
-    .filter((q) => q.trim() !== "")
-    .map((content, i) => ({
-      lesson_id: lesson.id,
-      content,
-      order: i,
-    }));
-
-  if (questionRows.length > 0) {
-    const { error: questionsError } = await supabase
-      .from("questions")
-      .insert(questionRows);
-
-    if (questionsError) return null;
-  }
 
   const snippetRows = (params.codeSnippets ?? [])
     .filter((s) => s.initialCode.trim() !== "")
