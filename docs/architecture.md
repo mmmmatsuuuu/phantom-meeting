@@ -259,11 +259,12 @@ src/
 │   ├── student-number.ts                                # 学籍番号（GCNN 形式）の範囲算出・学年／クラスの取り出し
 │   ├── rate-level.ts                                    # 分析画面共通：正答率の段階（40/70/90%）と色・表示形式
 │   ├── hooks/
+│   │   ├── use-code-block-state.ts                      # エディタのカーソル位置がコードブロックか・その言語を追うフック（ツールバー用）
 │   │   └── use-lazy-fetch.ts                            # 必要になったときだけ取得し、同じ URL なら再取得しないフック
 │   ├── pyodide-runner.ts                                # Pyodide による Python 実行（jsDelivr CDNから読み込み）
 │   ├── js-runner.ts                                     # サンドボックスiframeによる JavaScript 実行
 │   ├── tiptap/
-│   │   ├── note-extensions.ts                         # ノートとひな形のエディタで共通の拡張機能
+│   │   ├── note-extensions.ts                         # ノート・ひな形・小テストのエディタと表示（rich-content）で共通の拡張機能
 │   │   └── resizable-image-extension.ts                 # 画像リサイズ拡張
 │   ├── tiptap-utils.ts                                  # tiptap JSON ⇔ プレーンテキスト変換、画像の抽出と検証
 │   ├── mascot-icon.tsx                                  # アイコン用にヤギの顔を切り出す（next/og）

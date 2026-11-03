@@ -1,30 +1,10 @@
 "use client";
 
-import { useState } from "react";
-import { useEditor, EditorContent } from "@tiptap/react";
-import StarterKit from "@tiptap/starter-kit";
-import Link from "@tiptap/extension-link";
-import CodeBlockLowlight from "@tiptap/extension-code-block-lowlight";
-import Placeholder from "@tiptap/extension-placeholder";
-import { Table } from "@tiptap/extension-table";
-import TableRow from "@tiptap/extension-table-row";
-import TableCell from "@tiptap/extension-table-cell";
-import TableHeader from "@tiptap/extension-table-header";
-import { createLowlight } from "lowlight";
-import javascript from "highlight.js/lib/languages/javascript";
-import python from "highlight.js/lib/languages/python";
-import c from "highlight.js/lib/languages/c";
-import xml from "highlight.js/lib/languages/xml";
-import css from "highlight.js/lib/languages/css";
+import { useMemo, useState } from "react";
+import { useEditor, EditorContent, type EditorOptions } from "@tiptap/react";
 import MemoToolbar from "@/components/lesson/memo-toolbar";
-import { ResizableImage } from "@/lib/tiptap/resizable-image-extension";
-
-const lowlight = createLowlight();
-lowlight.register("javascript", javascript);
-lowlight.register("python", python);
-lowlight.register("c", c);
-lowlight.register("xml", xml);
-lowlight.register("css", css);
+import { createNoteExtensions } from "@/lib/tiptap/note-extensions";
+import { useCodeBlockState } from "@/lib/hooks/use-code-block-state";
 
 type Props = {
   uid: string;
@@ -46,51 +26,16 @@ function collectImageFileIds(doc: { descendants: (fn: (node: { type: { name: str
 }
 
 export default function QuizQuestionEditor({ uid, initialContent, onChange, placeholder }: Props) {
-  const [codeBlockLang, setCodeBlockLang] = useState("");
-  const [isCodeBlockActive, setIsCodeBlockActive] = useState(false);
+  const { codeBlockLang, isCodeBlockActive, sync: syncCodeBlock } = useCodeBlockState();
   const [isUploading, setIsUploading] = useState(false);
 
-  const syncState = (
-    editor: Parameters<
-      NonNullable<Parameters<typeof useEditor>[0]["onUpdate"]>
-    >[0]["editor"]
-  ) => {
-    const active = editor.isActive("codeBlock");
-    setIsCodeBlockActive(active);
-    setCodeBlockLang(active ? (editor.getAttributes("codeBlock").language ?? "") : "");
-  };
-
-  const editor = useEditor({
-    immediatelyRender: false,
-    content: initialContent,
-    onUpdate: ({ editor: e, transaction }) => {
-      syncState(e);
-      onChange(uid, e.getJSON() as Record<string, unknown>);
-
-      // エディタから削除された画像を ImageKit からも削除
-      const prevIds = collectImageFileIds(transaction.before);
-      const currIds = collectImageFileIds(transaction.doc);
-      prevIds.forEach((fileId) => {
-        if (!currIds.has(fileId)) {
-          fetch(`/api/images/${fileId}`, { method: "DELETE" }).catch(() => {});
-        }
-      });
-    },
-    onSelectionUpdate: ({ editor: e }) => {
-      syncState(e);
-    },
-    extensions: [
-      StarterKit.configure({ codeBlock: false }),
-      Link.configure({ openOnClick: false }),
-      CodeBlockLowlight.configure({ lowlight }),
-      Placeholder.configure({ placeholder: placeholder ?? "問題文を入力..." }),
-      Table.configure({ resizable: false }),
-      TableRow,
-      TableCell,
-      TableHeader,
-      ResizableImage,
-    ],
-    editorProps: {
+  // useEditor は拡張と editorProps を参照で比べるため、描画のたびに作り直さない
+  const extensions = useMemo(
+    () => createNoteExtensions({ placeholder: placeholder ?? "問題文を入力..." }),
+    [placeholder]
+  );
+  const editorProps = useMemo<EditorOptions["editorProps"]>(
+    () => ({
       attributes: {
         class: "min-h-[80px] p-3 text-sm focus:outline-none",
       },
@@ -128,7 +73,29 @@ export default function QuizQuestionEditor({ uid, initialContent, onChange, plac
 
         return true;
       },
+    }),
+    []
+  );
+
+  const editor = useEditor({
+    immediatelyRender: false,
+    content: initialContent,
+    // ボタン操作でコードブロックにしたときもカーソルは動かないため、エディタのすべての変化で判定し直す
+    onTransaction: ({ editor: e }) => syncCodeBlock(e),
+    onUpdate: ({ editor: e, transaction }) => {
+      onChange(uid, e.getJSON() as Record<string, unknown>);
+
+      // エディタから削除された画像を ImageKit からも削除
+      const prevIds = collectImageFileIds(transaction.before);
+      const currIds = collectImageFileIds(transaction.doc);
+      prevIds.forEach((fileId) => {
+        if (!currIds.has(fileId)) {
+          fetch(`/api/images/${fileId}`, { method: "DELETE" }).catch(() => {});
+        }
+      });
     },
+    extensions,
+    editorProps,
   });
 
   if (!editor) return null;
