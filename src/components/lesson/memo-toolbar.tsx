@@ -25,10 +25,10 @@ function ToolbarButton({ onClick, isActive, title, children }: ToolbarButtonProp
         onClick();
       }}
       title={title}
-      className={`px-2 py-1 rounded text-sm transition-colors ${
+      className={`px-2 py-0.5 rounded-sm border text-xs transition-colors ${
         isActive
-          ? "bg-primary text-primary-foreground"
-          : "text-muted-foreground hover:text-foreground hover:bg-muted"
+          ? "bg-ink border-ink text-sheet"
+          : "border-rule bg-sheet text-muted-foreground hover:text-foreground hover:border-ink"
       }`}
     >
       {children}
@@ -91,13 +91,13 @@ export default function MemoToolbar({ editor, codeBlockLang, isCodeBlockActive }
   };
 
   return (
-    <div className="flex flex-wrap items-center gap-0.5 px-2 py-1 border-b bg-muted/30">
+    <div className="flex flex-wrap items-center gap-1 px-2 py-1.5 border-b border-rule bg-surface font-sans">
       <ToolbarButton
         onClick={() => editor.chain().focus().toggleBold().run()}
         isActive={editor.isActive("bold")}
         title="太字"
       >
-        <strong>B</strong>
+        太字
       </ToolbarButton>
 
       <ToolbarButton
@@ -105,7 +105,7 @@ export default function MemoToolbar({ editor, codeBlockLang, isCodeBlockActive }
         isActive={editor.isActive("italic")}
         title="斜体"
       >
-        <em>I</em>
+        斜体
       </ToolbarButton>
 
       <ToolbarButton
@@ -113,7 +113,7 @@ export default function MemoToolbar({ editor, codeBlockLang, isCodeBlockActive }
         isActive={editor.isActive("heading", { level: 2 })}
         title="見出し"
       >
-        H2
+        見出し
       </ToolbarButton>
 
       <ToolbarButton
@@ -121,7 +121,7 @@ export default function MemoToolbar({ editor, codeBlockLang, isCodeBlockActive }
         isActive={editor.isActive("bulletList")}
         title="箇条書き"
       >
-        ≡
+        箇条書き
       </ToolbarButton>
 
       <ToolbarButton
@@ -129,7 +129,7 @@ export default function MemoToolbar({ editor, codeBlockLang, isCodeBlockActive }
         isActive={editor.isActive("orderedList")}
         title="番号付きリスト"
       >
-        1.
+        番号付き
       </ToolbarButton>
 
       <ToolbarButton
@@ -137,7 +137,7 @@ export default function MemoToolbar({ editor, codeBlockLang, isCodeBlockActive }
         isActive={editor.isActive("code")}
         title="インラインコード"
       >
-        {"<>"}
+        コード
       </ToolbarButton>
 
       <ToolbarButton
@@ -145,7 +145,7 @@ export default function MemoToolbar({ editor, codeBlockLang, isCodeBlockActive }
         isActive={editor.isActive("codeBlock")}
         title="コードブロック"
       >
-        {"{ }"}
+        コードブロック
       </ToolbarButton>
 
       {isCodeBlockActive && (
@@ -168,9 +168,9 @@ export default function MemoToolbar({ editor, codeBlockLang, isCodeBlockActive }
       <ToolbarButton
         onClick={() => editor.chain().focus().toggleBlockquote().run()}
         isActive={editor.isActive("blockquote")}
-        title="コールアウト"
+        title="引用（「考えてみよう」などの問いに使う）"
       >
-        ▌
+        引用
       </ToolbarButton>
 
       <ToolbarButton
@@ -215,13 +215,13 @@ export default function MemoToolbar({ editor, codeBlockLang, isCodeBlockActive }
             setShowLinkInput(false);
           }}
           title="表を挿入"
-          className={`px-2 py-1 rounded text-sm transition-colors ${
+          className={`px-2 py-0.5 rounded-sm border text-xs transition-colors ${
             editor.isActive("table")
-              ? "bg-primary text-primary-foreground"
-              : "text-muted-foreground hover:text-foreground hover:bg-muted"
+              ? "bg-ink border-ink text-sheet"
+              : "border-rule bg-sheet text-muted-foreground hover:text-foreground hover:border-ink"
           }`}
         >
-          ⊞
+          表
         </button>
         {showTableGrid && (
           <div className="absolute top-full left-0 z-50 mt-1">
@@ -236,25 +236,25 @@ export default function MemoToolbar({ editor, codeBlockLang, isCodeBlockActive }
             onClick={() => editor.chain().focus().addRowAfter().run()}
             title="行を追加"
           >
-            +行
+            行を追加
           </ToolbarButton>
           <ToolbarButton
             onClick={() => editor.chain().focus().addColumnAfter().run()}
             title="列を追加"
           >
-            +列
+            列を追加
           </ToolbarButton>
           <ToolbarButton
             onClick={() => editor.chain().focus().deleteRow().run()}
             title="行を削除"
           >
-            −行
+            行を削除
           </ToolbarButton>
           <ToolbarButton
             onClick={() => editor.chain().focus().deleteColumn().run()}
             title="列を削除"
           >
-            −列
+            列を削除
           </ToolbarButton>
           <ToolbarButton
             onClick={() => editor.chain().focus().deleteTable().run()}

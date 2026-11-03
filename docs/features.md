@@ -21,7 +21,7 @@
 - **1 レッスンに 1 つが基本**：必要なら「＋新しいノート」で複数書ける
 - **見た目**：方眼の用紙に Klee One。行の高さと余白を方眼（16px）の倍数にそろえる
 - **画像**：生徒は画像を入れられない。使えるのは、ひな形に教師が入れた画像だけ（保存時にサーバーで検証）
-- **ツールバー**：Bold / Italic / Heading / BulletList / OrderedList / InlineCode / CodeBlock / Callout / Link / Table
+- **ツールバー**：太字・斜体・見出し・箇条書き・番号付き・コード・コードブロック・引用・リンク・表。記号やアイコンではなく、文字のボタンで示す（教員のひな形・小テストの編集も同じツールバー）
 - シンタックスハイライト対応（`lowlight` + `@tiptap/extension-code-block-lowlight`）
 - タイムスタンプ（`timestamp_seconds`）の記録は画面から外した（列は残る）
 
