@@ -34,14 +34,12 @@ type Props = {
   snippets: CodeSnippet[];
   initialCodeStates: Record<string, StudentCodeStateEntry>;
   onSaveToMemo: (content: Record<string, unknown>) => void;
-  onClose?: () => void;
 };
 
 export default function Playground({
   snippets,
   initialCodeStates,
   onSaveToMemo,
-  onClose,
 }: Props) {
   const [activeId, setActiveId] = useState<string | null>(snippets[0]?.id ?? null);
   const [codeBySnippet, setCodeBySnippet] = useState<Record<string, string>>(() =>
@@ -228,29 +226,13 @@ export default function Playground({
   };
 
   return (
-    <div className="sticky top-20 rounded-md border bg-card p-4 space-y-3 max-h-[calc(100vh-6rem)] overflow-y-auto">
-      <div className="flex items-center justify-between">
-        <h2 className="text-base font-semibold">💻 コード</h2>
-        {onClose && (
-          <button
-            onClick={onClose}
-            className="p-1 rounded text-muted-foreground hover:text-foreground hover:bg-muted transition-colors"
-            aria-label="コードを閉じる"
-          >
-            ✕
-          </button>
-        )}
-      </div>
-
+    <div className="space-y-3">
       {snippets.length === 0 || !activeSnippet ? (
-        <div className="flex flex-col items-center py-10 text-center text-muted-foreground">
-          <span className="text-3xl mb-2">💻</span>
-          <p className="text-xs">まだコード例が登録されていません</p>
-        </div>
+        <p className="py-10 text-center text-sm text-muted-foreground">まだコード例が登録されていません</p>
       ) : (
         <>
-          {/* スニペットタブ */}
-          <div className="flex gap-1 flex-wrap">
+          {/* コード例の切り替え */}
+          <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-[13px]">
             {snippets.map((s) => (
               <button
                 key={s.id}
@@ -259,21 +241,20 @@ export default function Playground({
                   setRunError(null);
                   setSaveError(null);
                 }}
-                className={`px-3 py-1 rounded text-xs font-medium transition-colors ${
+                className={`pb-0.5 border-b-2 transition-colors ${
                   activeId === s.id
-                    ? "bg-primary text-primary-foreground"
-                    : "bg-muted text-muted-foreground hover:text-foreground"
+                    ? "border-ink text-ink font-semibold"
+                    : "border-transparent text-muted-foreground hover:text-foreground"
                 }`}
               >
                 {s.title}
-                {isDirty(s.id) && <span aria-label="未保存の変更あり"> ●</span>}
+                {isDirty(s.id) && <span aria-label="未保存の変更あり" className="text-[9px] align-[2px]"> ●</span>}
               </button>
             ))}
+            <span className="ml-auto text-xs text-muted-foreground">
+              {LANGUAGE_LABELS[activeSnippet.language]}
+            </span>
           </div>
-
-          <p className="text-xs text-muted-foreground">
-            {LANGUAGE_LABELS[activeSnippet.language]}
-          </p>
 
           <CodeEditor
             key={`${activeSnippet.id}-${resetVersionBySnippet[activeSnippet.id] ?? 0}`}
@@ -282,15 +263,12 @@ export default function Playground({
             onChange={(value) => handleChange(activeSnippet.id, value)}
             onRun={handleRun}
           />
-          <p className="text-[11px] text-muted-foreground -mt-2">
-            💡 エディタ内で Cmd/Ctrl + Enter でも実行できます
-          </p>
 
-          <div className="flex flex-wrap gap-2">
+          <div className="flex flex-wrap items-center gap-2">
             <button
               onClick={handleRun}
               disabled={running}
-              className="flex-1 py-2 text-sm rounded-md bg-primary text-primary-foreground hover:opacity-90 transition-opacity disabled:opacity-50 disabled:cursor-not-allowed"
+              className="px-4 py-2 text-sm rounded-sm bg-primary text-primary-foreground hover:opacity-90 transition-opacity disabled:opacity-50 disabled:cursor-not-allowed"
             >
               {running ? "実行中..." : "▶ 実行"}
             </button>
@@ -299,49 +277,40 @@ export default function Playground({
               loadingLabel="保存中..."
               disabled={!isDirty(activeSnippet.id)}
               onClick={handleSave}
-              className="px-3 py-2 text-sm rounded-md border hover:bg-muted transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+              className="px-3 py-2 text-sm rounded-sm border border-ink hover:bg-surface transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
             >
-              💾 保存
+              保存
             </SubmitButton>
             <button
               onClick={handleSaveToMemo}
-              className="px-3 py-2 text-sm rounded-md border hover:bg-muted transition-colors"
+              className="px-3 py-2 text-sm rounded-sm border border-ink hover:bg-surface transition-colors"
             >
-              📝 メモに保存
+              ノートに貼る
             </button>
             <button
               onClick={() => setResetConfirmOpen(true)}
-              className="px-3 py-2 text-sm rounded-md border hover:bg-muted transition-colors"
+              className="ml-auto px-2.5 py-1 text-xs rounded-sm border border-ink hover:bg-surface transition-colors"
               title="教師が配信した初期コードに戻す"
             >
-              🔄 初期コードにリセット
+              初期コードに戻す
             </button>
           </div>
-          <p
-            className={`text-[11px] -mt-1 ${saveError ? "text-red-pen" : "text-muted-foreground"}`}
-          >
-            {saveError ??
-              (isDirty(activeSnippet.id)
-                ? "未保存の変更があります。「保存」を押すと、コードと実行結果が保存されます"
-                : "保存済み")}
-          </p>
 
-          {/* コンソール */}
-          <div
-            className={`rounded-md border p-3 text-xs font-mono min-h-[72px] whitespace-pre-wrap ${
-              runError
-                ? "border-red-pen/50 bg-red-pen/10 text-red-pen"
-                : "bg-muted/40 text-foreground"
-            }`}
-          >
+          <div className="flex justify-between gap-2 text-xs text-muted-foreground">
+            <span>実行結果</span>
+            <span className={saveError ? "text-red-pen" : ""}>
+              {saveError ?? (isDirty(activeSnippet.id) ? "保存していない変更があります" : "保存済み")}
+            </span>
+          </div>
+
+          {/* 実行結果は一段暗い紙に出す。エラーは赤ペン */}
+          <div className="-mt-2 min-h-[120px] px-3.5 py-2.5 bg-paper border border-rule-strong font-mono text-sm leading-6 whitespace-pre-wrap">
             {output}
             {runError && (
-              <p className="mt-1 font-semibold">⚠ {formatRunError(runError)}</p>
+              <p className="mt-1 font-semibold text-red-pen">{formatRunError(runError)}</p>
             )}
             {!output && !runError && !pendingInput && (
-              <span className="text-muted-foreground">
-                「実行」を押すと結果がここに表示されます
-              </span>
+              <span className="text-muted-foreground">「実行」を押すと結果がここに表示されます</span>
             )}
             {pendingInput && (
               <form
@@ -355,18 +324,19 @@ export default function Playground({
                   autoFocus
                   value={inputDraft}
                   onChange={(e) => setInputDraft(e.target.value)}
-                  className="flex-1 min-w-0 px-2 py-1 text-xs font-mono rounded border bg-background focus:outline-none focus:ring-2 focus:ring-ring"
-                  placeholder="入力してEnter"
+                  className="w-44 min-w-0 px-1 py-0.5 font-mono text-sm bg-transparent border-0 border-b-[1.5px] border-ink focus:outline-none focus:border-b-[2.5px]"
+                  placeholder="入力して Enter"
                 />
                 <button
                   type="submit"
-                  className="px-2.5 py-1 text-xs rounded-md bg-primary text-primary-foreground hover:opacity-90 transition-opacity shrink-0"
+                  className="px-2.5 py-0.5 text-xs rounded-sm border border-ink hover:bg-surface transition-colors shrink-0"
                 >
                   送信
                 </button>
               </form>
             )}
           </div>
+          <p className="text-xs text-muted-foreground">エディタの中で Cmd / Ctrl + Enter でも実行できます</p>
         </>
       )}
 
