@@ -174,15 +174,15 @@ describe("buildReviewPrompt: 発問・メモ", () => {
     id: "1",
     questions: ["なぜ色の作り方が違うのか？"],
     memos: [
-      { text: "RGBは光", createdAt: "2026-09-10T01:00:00Z", hasTimestamp: true, shared: true },
-      { text: "CMYはインク", createdAt: "2026-09-10T02:00:00Z", hasTimestamp: false, shared: false },
+      { text: "RGBは光", createdAt: "2026-09-10T01:00:00Z", hasTimestamp: true },
+      { text: "CMYはインク", createdAt: "2026-09-10T02:00:00Z", hasTimestamp: false },
     ],
   });
 
-  it("発問とメモの取り方（件数・文字数・時刻つき・共有・作成日）を載せる", () => {
+  it("発問とメモの取り方（件数・文字数・時刻つき・作成日）を載せる", () => {
     const { text } = build(unit([memoLesson]));
     expect(text).toContain("- 1 レッスン1：なぜ色の作り方が違うのか？");
-    expect(text).toContain("| 1 レッスン1 | 2 | 12 | 1 | 1 | 9/10 |");
+    expect(text).toContain("| 1 レッスン1 | 2 | 12 | 1 | 9/10 |");
   });
 
   it("メモの本文は「／」で結合して載せ、含めない設定なら抜粋の節ごと出さない", () => {
@@ -226,7 +226,6 @@ describe("buildReviewPrompt: 上限（10,000字）", () => {
     text,
     createdAt: "2026-09-10T01:00:00Z",
     hasTimestamp: false,
-    shared: false,
   });
   const codeLesson = (id: string, codeLength: number) =>
     lesson({

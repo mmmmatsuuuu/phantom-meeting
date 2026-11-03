@@ -28,7 +28,6 @@ export type ReviewMemo = {
   text: string;
   createdAt: string;
   hasTimestamp: boolean;
-  shared: boolean;
 };
 
 export type ReviewSnippet = {
@@ -334,14 +333,14 @@ function memoStatsSection(lessons: NumberedLesson[]): string {
     const dates = [...new Set(memos.map((m) => shortDateFormat.format(new Date(m.createdAt))))];
     return (
       `| ${cell(`${no} ${lesson.title}`)} | ${memos.length} | ${chars} | ` +
-      `${memos.filter((m) => m.hasTimestamp).length} | ${memos.filter((m) => m.shared).length} | ` +
+      `${memos.filter((m) => m.hasTimestamp).length} | ` +
       `${dates.length > 0 ? dates.join(", ") : "―"} |`
     );
   });
   return [
     "### メモの取り方",
-    "| レッスン | 件数 | 合計文字数 | 動画の時刻つき | クラスに共有 | 作成日 |",
-    "|---|---|---|---|---|---|",
+    "| レッスン | 件数 | 合計文字数 | 動画の時刻つき | 作成日 |",
+    "|---|---|---|---|---|",
     ...rows,
   ].join("\n");
 }
