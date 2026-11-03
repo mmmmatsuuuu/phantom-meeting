@@ -188,8 +188,8 @@ describe("buildReviewPrompt: 発問・メモ", () => {
   it("メモの本文は「／」で結合して載せ、含めない設定なら抜粋の節ごと出さない", () => {
     expect(build(unit([memoLesson])).text).toContain("- 1 レッスン1：RGBは光／CMYはインク");
     const without = build(unit([memoLesson]), false).text;
-    expect(without).not.toContain("### メモの抜粋");
-    expect(without).toContain("### メモの取り方");
+    expect(without).not.toContain("### ノートの抜粋");
+    expect(without).toContain("### ノートの取り方");
   });
 });
 
@@ -244,7 +244,7 @@ describe("buildReviewPrompt: 上限（10,000字）", () => {
   it("上限内ならメモの本文は300字のまま", () => {
     const result = build(unit([lesson({ id: "1", memos: [memo("x".repeat(500))] })]));
     expect(result.memoTrimmed).toBe(false);
-    expect(result.text).toContain("### メモの抜粋（各レッスン300字まで）");
+    expect(result.text).toContain("### ノートの抜粋（各レッスン300字まで）");
   });
 
   it("超える場合はまずメモの本文を均等に短くする", () => {
@@ -255,7 +255,7 @@ describe("buildReviewPrompt: 上限（10,000字）", () => {
     expect(result.length).toBeLessThanOrEqual(PROMPT_CHAR_LIMIT);
     expect(result.memoTrimmed).toBe(true);
     expect(result.text).not.toContain("各レッスン300字まで");
-    expect(result.text).toMatch(/### メモの抜粋（各レッスン\d+字まで）/);
+    expect(result.text).toMatch(/### ノートの抜粋（各レッスン\d+字まで）/);
   });
 
   it("メモの本文を省いても超える場合は、後半のレッスンからコードを取り込む", () => {

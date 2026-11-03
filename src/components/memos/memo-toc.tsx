@@ -46,7 +46,7 @@ export default function MemoToc({ subjects }: Props) {
   }, [subjects]);
 
   return (
-    <nav aria-label="メモ目次">
+    <nav aria-label="ノート目次">
       <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide mb-3">
         目次
       </p>

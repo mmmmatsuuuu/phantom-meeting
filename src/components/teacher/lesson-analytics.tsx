@@ -254,7 +254,7 @@ export default function LessonAnalytics({ subjects }: Props) {
             ))}
           </div>
 
-          {/* コード・メモは一度開いた結果を保持するため、非表示にするだけでアンマウントしない */}
+          {/* コード・ノートは一度開いた結果を保持するため、非表示にするだけでアンマウントしない */}
           {playgroundEnabled && (
             <div hidden={effectiveTab !== "code"}>
               <LessonCodeCards
@@ -337,7 +337,7 @@ export default function LessonAnalytics({ subjects }: Props) {
                   <span className="font-medium text-foreground">{quizData.lessonTitle}</span>
                   ・対象生徒 {quizData.students.length}人
                   {hasQuiz && `・受験済み ${attemptedCount}人`}
-                  ・メモ記入 {memoStudentCount}人
+                  ・ノート記入 {memoStudentCount}人
                 </p>
               </div>
             </div>
@@ -402,7 +402,7 @@ export default function LessonAnalytics({ subjects }: Props) {
                           );
                         })}
                         <th aria-hidden className="w-2" />
-                        <th className="font-medium px-2 py-1.5 w-14">メモ</th>
+                        <th className="font-medium px-2 py-1.5 w-14">ノート</th>
                       </tr>
                     </thead>
                     <tbody>

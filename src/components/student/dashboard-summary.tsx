@@ -35,7 +35,7 @@ export default function DashboardSummaryCards({ summary }: Props) {
       valueClass: summary.reviewCount > 0 ? "text-red-pen" : "text-ink",
     },
     {
-      label: "メモ",
+      label: "ノート",
       value: `${summary.memoCount}`,
       sub: "件",
       href: "/memos",

@@ -47,7 +47,7 @@ export default async function MemosPage() {
 
   return (
     <div className="max-w-7xl mx-auto px-4 py-8">
-      <h1 className="font-hand font-semibold text-[26px] leading-normal mb-6">メモ一覧</h1>
+      <h1 className="font-hand font-semibold text-[26px] leading-normal mb-6">ノート一覧</h1>
 
       {tree.length === 0 ? (
         <div className="flex flex-col items-center justify-center py-20 text-center">
@@ -67,7 +67,7 @@ export default async function MemosPage() {
             </svg>
           </div>
           <p className="text-muted-foreground text-sm">
-            まだメモがありません。授業ページでメモを作成してみましょう。
+            まだノートがありません。授業ページでノートを作成してみましょう。
           </p>
         </div>
       ) : (
@@ -94,7 +94,7 @@ export default async function MemosPage() {
                   <div className="flex items-center gap-3 mb-5 border-b pb-3">
                     <h2 className="text-xl font-bold">{subject.name}</h2>
                     <MemoDownloadButton
-                      filename={`メモ_${subject.name}.md`}
+                      filename={`ノート_${subject.name}.md`}
                       sections={subjectSections}
                     />
                   </div>
@@ -110,7 +110,7 @@ export default async function MemosPage() {
                           <div className="flex items-center gap-3 mb-4">
                             <h3 className="text-lg font-semibold">{unit.name}</h3>
                             <MemoDownloadButton
-                              filename={`メモ_${subject.name}_${unit.name}.md`}
+                              filename={`ノート_${subject.name}_${unit.name}.md`}
                               sections={unitSections}
                             />
                           </div>
@@ -120,7 +120,7 @@ export default async function MemosPage() {
                                 <div className="flex items-center gap-3 mb-3">
                                   <h4 className="font-medium">{lesson.title}</h4>
                                   <MemoDownloadButton
-                                    filename={`メモ_${subject.name}_${unit.name}_${lesson.title}.md`}
+                                    filename={`ノート_${subject.name}_${unit.name}_${lesson.title}.md`}
                                     sections={[
                                       {
                                         lessonTitle: lesson.title,

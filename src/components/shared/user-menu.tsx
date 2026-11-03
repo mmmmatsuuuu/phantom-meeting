@@ -61,7 +61,7 @@ export default function UserMenu({ displayName, role }: Props) {
           <Link href="/">レッスン一覧</Link>
         </DropdownMenuItem>
         <DropdownMenuItem asChild>
-          <Link href="/memos">メモ一覧</Link>
+          <Link href="/memos">ノート一覧</Link>
         </DropdownMenuItem>
         <DropdownMenuItem asChild>
           <Link href="/quiz-results">小テスト結果</Link>

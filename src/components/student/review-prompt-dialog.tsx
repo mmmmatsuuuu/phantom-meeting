@@ -59,7 +59,7 @@ export default function ReviewPromptDialog({ unitId, unitName }: Props) {
         <DialogHeader>
           <DialogTitle>AIで振り返る：{unitName}</DialogTitle>
           <DialogDescription>
-            この単元のあなたの学習データ（小テスト・メモ・コード）を入れたプロンプトです。
+            この単元のあなたの学習データ（小テスト・ノート・コード）を入れたプロンプトです。
             コピーして使いたい AI に貼り付けると、AI がデータを読んで質問してきます。そこから自由に相談してみましょう。
           </DialogDescription>
         </DialogHeader>
@@ -82,7 +82,7 @@ export default function ReviewPromptDialog({ unitId, unitName }: Props) {
                 checked={includeMemoText}
                 onChange={(e) => setIncludeMemoText(e.target.checked)}
               />
-              メモの本文を含める
+              ノートの本文を含める
             </label>
 
             <textarea
@@ -97,7 +97,7 @@ export default function ReviewPromptDialog({ unitId, unitName }: Props) {
                 <p>
                   {prompt.length.toLocaleString()}字（上限 {PROMPT_CHAR_LIMIT.toLocaleString()}字）
                 </p>
-                {prompt.memoTrimmed && <p>※ 上限に収めるため、メモの本文を短くしています</p>}
+                {prompt.memoTrimmed && <p>※ 上限に収めるため、ノートの本文を短くしています</p>}
                 {prompt.omittedCodeLessonCount > 0 && (
                   <p>
                     ※ 上限に収めるため、前半の {prompt.omittedCodeLessonCount} レッスンのコードを省いています

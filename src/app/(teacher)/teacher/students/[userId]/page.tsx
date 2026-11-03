@@ -64,7 +64,7 @@ export default async function StudentDetailPage({ params }: Props) {
       valueClass: summary.reviewCount > 0 ? "text-red-pen" : "text-ink",
     },
     {
-      label: "メモ",
+      label: "ノート",
       value: `${summary.memoCount}`,
       sub: "件",
       valueClass: "",
@@ -153,7 +153,7 @@ export default async function StudentDetailPage({ params }: Props) {
                         <th className="px-4 py-2 font-medium text-center w-24">
                           受験回数
                         </th>
-                        <th className="px-4 py-2 font-medium text-center w-20">メモ</th>
+                        <th className="px-4 py-2 font-medium text-center w-20">ノート</th>
                       </tr>
                     </thead>
                     <tbody>

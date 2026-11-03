@@ -240,7 +240,7 @@ export default function LessonNewForm({ subjects, defaultUnitId }: Props) {
               発問
             </h2>
             <p className="text-xs text-muted-foreground">
-              正解のない問いを設定しましょう。生徒のメモ・思考のきっかけになります。
+              正解のない問いを設定しましょう。生徒のノート・思考のきっかけになります。
             </p>
           </div>
 
@@ -296,7 +296,7 @@ export default function LessonNewForm({ subjects, defaultUnitId }: Props) {
           {enablePlayground && (
             <>
               <p className="text-xs text-muted-foreground">
-                生徒がメモ欄で切り替えて実行できる初期コードを登録します（任意）。
+                生徒がノート欄で切り替えて実行できる初期コードを登録します（任意）。
               </p>
 
               <div className="space-y-3">

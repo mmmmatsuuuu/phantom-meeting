@@ -7,7 +7,7 @@ export default async function LessonAnalyticsPage() {
   return (
     <div>
       <p className="text-sm text-muted-foreground mb-4">
-        レッスンを選択すると、小テストの回答・コーディングプレイグラウンドの実行状況・メモを、生徒ごとにタブで確認できます
+        レッスンを選択すると、小テストの回答・コーディングプレイグラウンドの実行状況・ノートを、生徒ごとにタブで確認できます
       </p>
       <LessonAnalytics subjects={subjects} />
     </div>

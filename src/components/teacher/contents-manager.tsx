@@ -88,7 +88,7 @@ export default function ContentsManager({ subjects: initialSubjects, initialSubj
   const handleDeleteLesson = async (lessonId: string, unitId: string) => {
     if (
       !confirm(
-        "このレッスンを削除しますか？\n\nこのレッスンに紐づくメモ・投稿・小テスト回答もすべて削除されます。この操作は取り消せません。"
+        "このレッスンを削除しますか？\n\nこのレッスンに紐づくノート・小テスト回答もすべて削除されます。この操作は取り消せません。"
       )
     )
       return;

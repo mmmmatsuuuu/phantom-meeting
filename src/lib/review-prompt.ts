@@ -111,7 +111,7 @@ const TEMPLATE_HEAD = `# ロール
 
 最初の返信では、まずデータから読み取れることを、次の観点ごとに2〜3文で簡潔に伝えてください（詳しいアドバイスはまだ書かないでください）。
 - 小テストの結果
-- メモの傾向
+- ノートの傾向
 - コードの書き方（データに「コード」がある場合のみ）
 
 そのうえで、どのようなアドバイスがほしいか質問をしてください。質問を思いつかない生徒もいるので、以下のような例を提示してください。
@@ -127,7 +127,7 @@ const TEMPLATE_HEAD = `# ロール
 （データの読み方）
 - 得点率は自動採点の問題（選択式・並び替え）だけで計算しています。記述式は生徒の自己採点のため、得点率に含みません
 - 小テストは何度でも受け直せます
-- 日付は受験・メモ作成の日です`;
+- 日付は受験・ノート作成の日です`;
 
 const TEMPLATE_TAIL =
   "最初の返信は、観点ごとの簡潔な読み取りと、どのようなアドバイスがほしいかの質問だけにしてください。";
@@ -338,7 +338,7 @@ function memoStatsSection(lessons: NumberedLesson[]): string {
     );
   });
   return [
-    "### メモの取り方",
+    "### ノートの取り方",
     "| レッスン | 件数 | 合計文字数 | 動画の時刻つき | 作成日 |",
     "|---|---|---|---|---|",
     ...rows,
@@ -346,14 +346,14 @@ function memoStatsSection(lessons: NumberedLesson[]): string {
 }
 
 function memoExcerptSection(lessons: NumberedLesson[], limit: number | null): string {
-  if (limit === null) return `### メモの抜粋\n${TRIMMED_NOTE}`;
+  if (limit === null) return `### ノートの抜粋\n${TRIMMED_NOTE}`;
   const items = lessons
     .map(({ lesson, no }) => {
       const joined = lesson.memos.map((m) => m.text).filter((t) => t !== "").join("／");
       return joined ? `- ${no} ${lesson.title}：${truncate(joined, limit)}` : null;
     })
     .filter((item): item is string => item !== null);
-  return [`### メモの抜粋（各レッスン${limit}字まで）`, ...(items.length > 0 ? items : ["なし"])].join("\n");
+  return [`### ノートの抜粋（各レッスン${limit}字まで）`, ...(items.length > 0 ? items : ["なし"])].join("\n");
 }
 
 function codeSection(lessons: NumberedLesson[], included: Set<string>): string {
