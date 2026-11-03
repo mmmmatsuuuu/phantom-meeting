@@ -1,0 +1,81 @@
+/* ruminy モック共通の見た目。値の理由は docs/design.md の「見た目の決まり」 */
+:root {
+  color-scheme: light;
+  --paper: #efede6;
+  --surface: #e5e2d8;
+  --sheet: #f8f7f2;
+  --ink: #1d2b3f;
+  --pencil: #60605b;
+  --rule: #d6d3c7;
+  --rule-strong: #b3afa2;
+  --red: #b93a2b;
+  --note: #efe4b4;
+  --grid: rgba(29, 43, 63, .055);
+  --hand: "Klee One", system-ui, sans-serif;
+  --sans: system-ui, -apple-system, "Hiragino Sans", "Noto Sans JP", sans-serif;
+  --mono: ui-monospace, SFMono-Regular, Menlo, monospace;
+}
+* { box-sizing: border-box; }
+[hidden] { display: none !important; }
+body { margin: 0; background: var(--paper); color: var(--ink); font: 15px/1.8 var(--sans); }
+button, input, textarea, select { font: inherit; color: inherit; }
+button { cursor: pointer; }
+a { color: inherit; }
+:focus-visible { outline: 2px solid var(--ink); outline-offset: 2px; }
+h1, h2, h3, h4 { font-family: var(--hand); font-weight: 600; margin: 0; line-height: 1.5; }
+img[src*="mascot"] { mix-blend-mode: multiply; }
+
+/* モックの切り替え帯（モック専用） */
+.mock-bar { display: flex; flex-wrap: wrap; gap: 4px 14px; padding: 6px 16px; background: var(--ink); color: var(--paper); font-size: 12px; }
+.mock-bar a { text-decoration: none; opacity: .7; }
+.mock-bar a.on { opacity: 1; text-decoration: underline; text-underline-offset: 3px; }
+.mock-bar .sep { opacity: .4; }
+
+/* ヘッダー */
+.site-head { display: flex; justify-content: space-between; align-items: center; max-width: 1240px; margin: 0 auto; padding: 14px 16px 10px; border-bottom: 2px solid var(--ink); }
+.site-name { display: inline-flex; align-items: center; gap: 6px; font: 600 21px var(--hand); text-decoration: none; }
+.face { width: 34px; height: 34px; overflow: hidden; flex: none; }
+.face img { width: 100%; height: 100%; transform: scale(1.5) translateY(4%); }
+.site-user { font-size: 13px; color: var(--pencil); }
+.site-nav { display: flex; gap: 18px; font-size: 13px; }
+.site-nav a { text-decoration: none; color: var(--pencil); }
+.site-nav a.on { color: var(--ink); font-weight: 600; }
+main { max-width: 1240px; margin: 0 auto; padding: 0 16px 80px; }
+.screen { display: none; }
+.screen.on { display: block; }
+
+/* ボタン */
+.btn { display: inline-block; padding: 8px 14px; border: 1px solid var(--ink); background: transparent; font-size: 14px; border-radius: 2px; text-decoration: none; white-space: nowrap; }
+.btn:hover { background: var(--surface); }
+.btn-ink { background: var(--ink); color: var(--sheet); }
+.btn-ink:hover { background: #2c3e57; }
+.btn-sm { padding: 3px 10px; font-size: 12px; }
+.hint { font-size: 12px; color: var(--pencil); }
+
+/* 方眼の用紙（入力欄） */
+.graph { background-color: var(--sheet); border: 1px solid var(--rule-strong); border-radius: 2px;
+  background-image: linear-gradient(var(--grid) 1px, transparent 1px), linear-gradient(90deg, var(--grid) 1px, transparent 1px);
+  background-size: 16px 16px; background-position: -1px -1px; }
+.field { display: block; }
+.field > span { display: block; font-size: 13px; font-weight: 600; margin-bottom: 4px; }
+.field input, .field textarea { width: 100%; padding: 0 16px; line-height: 32px; font-family: var(--hand); font-size: 16px; }
+.field textarea { resize: vertical; min-height: 128px; }
+.graph:focus { outline: none; border-color: var(--ink); box-shadow: inset 0 0 0 1px var(--ink); }
+
+/* レッスンの見出しと2列 */
+.lesson-head { padding: 20px 0 14px; }
+.crumb { font-size: 13px; color: var(--pencil); }
+.lesson-head h1 { font-size: 28px; }
+.lesson-grid { display: grid; grid-template-columns: minmax(0, 1.15fr) minmax(0, 1fr); gap: 32px; align-items: start; }
+.video { aspect-ratio: 16/9; background: #17202c; color: #e9edf1; display: flex; align-items: center; justify-content: center; font: 15px var(--hand); }
+
+/* 左の切り替え（動画・小テスト）：下線のタブ */
+.tabs { display: flex; gap: 22px; border-bottom: 1px solid var(--rule-strong); margin-bottom: 16px; }
+.tabs a { padding: 4px 0; border-bottom: 3px solid transparent; margin-bottom: -1px; color: var(--pencil); font-size: 14px; text-decoration: none; }
+.tabs a.on { color: var(--ink); border-color: var(--ink); font-weight: 600; }
+
+/* 右の切り替え（ノート・コード）：紙の端から出たインデックス */
+.index-tabs { display: flex; gap: 4px; padding-left: 12px; }
+.index-tabs a { position: relative; top: 1px; padding: 4px 18px 3px; border: 1px solid var(--rule-strong); border-bottom: 0; border-radius: 4px 4px 0 0; background: var(--surface); color: var(--pencil); font-size: 13px; text-decoration: none; }
+.index-tabs a.on { background: var(--sheet); color: var(--ink); font-weight: 600; z-index: 1; }
+.binder { background: var(--sheet); border: 1px solid var(--rule-strong); padding: 16px; }

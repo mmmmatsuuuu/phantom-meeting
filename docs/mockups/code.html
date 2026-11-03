@@ -1,0 +1,83 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>ruminy モック：プレイグラウンド付きのレッスン</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Klee+One:wght@400;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="ruminy.css">
+<style>
+.steps { margin: 16px 0 0; padding: 0; list-style: none; border-top: 1px solid var(--rule-strong); }
+.steps li { display: grid; grid-template-columns: 1fr auto; padding: 9px 0; border-bottom: 1px solid var(--rule); font-size: 14px; }
+.steps small { color: var(--pencil); font-size: 12px; }
+.snippets { display: flex; gap: 16px; margin: -4px 0 10px; font-size: 13px; }
+.snippets a { text-decoration: none; color: var(--pencil); padding-bottom: 2px; border-bottom: 2px solid transparent; }
+.snippets a.on { color: var(--ink); font-weight: 600; border-color: var(--ink); }
+.snippets .dirty::after { content: " ●"; font-size: 9px; vertical-align: 2px; }
+/* コードは方眼の用紙に等幅で。色は意味の区別に必要な最小限 */
+.editor { margin: 0; padding: 8px 0; font: 14px/24px var(--mono); counter-reset: line; background-size: 12px 12px; }
+.editor span.l { display: block; padding-left: 52px; position: relative; white-space: pre; }
+.editor span.l::before { counter-increment: line; content: counter(line); position: absolute; left: 0; width: 36px; text-align: right; color: #a6a398; }
+.k { font-weight: 700; }
+.s { color: #6b4e16; }
+.c { color: var(--pencil); font-style: italic; }
+.n { color: #2b5f8a; }
+.code-actions { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; margin: 12px 0; }
+.code-actions .grow { flex: 1; }
+.console-label { display: flex; justify-content: space-between; font-size: 12px; color: var(--pencil); margin-bottom: 4px; }
+.console { min-height: 140px; padding: 10px 14px; background: var(--paper); border: 1px solid var(--rule-strong); font: 14px/24px var(--mono); white-space: pre-wrap; }
+.console .ask { display: flex; align-items: center; gap: 8px; margin-top: 2px; }
+.console .ask input { width: 160px; padding: 0 4px; border: 0; border-bottom: 1.5px solid var(--ink); background: transparent; font: 14px var(--mono); }
+.console .ask input:focus { outline: none; border-bottom-width: 2.5px; }
+.console .err { color: var(--red); font-weight: 600; }
+.save-state { font-size: 12px; color: var(--pencil); }
+</style>
+</head>
+<body>
+<nav class="mock-bar"><strong>モック</strong><a href="index.html">一覧</a></nav>
+<header class="site-head">
+  <a class="site-name" href="student.html#home"><span class="face"><img src="../../public/mascot/face.png" alt=""></span>ruminy</a>
+  <span class="site-user">1101 テスト生徒</span>
+</header>
+<main>
+  <div class="lesson-head">
+    <div class="crumb"><a href="student.html#home">プログラミング入門</a> / 04</div>
+    <h1>選択構造の基礎</h1>
+  </div>
+  <div class="lesson-grid">
+    <div>
+      <nav class="tabs"><a href="#" class="on">動画</a><a href="quiz.html">小テスト</a></nav>
+      <div class="video">授業動画</div>
+      <ol class="steps">
+        <li><span>動画で学ぶ</span><small>見ながらコードを読み、予想する</small></li>
+        <li><span>コードで試す</span><small>動かして、書き換えて確かめる</small></li>
+        <li><span>ノートで広げ、深める</span><small>分かったことを自分のことばで</small></li>
+      </ol>
+    </div>
+    <div>
+      <nav class="index-tabs"><a href="#">ノート</a><a href="#" class="on">コード</a></nav>
+      <div class="binder">
+        <nav class="snippets"><a href="#" class="on dirty">例1 合否判定</a><a href="#">例2 正負の判定</a><a href="#">練習</a></nav>
+        <pre class="editor graph"><span class="l"><span class="c"># 点数を入力して、合格か不合格かを表示する</span></span><span class="l">score = <span class="k">int</span>(<span class="k">input</span>(<span class="s">"点数: "</span>))</span><span class="l"><span class="k">if</span> score &gt;= <span class="n">60</span>:</span><span class="l">    <span class="k">print</span>(<span class="s">"合格"</span>)</span><span class="l"><span class="k">else</span>:</span><span class="l">    <span class="k">print</span>(<span class="s">"不合格"</span>)</span></pre>
+        <div class="code-actions">
+          <button class="btn btn-ink">▶ 実行</button>
+          <button class="btn">保存</button>
+          <button class="btn">ノートに貼る</button>
+          <span class="grow"></span>
+          <button class="btn btn-sm">初期コードに戻す</button>
+        </div>
+        <div class="console-label"><span>実行結果</span><span class="save-state">未保存の変更があります</span></div>
+        <div class="console">点数: 72
+合格
+点数: <span class="ask"><input value="" placeholder="入力して Enter" aria-label="入力"><button class="btn btn-sm">送信</button></span></div>
+        <p class="hint">エディタの中で Cmd / Ctrl + Enter でも実行できます</p>
+        <div class="console" style="min-height:0;margin-top:10px"><span class="err">ValueError: invalid literal for int() with base 10: 'abc'</span>
+<span class="hint">（エラーのときの表示例）</span></div>
+      </div>
+    </div>
+  </div>
+</main>
+</body>
+</html>
