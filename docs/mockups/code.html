@@ -33,6 +33,7 @@
 .console .ask input:focus { outline: none; border-bottom-width: 2.5px; }
 .console .err { color: var(--red); font-weight: 600; }
 .save-state { font-size: 12px; color: var(--pencil); }
+.editor { background: var(--sheet); border: 1px solid var(--rule-strong); border-radius: 2px; }
 </style>
 </head>
 <body>
@@ -60,7 +61,7 @@
       <nav class="index-tabs"><a href="#">ノート</a><a href="#" class="on">コード</a></nav>
       <div class="binder">
         <nav class="snippets"><a href="#" class="on dirty">例1 合否判定</a><a href="#">例2 正負の判定</a><a href="#">練習</a></nav>
-        <pre class="editor graph"><span class="l"><span class="c"># 点数を入力して、合格か不合格かを表示する</span></span><span class="l">score = <span class="k">int</span>(<span class="k">input</span>(<span class="s">"点数: "</span>))</span><span class="l"><span class="k">if</span> score &gt;= <span class="n">60</span>:</span><span class="l">    <span class="k">print</span>(<span class="s">"合格"</span>)</span><span class="l"><span class="k">else</span>:</span><span class="l">    <span class="k">print</span>(<span class="s">"不合格"</span>)</span></pre>
+        <pre class="editor"><span class="l"><span class="c"># 点数を入力して、合格か不合格かを表示する</span></span><span class="l">score = <span class="k">int</span>(<span class="k">input</span>(<span class="s">"点数: "</span>))</span><span class="l"><span class="k">if</span> score &gt;= <span class="n">60</span>:</span><span class="l">    <span class="k">print</span>(<span class="s">"合格"</span>)</span><span class="l"><span class="k">else</span>:</span><span class="l">    <span class="k">print</span>(<span class="s">"不合格"</span>)</span></pre>
         <div class="code-actions">
           <button class="btn btn-ink">▶ 実行</button>
           <button class="btn">保存</button>
