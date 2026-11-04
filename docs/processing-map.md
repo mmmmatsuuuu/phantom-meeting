@@ -120,10 +120,10 @@
 
 | 層 | 処理 | 場所 |
 |---|---|---|
-| フロント | ダイアログを開いたときだけ単元の学習データを取得（`useLazyFetch`）、メモ本文の有無の切り替え、プレビュー・文字数の表示、クリップボードへのコピー | `components/student/review-prompt-dialog.tsx` |
-| フロント | プロンプトの組み立て（受験の推移・間違えた問題などの整形）と10,000字の上限処理（メモ本文の短縮・省略 → コードを後半のレッスンから取り込む） | `lib/review-prompt.ts` `buildReviewPrompt`（純粋関数。単体テストあり） |
+| フロント | ダイアログを開いたときだけ単元の学習データを取得（`useLazyFetch`）、ノート本文の有無の切り替え、プレビュー・文字数の表示、クリップボードへのコピー | `components/student/review-prompt-dialog.tsx` |
+| フロント | プロンプトの組み立て（受験の推移・間違えた問題などの整形）と10,000字の上限処理（ノート本文の短縮・省略 → コードを後半のレッスンから取り込む） | `lib/review-prompt.ts` `buildReviewPrompt`（純粋関数。単体テストあり） |
 | API | ログイン確認（本人のデータのみ返す） | `api/units/[unitId]/review-data/route.ts` |
-| lib/db | 単元→レッスン→発問・小テストの設問・初期コードをネスト select で取得し、本人の受験記録（回答をネスト）・メモ（共有の有無をネスト）・コードの保存内容の3クエリを並列取得。問題文・メモの tiptap JSON のテキスト化、回答・正解のテキスト化 | `review.ts` `getUnitReviewData`（回答・正解のテキスト化は `quizzes.ts` `toAnswerText` / `toCorrectAnswerText`） |
+| lib/db | 単元→レッスン→発問・小テストの設問・初期コードをネスト select で取得し、本人の受験記録（回答をネスト）・ノート・コードの保存内容の3クエリを並列取得。問題文・ノートの tiptap JSON のテキスト化、回答・正解のテキスト化 | `review.ts` `getUnitReviewData`（回答・正解のテキスト化は `quizzes.ts` `toAnswerText` / `toCorrectAnswerText`） |
 | DB | 本人のデータは既存の RLS の範囲で読める。教師・管理者は RLS 上全生徒を読めるため、lib/db ですべて本人の ID で絞り込む | RLS（`quiz_attempts`・`memos`・`code_states`） |
 
 ### プロフィール（`/profile`）
@@ -159,7 +159,7 @@
 | lib/db | 科目・単元の作成・更新・削除 | `contents.ts` |
 | lib/db | レッスンの作成：単元内のレッスン数から表示順を決め、レッスン→初期コードの順に挿入 | `contents.ts` `createLesson` |
 | DB | コンテンツの作成・更新・削除は教師のみ、閲覧は認証ユーザー全員 | RLS（`subjects`・`units`・`lessons`・`questions`） |
-| DB | レッスン削除時に、メモ・投稿・小テストなどを連鎖削除 | 外部キーの `on delete cascade` |
+| DB | レッスン削除時に、ノート・投稿・小テストなどを連鎖削除 | 外部キーの `on delete cascade` |
 
 ### ノートのひな形（`/teacher/lessons/[lessonId]/note-template`）
 
@@ -207,7 +207,7 @@
 | 層 | 処理 | 場所 |
 |---|---|---|
 | SC | 生徒のプロフィール取得（生徒ロール以外は 404） | `app/(teacher)/teacher/students/[userId]/page.tsx` |
-| lib/db | 生徒の受験状況・メモ件数の集計 | `quizzes.ts` `getStudentQuizStatuses`、`memos.ts` `getMemoCountsByLesson` |
+| lib/db | 生徒の受験状況・ノート件数の集計 | `quizzes.ts` `getStudentQuizStatuses`、`memos.ts` `getMemoCountsByLesson` |
 | lib | サマリー・レッスンのバッジの算出（生徒ホームと同じ関数） | `lib/student-dashboard.ts` `buildStudentDashboard` |
 
 ### 分析：単元別（`/teacher/analytics/units`）
@@ -224,19 +224,19 @@
 
 | 層 | 処理 | 場所 |
 |---|---|---|
-| フロント | 学年・クラス・科目・レッスンの選択（クラスは必須。学年全体は扱わない）、サブタブ（小テスト／コード／メモ）の切り替え | `components/teacher/lesson-analytics.tsx` |
-| フロント | 各タブ（小テスト・コード・メモ）はタブを開いたときだけ取得し、同じ条件で取得済みなら再取得しない。条件を切り替えた後に届いた古いレスポンスは破棄。コード・メモは非表示にするだけでアンマウントしない | `components/teacher/lesson-analytics.tsx`、`lib/hooks/use-lazy-fetch.ts` |
+| フロント | 学年・クラス・科目・レッスンの選択（クラスは必須。学年全体は扱わない）、サブタブ（小テスト／コード／ノート）の切り替え | `components/teacher/lesson-analytics.tsx` |
+| フロント | 各タブ（小テスト・コード・ノート）はタブを開いたときだけ取得し、同じ条件で取得済みなら再取得しない。条件を切り替えた後に届いた古いレスポンスは破棄。コード・ノートは非表示にするだけでアンマウントしない | `components/teacher/lesson-analytics.tsx`、`lib/hooks/use-lazy-fetch.ts` |
 | フロント | 小テスト：生徒×設問の表、正誤（○／✕。誤答はホバーで生徒の回答と正解）・記述内容の表示。小テストのないレッスンはその旨を表示 | `components/teacher/lesson-analytics.tsx` |
 | フロント | 小テスト：受け取ったクラス分の結果から、クラス平均得点率（受験者の得点率の平均）と設問ごとのクラスの正答率（記述式を除く）を算出（JS） | `components/teacher/lesson-analytics.tsx` |
 | API | 小テスト：教師確認、学年・クラスの検証（どちらも必須） | `api/teacher/lessons/[lessonId]/quiz-analytics/route.ts` |
-| lib/db | 小テスト：レッスン→小テスト→設問、クラスの生徒、メモ、受験記録（回答をネスト）の4クエリを並列取得し、生徒ごとの最新受験の特定・回答の表示用テキスト化・メモ件数の集計（JS）、正解テキストの組み立て | `quizzes.ts` `getLessonQuizResultsByStudent` |
+| lib/db | 小テスト：レッスン→小テスト→設問、クラスの生徒、ノート、受験記録（回答をネスト）の4クエリを並列取得し、生徒ごとの最新受験の特定・回答の表示用テキスト化・ノート件数の集計（JS）、正解テキストの組み立て | `quizzes.ts` `getLessonQuizResultsByStudent` |
 | フロント | コード：生徒ごとのカード表示、編集した人数（全体・初期コードごと）の表示 | `components/teacher/lesson-code-cards.tsx` |
 | API | コード：教師確認、学年・クラスの検証（どちらも必須） | `api/teacher/lessons/[lessonId]/code-analytics/route.ts` |
 | lib/db | コード：レッスン→初期コード、クラスの生徒、保存内容（初期コードのレッスンと学籍番号で絞り込み）の3クエリを並列取得し、生徒ごとに振り分け（JS） | `code-snippets.ts` `getLessonCodeStatesByStudent` |
-| フロント | メモ：生徒ごとのカード表示（クラス全員分を1リクエストで取得）、メモを書いた人数・合計件数の表示 | `components/teacher/lesson-memo-cards.tsx` |
-| API | メモ：教師確認、学年・クラスの検証（どちらも必須） | `api/teacher/lessons/[lessonId]/memos/route.ts` |
-| lib/db | メモ：クラスの生徒と、クラス全員分のメモ（学籍番号で絞り込み）の2クエリを並列取得し、生徒ごとに振り分け（JS） | `memos.ts` `getLessonMemosByClass` |
-| DB | 教師は全生徒の受験記録・メモ・コードを閲覧可 | RLS（`quiz_attempts`・`quiz_attempt_answers`・`memos`・`code_states`） |
+| フロント | ノート：生徒ごとのカード表示（クラス全員分を1リクエストで取得）、ノートを書いた人数・合計件数の表示 | `components/teacher/lesson-memo-cards.tsx` |
+| API | ノート：教師確認、学年・クラスの検証（どちらも必須） | `api/teacher/lessons/[lessonId]/memos/route.ts` |
+| lib/db | ノート：クラスの生徒と、クラス全員分のノート（学籍番号で絞り込み）の2クエリを並列取得し、生徒ごとに振り分け（JS） | `memos.ts` `getLessonMemosByClass` |
+| DB | 教師は全生徒の受験記録・ノート・コードを閲覧可 | RLS（`quiz_attempts`・`quiz_attempt_answers`・`memos`・`code_states`） |
 
 ### 分析：生徒別（`/teacher/analytics/students`）
 
@@ -253,8 +253,8 @@
 | API | 教師確認、CSV の生成（エスケープ・ラベル付け）とファイル名の決定 | `api/teacher/units/[unitId]/quiz-export/route.ts`、`memo-export/route.ts` |
 | lib/db | 小テスト：単元→レッスン→小テスト→設問、学年の生徒（人数・クラス一覧用）、RPC を並列取得し、正答率（全体・クラス別）と回答分布の割合を算出して組み立て | `quizzes.ts` `getUnitQuizResultsForExport` |
 | DB | 小テスト：最新受験を特定し、設問ごとにクラス別の正答数・回答数、選択肢ごとの回答数、記述式の回答からランダムに3件を集計 | RPC `unit_quiz_export_stats` |
-| lib/db | メモ：単元→レッスン、学年の生徒数、RPC を並列取得し、1人分のメモを300文字で切り詰めてレッスン順に組み立て | `memos.ts` `getUnitMemoSamplesForExport` |
-| DB | メモ：レッスンごとに、テキストのあるメモを書いた生徒から各クラス2人ずつ（10人未満なら10人までランダムに追加）を抽出し、1人分のメモのテキストを作成日時順に「／」で結合（学籍番号・氏名は返さない） | RPC `unit_memo_export_samples`、関数 `tiptap_to_text` |
+| lib/db | ノート：単元→レッスン、学年の生徒数、RPC を並列取得し、1人分のノートを300文字で切り詰めてレッスン順に組み立て | `memos.ts` `getUnitMemoSamplesForExport` |
+| DB | ノート：レッスンごとに、テキストのあるノートを書いた生徒から各クラス2人ずつ（10人未満なら10人までランダムに追加）を抽出し、1人分のノートのテキストを作成日時順に「／」で結合（学籍番号・氏名は返さない） | RPC `unit_memo_export_samples`、関数 `tiptap_to_text` |
 
 ---
 
@@ -278,7 +278,7 @@
 |---|---|---|---|
 | `quiz_question_stats(subject_id, min, max)` | 科目内の小テストについて、学籍番号が範囲内の生徒ごとに最新受験を特定し、設問ごとの正答数・回答数（記述式を除く）を返す | `quizzes.ts` `getQuizAnalytics` | `20260928000001_quiz_question_stats.sql` |
 | `unit_quiz_export_stats(unit_id, min, max)` | 単元内の小テストについて、学籍番号が範囲内の生徒ごとに最新受験を特定し、設問ごとにクラス別の正答数・回答数、選択肢ごとの回答数、記述式の回答のランダム3件を返す | `quizzes.ts` `getUnitQuizResultsForExport` | `20260930000001_unit_export_stats.sql` |
-| `unit_memo_export_samples(unit_id, min, max)` | 単元内のレッスンごとに、各クラス2人ずつ（10人未満なら10人まで追加）の生徒を抽出し、1人分のメモのテキストを結合して返す | `memos.ts` `getUnitMemoSamplesForExport` | 同上 |
+| `unit_memo_export_samples(unit_id, min, max)` | 単元内のレッスンごとに、各クラス2人ずつ（10人未満なら10人まで追加）の生徒を抽出し、1人分のノートのテキストを結合して返す | `memos.ts` `getUnitMemoSamplesForExport` | 同上 |
 
 ### RLS の概要
 
@@ -290,7 +290,7 @@
 | `code_snippets` | 認証ユーザー全員 | 教師・管理者のみ |
 | `memos` | 本人／教師・管理者は全件 | 本人のみ |
 | `memo_templates` | 認証ユーザー全員 | 教師・管理者のみ |
-| `posts` | 認証ユーザー全員 | 作成は本人のメモからのみ／削除は本人または教師・管理者（画面と API からは使っていない。テーブルは削除予定） |
+| `posts` | 認証ユーザー全員 | 作成は本人のノートからのみ／削除は本人または教師・管理者（画面と API からは使っていない。テーブルは削除予定） |
 | `quiz_attempts`・`quiz_attempt_answers` | 本人／教師・管理者は全件 | 作成は本人のみ（更新・削除なし） |
 | `code_states` | 本人／教師・管理者は全件 | 作成・更新は本人のみ |
 
@@ -313,7 +313,7 @@ Supabase の `max_rows = 1000` により、1リクエストで1000行を超え�
 |---|---|---|
 | `quizzes.ts` `getLessonQuizResultsByStudent` | 1レッスン×1クラスの受験記録 | 1クラスの受験記録が1000件を超える場合（40人なら1人平均25回以上の再受験）。回答は受験記録にネストしているため対象外 |
 | `code-snippets.ts` `getLessonCodeStatesByStudent` | 1レッスン×1クラスの保存内容 | 1クラスの生徒数×初期コード数が1000を超える場合（40人なら初期コード25個以上） |
-| `memos.ts` `getLessonMemosByClass` | 1レッスン×1クラスのメモ | 1クラスのメモが1000件を超える場合（40人なら1人平均25件以上） |
+| `memos.ts` `getLessonMemosByClass` | 1レッスン×1クラスのノート | 1クラスのノートが1000件を超える場合（40人なら1人平均25件以上） |
 | `users.ts` `getAllProfiles` | 全生徒のプロフィール | 生徒数が1000人を超える場合 |
 
 1人分のデータだけを取る関数（`getStudentQuizStatuses`・`getMemoCountsByLesson`・`getAllMemos`・`getQuizResultsByUser`・`getUnitReviewData`）は、1人の件数が1000を超えない限り影響しない。
