@@ -6,9 +6,8 @@
 subjects
   └── units
         └── lessons
-              ├── questions
               ├── memo_templates（ノートのひな形。1 レッスンに 1 つ）
-              ├── memos ──→ posts（廃止予定）
+              ├── memos
               ├── quizzes
               │     ├── quiz_questions
               │     └── quiz_attempts
@@ -66,15 +65,6 @@ maker_events（自由制作。既存テーブルへは unit_id の一方向の�
 | enable_playground | bool | default false。コーディングプレイグラウンド（Phase 21）の有効/無効 |
 | created_at | timestamptz | |
 
-### questions（発問）
-| カラム | 型 | 備考 |
-|---|---|---|
-| id | uuid | PK |
-| lesson_id | uuid | FK → lessons |
-| content | text | 発問内容 |
-| order | int | 表示順 |
-| created_at | timestamptz | |
-
 ### memo_templates（ノートのひな形）
 | カラム | 型 | 備考 |
 |---|---|---|
@@ -98,19 +88,12 @@ maker_events（自由制作。既存テーブルへは unit_id の一方向の�
 
 画像は、そのレッスンの `memo_templates` にあるものだけを保存できる（API で検証）。
 
-### posts（共有投稿・廃止予定）
+### 削除したテーブル
 
-画面と API からは使っていない。マージ後に別の PR でテーブルを削除する。
-
-| カラム | 型 | 備考 |
+| テーブル | 削除 | 理由 |
 |---|---|---|
-| id | uuid | PK |
-| memo_id | uuid | FK → memos |
-| lesson_id | uuid | FK → lessons（クエリ効率化のため非正規化） |
-| user_id | uuid | FK → profiles（投稿者。自分の投稿判定・削除権限に使用） |
-| content | jsonb | 共有時点のスナップショット |
-| timestamp_seconds | int | nullable、投稿元ノートのタイムスタンプ |
-| created_at | timestamptz | |
+| `posts`（クラスへの投稿） | `20261104000001_drop_posts.sql` | 投稿を廃止したため（[features.md](features.md) の「廃止・見送りした機能」） |
+| `questions`（発問） | `20261104000002_drop_questions.sql` | 発問はノートのひな形の中に移したため |
 
 ### quizzes
 | カラム | 型 | 備考 |
@@ -226,4 +209,6 @@ maker_events（自由制作。既存テーブルへは unit_id の一方向の�
 | submitted_at | timestamptz | 再提出で更新 |
 | hidden_at | timestamptz | nullable、教員による公開停止。再提出しても解除されない |
 
-書き込みは RPC `submit_maker_work` のみ（生徒に `hidden_at` を書き換えさせないため）。閲覧は本人、teacher/admin、および公開停止されていない作品を開放済みクラスの生徒（`maker_can_view_gallery`）。
+書き込みは RPC `submit_maker_work` のみ（生徒に `hidden_at` を書き換えさせないため）。閲覧は本人、teacher/admin、および公開停止されていない作品を開放済みクラスの生徒。
+開放の判定は、自分のクラスが閲覧できる課題の ID を返す `maker_viewable_event_ids()` を `event_id in (select ...)` で使い、1 クエリにつき 1 回だけ評価する（行ごとに判定すると、作品の数だけプロフィールと開放状況を引き直すため。`20261104000003_maker_gallery_rls.sql`）。
+作品展の取得（課題 × 学籍番号の範囲）のため、`(event_id, student_number)` にインデックスがある。
