@@ -4,14 +4,12 @@ import type { Database } from "@/lib/supabase/types";
 export type Subject = Database["public"]["Tables"]["subjects"]["Row"];
 export type Unit = Database["public"]["Tables"]["units"]["Row"];
 export type Lesson = Database["public"]["Tables"]["lessons"]["Row"];
-export type Question = Database["public"]["Tables"]["questions"]["Row"];
 
 export type UnitWithLessons = Unit & { lessons: Lesson[] };
 export type SubjectWithUnits = Subject & { units: UnitWithLessons[] };
 
-export type LessonWithQuestions = Lesson & {
+export type LessonWithUnit = Lesson & {
   unit: Unit & { subject: Subject };
-  questions: Question[];
 };
 
 /**
@@ -127,13 +125,13 @@ export async function deleteLesson(id: string): Promise<boolean> {
 }
 
 /**
- * レッスンと発問・初期コードを一括作成する（teacher/admin のみ）
+ * レッスンと初期コードを一括作成する（teacher/admin のみ）。
+ * 発問はノートのひな形の中に置くため、ここでは登録しない
  */
 export async function createLesson(params: {
   unitId: string;
   title: string;
   youtubeUrl: string;
-  questions: string[];
   enablePlayground?: boolean;
   codeSnippets?: { title: string; language: "python" | "javascript"; initialCode: string }[];
 }): Promise<Lesson | null> {
@@ -159,22 +157,6 @@ export async function createLesson(params: {
 
   if (lessonError || !lesson) return null;
 
-  const questionRows = params.questions
-    .filter((q) => q.trim() !== "")
-    .map((content, i) => ({
-      lesson_id: lesson.id,
-      content,
-      order: i,
-    }));
-
-  if (questionRows.length > 0) {
-    const { error: questionsError } = await supabase
-      .from("questions")
-      .insert(questionRows);
-
-    if (questionsError) return null;
-  }
-
   const snippetRows = (params.codeSnippets ?? [])
     .filter((s) => s.initialCode.trim() !== "")
     .map((s, i) => ({
@@ -197,23 +179,18 @@ export async function createLesson(params: {
 }
 
 /**
- * レッスン詳細と発問を取得する（ネスト select で1クエリ）
+ * レッスン詳細を単元・科目つきで取得する（ネスト select で1クエリ）。
+ * 発問はノートのひな形に移ったため取得しない（振り返りのプロンプトは review.ts で別に取得する）
  */
-export async function getLessonWithQuestions(
-  lessonId: string
-): Promise<LessonWithQuestions | null> {
+export async function getLessonWithUnit(lessonId: string): Promise<LessonWithUnit | null> {
   const supabase = await createClient();
 
-  const { data: lesson, error: lessonError } = await supabase
+  const { data: lesson, error } = await supabase
     .from("lessons")
-    .select("*, unit:units(*, subject:subjects(*)), questions(*)")
+    .select("*, unit:units(*, subject:subjects(*))")
     .eq("id", lessonId)
     .single();
 
-  if (lessonError || !lesson) return null;
-
-  return {
-    ...lesson,
-    questions: [...lesson.questions].sort((a, b) => a.order - b.order),
-  };
+  if (error || !lesson) return null;
+  return lesson;
 }

@@ -1,6 +1,7 @@
 /**
  * 教師向け分析画面で共通に使う、正答率・得点率の段階と色（Tailwind のクラス）。
  * 段階の境目は 40% / 70% / 90%。
+ * 色はインクの濃さで表し（高いほど濃い）、40% 未満だけを気をつけるところとして赤ペンにする（docs/design.md の「配色」）
  */
 
 /** 正答率の段階。上から順に判定する（min 以上ならその段階） */
@@ -8,30 +9,30 @@ export const RATE_LEVELS = [
   {
     min: 0.9,
     label: "90%以上",
-    tile: "bg-emerald-100 text-emerald-800 dark:bg-emerald-500/20 dark:text-emerald-300",
-    bar: "bg-emerald-500",
-    text: "text-emerald-700 dark:text-emerald-400",
+    tile: "bg-ink text-sheet",
+    bar: "bg-ink",
+    text: "text-ink",
   },
   {
     min: 0.7,
     label: "70〜90%",
-    tile: "bg-yellow-100 text-yellow-800 dark:bg-yellow-500/20 dark:text-yellow-300",
-    bar: "bg-yellow-400",
-    text: "text-yellow-700 dark:text-yellow-400",
+    tile: "bg-ink/30 text-ink",
+    bar: "bg-ink/60",
+    text: "text-ink",
   },
   {
     min: 0.4,
     label: "40〜70%",
-    tile: "bg-orange-100 text-orange-800 dark:bg-orange-500/20 dark:text-orange-300",
-    bar: "bg-orange-500",
-    text: "text-orange-700 dark:text-orange-400",
+    tile: "bg-ink/10 text-ink",
+    bar: "bg-ink/30",
+    text: "text-ink",
   },
   {
     min: 0,
     label: "40%未満",
-    tile: "bg-red-100 text-red-800 dark:bg-red-500/20 dark:text-red-300",
-    bar: "bg-red-500",
-    text: "text-red-700 dark:text-red-400",
+    tile: "bg-red-pen/10 text-red-pen",
+    bar: "bg-red-pen",
+    text: "text-red-pen",
   },
 ] as const;
 

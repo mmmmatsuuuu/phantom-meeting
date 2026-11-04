@@ -1,22 +1,16 @@
 "use client";
 
-import { useState, useRef } from "react";
-import type { YouTubePlayer } from "react-youtube";
-import type { Question } from "@/lib/db/contents";
 import type { QuizWithQuestions } from "@/lib/db/quizzes";
 import type { CodeSnippet, StudentCodeStateEntry } from "@/lib/db/code-snippets";
+import type { TiptapDoc } from "@/lib/tiptap-utils";
 import LessonTabs from "@/components/lesson/lesson-tabs";
 import LessonSidePanel from "@/components/lesson/lesson-side-panel";
-import PostList from "@/components/lesson/post-list";
 
 type Props = {
   lessonId: string;
   youtubeUrl: string;
-  questions: Question[];
   quiz: QuizWithQuestions | null;
-  currentUserId: string;
-  currentUserRole: string;
-  initialIsCompleted: boolean;
+  template: TiptapDoc | null;
   /** このレッスン以外で要復習のレッスン数（提出後ナッジ用） */
   otherReviewCount?: number;
   enablePlayground?: boolean;
@@ -24,88 +18,31 @@ type Props = {
   initialCodeStates?: Record<string, StudentCodeStateEntry>;
 };
 
+/** 左に動画と小テスト、右にノート（とコード）を並べる。PC での利用が前提（docs/design.md） */
 export default function LessonContent({
   lessonId,
   youtubeUrl,
-  questions,
   quiz,
-  currentUserId,
-  currentUserRole,
-  initialIsCompleted,
+  template,
   otherReviewCount = 0,
   enablePlayground = false,
   codeSnippets = [],
   initialCodeStates = {},
 }: Props) {
-  const [memoVisible, setMemoVisible] = useState(true);
-  const isTeacherOrAdmin = currentUserRole === "teacher" || currentUserRole === "admin";
-  // 小テストなし or 完了済み or teacher/admin なら最初からアンロック
-  const [isPostUnlocked, setIsPostUnlocked] = useState(
-    quiz === null || initialIsCompleted || isTeacherOrAdmin
-  );
-  const playerRef = useRef<YouTubePlayer | null>(null);
-
-  const getCurrentTime = (): number | null => {
-    if (!playerRef.current) return null;
-    return Math.floor(playerRef.current.getCurrentTime());
-  };
-
-  const seekTo = (seconds: number) => {
-    playerRef.current?.seekTo(seconds, true);
-  };
-
   return (
-    <div>
-      {!memoVisible && (
-        <div className="flex justify-end mb-3">
-          <button
-            onClick={() => setMemoVisible(true)}
-            className="flex items-center gap-1.5 text-sm px-3 py-1.5 rounded-md border hover:bg-muted transition-colors"
-          >
-            ✏️ メモを開く
-          </button>
-        </div>
-      )}
-
-      <div className="grid grid-cols-5 gap-6">
-        <div className={`${memoVisible ? "col-span-3" : "col-span-5"} space-y-8`}>
-          <LessonTabs
-            youtubeUrl={youtubeUrl}
-            questions={questions}
-            quiz={quiz}
-            otherReviewCount={otherReviewCount}
-            onPlayerReady={(player) => {
-              playerRef.current = player;
-            }}
-            onQuizCompleted={() => setIsPostUnlocked(true)}
-          />
-          <div className="border-t pt-6">
-            {isPostUnlocked ? (
-              <PostList lessonId={lessonId} currentUserId={currentUserId} currentUserRole={currentUserRole} seekTo={seekTo} />
-            ) : (
-              <div className="flex flex-col items-center justify-center py-12 gap-3 text-center">
-                <span className="text-4xl">🔒</span>
-                <p className="text-sm text-muted-foreground">
-                  小テストを完了すると、みんなの投稿が見られます
-                </p>
-              </div>
-            )}
-          </div>
-        </div>
-
-        {/* 閉じてもアンマウントせず非表示にする（プレイグラウンドの未保存の編集を保持するため） */}
-        <div className={memoVisible ? "col-span-2" : "hidden"}>
-          <LessonSidePanel
-            lessonId={lessonId}
-            enablePlayground={enablePlayground}
-            snippets={codeSnippets}
-            initialCodeStates={initialCodeStates}
-            getCurrentTime={getCurrentTime}
-            seekTo={seekTo}
-            onClose={() => setMemoVisible(false)}
-          />
-        </div>
-      </div>
+    <div className="grid grid-cols-[minmax(0,1.15fr)_minmax(0,1fr)] gap-8 items-start">
+      <LessonTabs
+        youtubeUrl={youtubeUrl}
+        quiz={quiz}
+        otherReviewCount={otherReviewCount}
+      />
+      <LessonSidePanel
+        lessonId={lessonId}
+        template={template}
+        enablePlayground={enablePlayground}
+        snippets={codeSnippets}
+        initialCodeStates={initialCodeStates}
+      />
     </div>
   );
 }

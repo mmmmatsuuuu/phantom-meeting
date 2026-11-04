@@ -25,10 +25,10 @@ function ToolbarButton({ onClick, isActive, title, children }: ToolbarButtonProp
         onClick();
       }}
       title={title}
-      className={`px-2 py-1 rounded text-sm transition-colors ${
+      className={`px-2 py-0.5 rounded-sm border text-xs transition-colors ${
         isActive
-          ? "bg-primary text-primary-foreground"
-          : "text-muted-foreground hover:text-foreground hover:bg-muted"
+          ? "bg-ink border-ink text-sheet"
+          : "border-rule bg-sheet text-muted-foreground hover:text-foreground hover:border-ink"
       }`}
     >
       {children}
@@ -90,180 +90,176 @@ export default function MemoToolbar({ editor, codeBlockLang, isCodeBlockActive }
     setShowTableGrid(false);
   };
 
+  // 1 行目は文章、2 行目はコードに分ける。コードブロックと言語の欄が途中で折り返さないよう、同じ行の同じまとまりに置く
   return (
-    <div className="flex flex-wrap items-center gap-0.5 px-2 py-1 border-b bg-muted/30">
-      <ToolbarButton
-        onClick={() => editor.chain().focus().toggleBold().run()}
-        isActive={editor.isActive("bold")}
-        title="太字"
-      >
-        <strong>B</strong>
-      </ToolbarButton>
-
-      <ToolbarButton
-        onClick={() => editor.chain().focus().toggleItalic().run()}
-        isActive={editor.isActive("italic")}
-        title="斜体"
-      >
-        <em>I</em>
-      </ToolbarButton>
-
-      <ToolbarButton
-        onClick={() => editor.chain().focus().toggleHeading({ level: 2 }).run()}
-        isActive={editor.isActive("heading", { level: 2 })}
-        title="見出し"
-      >
-        H2
-      </ToolbarButton>
-
-      <ToolbarButton
-        onClick={() => editor.chain().focus().toggleBulletList().run()}
-        isActive={editor.isActive("bulletList")}
-        title="箇条書き"
-      >
-        ≡
-      </ToolbarButton>
-
-      <ToolbarButton
-        onClick={() => editor.chain().focus().toggleOrderedList().run()}
-        isActive={editor.isActive("orderedList")}
-        title="番号付きリスト"
-      >
-        1.
-      </ToolbarButton>
-
-      <ToolbarButton
-        onClick={() => editor.chain().focus().toggleCode().run()}
-        isActive={editor.isActive("code")}
-        title="インラインコード"
-      >
-        {"<>"}
-      </ToolbarButton>
-
-      <ToolbarButton
-        onClick={() => editor.chain().focus().toggleCodeBlock().run()}
-        isActive={editor.isActive("codeBlock")}
-        title="コードブロック"
-      >
-        {"{ }"}
-      </ToolbarButton>
-
-      {isCodeBlockActive && (
-        <select
-          value={codeBlockLang}
-          onChange={(e) =>
-            editor.chain().focus().updateAttributes("codeBlock", { language: e.target.value || null }).run()
-          }
-          className="text-xs border rounded px-1.5 py-0.5 bg-background text-foreground focus:outline-none focus:ring-1 focus:ring-ring"
+    <div className="flex flex-col gap-1 px-2 py-1.5 border-b border-rule bg-surface font-sans">
+      <div className="flex flex-wrap items-center gap-1">
+        <ToolbarButton
+          onClick={() => editor.chain().focus().toggleBold().run()}
+          isActive={editor.isActive("bold")}
+          title="太字"
         >
-          <option value="">自動検出</option>
-          <option value="javascript">JavaScript</option>
-          <option value="python">Python</option>
-          <option value="c">C言語</option>
-          <option value="xml">HTML</option>
-          <option value="css">CSS</option>
-        </select>
-      )}
-
-      <ToolbarButton
-        onClick={() => editor.chain().focus().toggleBlockquote().run()}
-        isActive={editor.isActive("blockquote")}
-        title="コールアウト"
-      >
-        ▌
-      </ToolbarButton>
-
-      <ToolbarButton
-        onClick={() => setShowLinkInput((v) => !v)}
-        isActive={editor.isActive("link") || showLinkInput}
-        title="リンク"
-      >
-        🔗
-      </ToolbarButton>
-
-      {showLinkInput && (
-        <div className="flex items-center gap-1 ml-1">
-          <input
-            type="url"
-            value={linkUrl}
-            onChange={(e) => setLinkUrl(e.target.value)}
-            onKeyDown={(e) => {
-              if (e.key === "Enter") handleSetLink();
-              if (e.key === "Escape") setShowLinkInput(false);
-            }}
-            placeholder="https://..."
-            className="text-xs border rounded px-2 py-0.5 w-44 bg-background focus:outline-none focus:ring-1 focus:ring-ring"
-            autoFocus
-          />
+          太字
+        </ToolbarButton>
+        <ToolbarButton
+          onClick={() => editor.chain().focus().toggleItalic().run()}
+          isActive={editor.isActive("italic")}
+          title="斜体"
+        >
+          斜体
+        </ToolbarButton>
+        <ToolbarButton
+          onClick={() => editor.chain().focus().toggleHeading({ level: 2 }).run()}
+          isActive={editor.isActive("heading", { level: 2 })}
+          title="見出し"
+        >
+          見出し
+        </ToolbarButton>
+        <ToolbarButton
+          onClick={() => editor.chain().focus().toggleBulletList().run()}
+          isActive={editor.isActive("bulletList")}
+          title="箇条書き"
+        >
+          箇条書き
+        </ToolbarButton>
+        <ToolbarButton
+          onClick={() => editor.chain().focus().toggleOrderedList().run()}
+          isActive={editor.isActive("orderedList")}
+          title="番号付きリスト"
+        >
+          番号付き
+        </ToolbarButton>
+        <ToolbarButton
+          onClick={() => editor.chain().focus().toggleBlockquote().run()}
+          isActive={editor.isActive("blockquote")}
+          title="引用（「考えてみよう」などの問いに使う）"
+        >
+          引用
+        </ToolbarButton>
+        <ToolbarButton
+          onClick={() => setShowLinkInput((v) => !v)}
+          isActive={editor.isActive("link") || showLinkInput}
+          title="リンク"
+        >
+          リンク
+        </ToolbarButton>
+        <div className="relative">
           <button
+            ref={tableButtonRef}
             type="button"
-            onClick={handleSetLink}
-            className="text-xs px-2 py-0.5 rounded bg-primary text-primary-foreground"
+            onMouseDown={(e) => {
+              e.preventDefault();
+              setShowTableGrid((v) => !v);
+              setShowLinkInput(false);
+            }}
+            title="表を挿入"
+            className={`px-2 py-0.5 rounded-sm border text-xs transition-colors ${
+              editor.isActive("table")
+                ? "bg-ink border-ink text-sheet"
+                : "border-rule bg-sheet text-muted-foreground hover:text-foreground hover:border-ink"
+            }`}
           >
-            設定
+            表
           </button>
+          {showTableGrid && (
+            <div className="absolute top-full left-0 z-50 mt-1">
+              <TableGrid onSelect={handleInsertTable} />
+            </div>
+          )}
         </div>
-      )}
-
-      <div className="relative">
-        <button
-          ref={tableButtonRef}
-          type="button"
-          onMouseDown={(e) => {
-            e.preventDefault();
-            setShowTableGrid((v) => !v);
-            setShowLinkInput(false);
-          }}
-          title="表を挿入"
-          className={`px-2 py-1 rounded text-sm transition-colors ${
-            editor.isActive("table")
-              ? "bg-primary text-primary-foreground"
-              : "text-muted-foreground hover:text-foreground hover:bg-muted"
-          }`}
-        >
-          ⊞
-        </button>
-        {showTableGrid && (
-          <div className="absolute top-full left-0 z-50 mt-1">
-            <TableGrid onSelect={handleInsertTable} />
+        {showLinkInput && (
+          <div className="flex items-center gap-1 ml-1">
+            <input
+              type="url"
+              value={linkUrl}
+              onChange={(e) => setLinkUrl(e.target.value)}
+              onKeyDown={(e) => {
+                if (e.key === "Enter") handleSetLink();
+                if (e.key === "Escape") setShowLinkInput(false);
+              }}
+              placeholder="https://..."
+              className="text-xs border rounded px-2 py-0.5 w-44 bg-background focus:outline-none focus:ring-1 focus:ring-ring"
+              autoFocus
+            />
+            <button
+              type="button"
+              onClick={handleSetLink}
+              className="text-xs px-2 py-0.5 rounded bg-primary text-primary-foreground"
+            >
+              設定
+            </button>
           </div>
         )}
       </div>
-
-      {editor.isActive("table") && (
-        <>
+      <div className="flex flex-wrap items-center gap-1">
+        <div className="flex items-center gap-1 shrink-0">
           <ToolbarButton
-            onClick={() => editor.chain().focus().addRowAfter().run()}
-            title="行を追加"
+            onClick={() => editor.chain().focus().toggleCode().run()}
+            isActive={editor.isActive("code")}
+            title="インラインコード"
           >
-            +行
+            コード
           </ToolbarButton>
           <ToolbarButton
-            onClick={() => editor.chain().focus().addColumnAfter().run()}
-            title="列を追加"
+            onClick={() => editor.chain().focus().toggleCodeBlock().run()}
+            isActive={editor.isActive("codeBlock")}
+            title="コードブロック"
           >
-            +列
+            コードブロック
           </ToolbarButton>
-          <ToolbarButton
-            onClick={() => editor.chain().focus().deleteRow().run()}
-            title="行を削除"
-          >
-            −行
-          </ToolbarButton>
-          <ToolbarButton
-            onClick={() => editor.chain().focus().deleteColumn().run()}
-            title="列を削除"
-          >
-            −列
-          </ToolbarButton>
-          <ToolbarButton
-            onClick={() => editor.chain().focus().deleteTable().run()}
-            title="表を削除"
-          >
-            🗑
-          </ToolbarButton>
-        </>
-      )}
+          {isCodeBlockActive && (
+            <select
+              value={codeBlockLang}
+              onChange={(e) =>
+                editor.chain().focus().updateAttributes("codeBlock", { language: e.target.value || null }).run()
+              }
+              aria-label="コードの言語"
+              className="text-xs border border-rule rounded-sm px-1.5 py-0.5 bg-sheet text-foreground focus:outline-none focus:border-ink"
+            >
+              <option value="">自動検出</option>
+              <option value="javascript">JavaScript</option>
+              <option value="python">Python</option>
+              <option value="c">C言語</option>
+              <option value="xml">HTML</option>
+              <option value="css">CSS</option>
+            </select>
+          )}
+        </div>
+        {editor.isActive("table") && (
+          <>
+            <ToolbarButton
+              onClick={() => editor.chain().focus().addRowAfter().run()}
+              title="行を追加"
+            >
+              行を追加
+            </ToolbarButton>
+            <ToolbarButton
+              onClick={() => editor.chain().focus().addColumnAfter().run()}
+              title="列を追加"
+            >
+              列を追加
+            </ToolbarButton>
+            <ToolbarButton
+              onClick={() => editor.chain().focus().deleteRow().run()}
+              title="行を削除"
+            >
+              行を削除
+            </ToolbarButton>
+            <ToolbarButton
+              onClick={() => editor.chain().focus().deleteColumn().run()}
+              title="列を削除"
+            >
+              列を削除
+            </ToolbarButton>
+            <ToolbarButton
+              onClick={() => editor.chain().focus().deleteTable().run()}
+              title="表を削除"
+            >
+              表を削除
+            </ToolbarButton>
+          </>
+        )}
+      </div>
     </div>
   );
 }

@@ -93,7 +93,7 @@ export default function StudentPicker({ profiles }: Props) {
                   fill="none"
                   stroke="currentColor"
                   strokeWidth={2}
-                  className="ml-auto w-4 h-4 text-muted-foreground group-hover:text-indigo-500 group-hover:translate-x-0.5 transition-all shrink-0"
+                  className="ml-auto w-4 h-4 text-muted-foreground group-hover:text-ink group-hover:translate-x-0.5 transition-all shrink-0"
                   aria-hidden
                 >
                   <path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7 7" />

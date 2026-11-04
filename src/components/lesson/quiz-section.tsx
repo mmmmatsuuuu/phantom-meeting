@@ -47,6 +47,7 @@ type SortableItemProps = {
   label: string;
 };
 
+/** 並び替えの短冊。つまんで上下に動かす */
 function SortableItem({ id, label }: SortableItemProps) {
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } =
     useSortable({ id });
@@ -61,17 +62,46 @@ function SortableItem({ id, label }: SortableItemProps) {
     <div
       ref={setNodeRef}
       style={style}
-      className="flex items-center gap-2 px-3 py-2 rounded-md border bg-background cursor-grab active:cursor-grabbing select-none"
+      className="flex items-center gap-2 px-2.5 py-1.5 bg-paper border border-rule-strong cursor-grab active:cursor-grabbing select-none"
       {...attributes}
       {...listeners}
     >
-      <span className="text-muted-foreground text-sm">⠿</span>
-      <span className="text-sm">{label}</span>
+      <span className="text-muted-foreground text-sm">≡</span>
+      <span className="font-hand">{label}</span>
     </div>
   );
 }
 
-// --------------- 問題カード ---------------
+// --------------- 問題 ---------------
+
+// 選択肢の記号。選んだ記号を丸で囲む（答案用紙の書き方）
+const CHOICE_SYMBOLS = ["ア", "イ", "ウ", "エ", "オ", "カ", "キ", "ク", "ケ", "コ"];
+
+/**
+ * 赤ペンの採点の印。問題番号の左の欄に書き、文字にかけない
+ * （実際の採点でも、印を文字にかけないよう指導されている。docs/design.md）
+ */
+function GradeMark({ isCorrect }: { isCorrect: boolean | null }) {
+  if (isCorrect === null) return null;
+  return isCorrect ? (
+    <span aria-label="正解" className="block size-10 border-[2.5px] border-red-pen rounded-full -rotate-[8deg]" />
+  ) : (
+    <span aria-label="不正解" className="relative block size-10">
+      <span className="absolute left-1/2 top-0.5 h-9 w-[2.5px] -ml-px bg-red-pen rounded rotate-40" />
+      <span className="absolute left-1/2 top-0.5 h-9 w-[2.5px] -ml-px bg-red-pen rounded -rotate-40" />
+    </span>
+  );
+}
+
+/** 赤ペンの書き込み（解説・模範解答） */
+function RedNote({ label, children }: { label: string; children: React.ReactNode }) {
+  return (
+    <div className="mt-3 pl-3 border-l-2 border-red-pen text-red-pen font-hand leading-relaxed">
+      <span className="font-semibold mr-1.5">{label}</span>
+      {children}
+    </div>
+  );
+}
 
 type QuestionCardProps = {
   question: QuizQuestion;
@@ -115,150 +145,120 @@ function QuestionCard({ question, index, answer, onAnswerChange, state }: Questi
   };
 
   return (
-    <div
-      className={`border rounded-lg p-4 space-y-3 ${
-        isSubmitted && isCorrect === true
-          ? "border-green-500 bg-green-50 dark:bg-green-950/20"
-          : isSubmitted && isCorrect === false
-          ? "border-red-500 bg-red-50 dark:bg-red-950/20"
-          : "bg-card"
-      }`}
-    >
-      <div className="flex items-start gap-2">
-        <span className="text-sm font-semibold shrink-0">Q{index + 1}.</span>
-        <div className="flex-1">
+    <section className="grid grid-cols-[44px_32px_minmax(0,1fr)] gap-x-3 py-5 border-b border-rule last:border-b-0">
+      <div className="pt-0.5">
+        <GradeMark isCorrect={isCorrect} />
+      </div>
+      <span className="pt-1.5 font-hand font-semibold text-[17px] text-center">{index + 1}</span>
+      <div className="min-w-0">
+        <div className="quiz-question mb-2.5">
           <RichContent content={question.content as Record<string, unknown>} />
         </div>
-        {isSubmitted && isCorrect === true && (
-          <span className="text-green-600 font-bold shrink-0">○</span>
-        )}
-        {isSubmitted && isCorrect === false && (
-          <span className="text-red-600 font-bold shrink-0">✕</span>
-        )}
-      </div>
 
-      {/* 選択式 */}
-      {question.type === "multiple_choice" && answer.type === "multiple_choice" && (
-        <div className="space-y-1.5 pl-5">
-          {answer.shuffledOptions.map((opt, i) => {
-            const correctText = (question.options as string[])[(question.correct_answer as MultipleChoiceAnswer).index];
-            const isSelected = answer.selectedIndex === i;
-            const isCorrectChoice = isSubmitted && opt === correctText;
-            const isWrong = isSubmitted && isSelected && opt !== correctText;
+        {/* 選択式：記号を丸で囲んで選ぶ。正解の選択肢には赤で「正解」と添える */}
+        {question.type === "multiple_choice" && answer.type === "multiple_choice" && (
+          <div role="radiogroup" className="grid gap-1">
+            {answer.shuffledOptions.map((opt, i) => {
+              const correctText = (question.options as string[])[(question.correct_answer as MultipleChoiceAnswer).index];
+              const isSelected = answer.selectedIndex === i;
+              const isCorrectChoice = isSubmitted && opt === correctText;
 
-            return (
-              <label
-                key={i}
-                className={`flex items-center gap-2 px-3 py-1.5 rounded-md cursor-pointer transition-colors ${
-                  isCorrectChoice
-                    ? "bg-green-100 dark:bg-green-900/30 text-green-800 dark:text-green-300"
-                    : isWrong
-                    ? "bg-red-100 dark:bg-red-900/30 text-red-800 dark:text-red-300"
-                    : isSelected
-                    ? "bg-primary/10"
-                    : "hover:bg-muted"
-                }`}
-              >
-                <input
-                  type="radio"
-                  name={`q-${question.id}`}
-                  checked={isSelected}
-                  onChange={() =>
-                    !isSubmitted &&
-                    onAnswerChange({ type: "multiple_choice", selectedIndex: i, shuffledOptions: answer.shuffledOptions })
-                  }
-                  disabled={isSubmitted}
-                  className="shrink-0"
-                />
-                <span className="text-sm">{opt}</span>
-                {isCorrectChoice && (
-                  <span className="ml-auto text-xs text-green-600 font-medium">正解</span>
-                )}
-              </label>
-            );
-          })}
-        </div>
-      )}
-
-      {/* 記述式 */}
-      {question.type === "short_answer" && answer.type === "short_answer" && (
-        <div className="pl-5 space-y-2">
-          <textarea
-            value={answer.text}
-            onChange={(e) =>
-              !isSubmitted && onAnswerChange({ type: "short_answer", text: e.target.value })
-            }
-            disabled={isSubmitted}
-            placeholder="回答を入力..."
-            rows={3}
-            className="w-full border rounded-md px-3 py-2 text-sm bg-background focus:outline-none focus:ring-2 focus:ring-ring disabled:opacity-70 resize-none"
-          />
-          {isSubmitted && (
-            <div className="text-sm p-3 rounded-md bg-muted">
-              <span className="font-medium">模範解答: </span>
-              {(question.correct_answer as ShortAnswerCorrect).text}
-            </div>
-          )}
-        </div>
-      )}
-
-      {/* 並び替え */}
-      {question.type === "ordering" && answer.type === "ordering" && (
-        <div className="pl-5 space-y-2">
-          {!isSubmitted ? (
-            <DndContext
-              sensors={sensors}
-              collisionDetection={closestCenter}
-              onDragEnd={handleDragEnd}
-            >
-              <SortableContext
-                items={answer.items}
-                strategy={verticalListSortingStrategy}
-              >
-                <div className="space-y-1.5">
-                  {answer.items.map((item) => (
-                    <SortableItem key={item} id={item} label={item} />
-                  ))}
-                </div>
-              </SortableContext>
-            </DndContext>
-          ) : (
-            <div className="space-y-1.5">
-              {answer.items.map((item, i) => {
-                const correct = question.correct_answer as string[];
-                const isItemCorrect = correct[i] === item;
-                return (
-                  <div
-                    key={item}
-                    className={`flex items-center gap-2 px-3 py-2 rounded-md border text-sm ${
-                      isItemCorrect
-                        ? "bg-green-50 border-green-300 dark:bg-green-900/20"
-                        : "bg-red-50 border-red-300 dark:bg-red-900/20"
+              return (
+                <label
+                  key={i}
+                  className={`grid grid-cols-[34px_minmax(0,1fr)_auto] items-center px-2 py-1 rounded-sm font-hand ${
+                    isSubmitted ? "" : "cursor-pointer hover:bg-surface"
+                  }`}
+                >
+                  <input
+                    type="radio"
+                    name={`q-${question.id}`}
+                    checked={isSelected}
+                    onChange={() =>
+                      !isSubmitted &&
+                      onAnswerChange({ type: "multiple_choice", selectedIndex: i, shuffledOptions: answer.shuffledOptions })
+                    }
+                    disabled={isSubmitted}
+                    className="sr-only peer"
+                  />
+                  <span
+                    className={`grid place-items-center size-7 rounded-full border-[1.5px] peer-focus-visible:outline peer-focus-visible:outline-2 ${
+                      isSelected ? "border-ink" : "border-transparent"
                     }`}
                   >
-                    <span className="text-muted-foreground w-4">{i + 1}.</span>
-                    <span className="flex-1">{item}</span>
-                    {!isItemCorrect && (
-                      <span className="text-xs text-muted-foreground">
-                        → {correct[i]}
-                      </span>
-                    )}
-                  </div>
-                );
-              })}
-            </div>
-          )}
-        </div>
-      )}
+                    {CHOICE_SYMBOLS[i] ?? i + 1}
+                  </span>
+                  <span>{opt}</span>
+                  {isCorrectChoice && <span className="text-[13px] font-semibold text-red-pen">正解</span>}
+                </label>
+              );
+            })}
+          </div>
+        )}
 
-      {/* 解説（提出後に正解・不正解関係なく表示） */}
-      {isSubmitted && question.explanation && (
-        <div className="pl-5 pt-2 border-t">
-          <p className="text-xs font-medium text-muted-foreground mb-1">解説</p>
-          <RichContent content={question.explanation as Record<string, unknown>} />
-        </div>
-      )}
-    </div>
+        {/* 記述式 */}
+        {question.type === "short_answer" && answer.type === "short_answer" && (
+          <div>
+            <textarea
+              value={answer.text}
+              onChange={(e) =>
+                !isSubmitted && onAnswerChange({ type: "short_answer", text: e.target.value })
+              }
+              disabled={isSubmitted}
+              placeholder="答えを書く"
+              rows={2}
+              className="graph-paper w-full px-4 font-hand text-base leading-8 border border-rule-strong rounded-sm focus:outline-none focus:border-ink disabled:opacity-80 resize-none"
+            />
+            {isSubmitted && (
+              <RedNote label="模範解答">
+                {(question.correct_answer as ShortAnswerCorrect).text}
+                <span className="block text-xs font-sans">記述の問題は、自分で見比べて確かめよう（採点はしない）</span>
+              </RedNote>
+            )}
+          </div>
+        )}
+
+        {/* 並び替え：短冊を動かす */}
+        {question.type === "ordering" && answer.type === "ordering" && (
+          <div>
+            {!isSubmitted ? (
+              <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
+                <SortableContext items={answer.items} strategy={verticalListSortingStrategy}>
+                  <div className="grid gap-1.5">
+                    {answer.items.map((item) => (
+                      <SortableItem key={item} id={item} label={item} />
+                    ))}
+                  </div>
+                </SortableContext>
+              </DndContext>
+            ) : (
+              <>
+                <div className="grid gap-1.5">
+                  {answer.items.map((item, i) => (
+                    <div key={item} className="flex items-center gap-2 px-2.5 py-1.5 bg-paper border border-rule-strong font-hand">
+                      <span className="w-4 text-sm text-muted-foreground">{i + 1}.</span>
+                      <span>{item}</span>
+                    </div>
+                  ))}
+                </div>
+                {isCorrect === false && (
+                  <RedNote label="正しい順">{(question.correct_answer as string[]).join(" → ")}</RedNote>
+                )}
+              </>
+            )}
+          </div>
+        )}
+
+        {/* 解説（提出後に正解・不正解関係なく表示） */}
+        {isSubmitted && question.explanation && (
+          <RedNote label="解説">
+            <div className="quiz-explanation">
+              <RichContent content={question.explanation as Record<string, unknown>} />
+            </div>
+          </RedNote>
+        )}
+      </div>
+    </section>
   );
 }
 
@@ -299,10 +299,9 @@ type Props = {
   quiz: QuizWithQuestions;
   /** このレッスン以外で要復習のレッスン数（提出後ナッジ用） */
   otherReviewCount?: number;
-  onCompleted?: () => void;
 };
 
-export default function QuizSection({ quiz, otherReviewCount = 0, onCompleted }: Props) {
+export default function QuizSection({ quiz, otherReviewCount = 0 }: Props) {
   const [answers, setAnswers] = useState<Answer[]>(() =>
     quiz.questions.map(initAnswer)
   );
@@ -399,7 +398,6 @@ export default function QuizSection({ quiz, otherReviewCount = 0, onCompleted }:
       });
 
       if (res.ok) {
-        onCompleted?.();
         const statsRes = await fetch(`/api/quizzes/${quiz.id}/attempts`);
         if (statsRes.ok) {
           const json = (await statsRes.json()) as { data: RecentAttemptDetail[] | null };
@@ -417,72 +415,44 @@ export default function QuizSection({ quiz, otherReviewCount = 0, onCompleted }:
   };
 
   return (
-    <div className="space-y-5">
-      <div className="flex items-center justify-between">
-        <h2 className="text-base font-semibold">{quiz.title}</h2>
-        <span className="text-sm text-muted-foreground">{quiz.questions.length} 問</span>
-      </div>
-
+    <div className="space-y-4">
       {/* これまでの記録（受験前・受験後ともに表示、初回は非表示） */}
       {(recentStats !== null || frequentlyMissed.length > 0) && (
-        <div className="rounded-lg border bg-muted/40 p-4 space-y-2.5">
-          <p className="text-xs font-medium text-muted-foreground">これまでの記録</p>
+        <div className="flex flex-wrap items-center gap-x-6 gap-y-1 text-xs text-muted-foreground">
           {recentStats && (
-            <div className="flex items-center gap-6 text-sm">
-              <div className="text-center">
-                <p className="text-xs text-muted-foreground">直近最高</p>
-                <p className="font-bold">{recentStats.max}%</p>
-              </div>
-              <div className="text-center">
-                <p className="text-xs text-muted-foreground">直近平均</p>
-                <p className="font-bold">{recentStats.avg}%</p>
-              </div>
-              <p className="text-xs text-muted-foreground self-end pb-0.5">直近{recentStats.count}回</p>
-            </div>
+            <span>
+              これまで：直近{recentStats.count}回の最高 <b className="text-ink">{recentStats.max}%</b>・平均{" "}
+              <b className="text-ink">{recentStats.avg}%</b>
+            </span>
           )}
           {frequentlyMissed.length > 0 && (
-            <div className="flex items-center gap-2 flex-wrap">
-              <span className="text-xs text-muted-foreground shrink-0">間違いが多い問題:</span>
-              {frequentlyMissed.map((label) => (
-                <span
-                  key={label}
-                  className="inline-block px-2 py-0.5 rounded-full bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400 text-xs font-medium"
-                >
-                  {label}
-                </span>
-              ))}
-            </div>
+            <span>
+              間違いが多い問題：<b className="text-red-pen">{frequentlyMissed.join("・")}</b>
+            </span>
           )}
         </div>
       )}
 
-      {/* 提出後のスコアカード */}
-      {quizState === "submitted" && score !== null && (
-        <div className="rounded-lg border bg-card p-4 text-center space-y-1">
-          {score.autoGradable > 0 && (
-            <p className="text-2xl font-bold">
-              {score.correct} / {score.autoGradable}
-              <span className="text-base font-normal text-muted-foreground ml-1">点</span>
-              <span className="text-lg font-normal text-muted-foreground ml-2">
-                （{Math.round((score.correct / score.autoGradable) * 100)}%）
+      {/* 答案用紙 */}
+      <div className="bg-sheet border border-rule-strong px-7 pb-6">
+        <div className="grid grid-cols-[minmax(0,1fr)_auto] -mx-7 mb-2 border-b-2 border-ink">
+          <div className="px-7 py-2.5">
+            <span className="block text-[11px] text-muted-foreground">小テスト</span>
+            <span className="font-hand font-semibold text-lg">{quiz.title}</span>
+          </div>
+          <div className="min-w-[120px] px-4 py-2.5 text-center border-l border-rule-strong">
+            <span className="block text-[11px] text-muted-foreground">得点</span>
+            {quizState === "submitted" && score !== null && score.autoGradable > 0 ? (
+              // 得点は赤ペンで書くだけで、丸で囲まない（点数を目立たせない）
+              <span className="font-hand font-semibold text-2xl text-red-pen">
+                {score.correct} / {score.autoGradable}
               </span>
-            </p>
-          )}
-          {quiz.questions.some((q) => q.type === "short_answer") && (
-            <p className="text-sm text-muted-foreground">記述式は模範解答を参考に自己採点してください</p>
-          )}
-          {otherReviewCount > 0 && (
-            <Link
-              href="/quiz-results"
-              className="inline-flex items-center gap-1.5 text-sm text-red-600 dark:text-red-400 hover:underline pt-1"
-            >
-              ⚠ ほかに要復習のレッスンが {otherReviewCount} 件あります → 小テスト結果で確認
-            </Link>
-          )}
+            ) : (
+              <span className="text-sm text-muted-foreground">{quiz.questions.length} 問</span>
+            )}
+          </div>
         </div>
-      )}
 
-      <div className="space-y-4">
         {quiz.questions.map((q, i) => (
           <QuestionCard
             key={q.id}
@@ -495,25 +465,38 @@ export default function QuizSection({ quiz, otherReviewCount = 0, onCompleted }:
             state={quizState}
           />
         ))}
-      </div>
 
-      {quizState === "answering" ? (
-        <SubmitButton
-          loading={submitting}
-          loadingLabel="送信中..."
-          onClick={handleSubmit}
-          className="w-full py-2.5 text-sm rounded-md bg-primary text-primary-foreground hover:opacity-90 transition-opacity disabled:opacity-50 disabled:cursor-not-allowed"
-        >
-          回答を提出する
-        </SubmitButton>
-      ) : (
-        <button
-          onClick={handleRetry}
-          className="w-full py-2.5 text-sm rounded-md border hover:bg-muted transition-colors"
-        >
-          もう一度挑戦する
-        </button>
-      )}
+        <div className="flex flex-wrap items-center gap-3 mt-5">
+          {quizState === "answering" ? (
+            <>
+              <SubmitButton
+                loading={submitting}
+                loadingLabel="送信中..."
+                onClick={handleSubmit}
+                className="px-5 py-2 text-sm rounded-sm bg-primary text-primary-foreground hover:opacity-90 transition-opacity disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                答え合わせ
+              </SubmitButton>
+              <span className="text-xs text-muted-foreground">答え合わせのあとも、何度でも解き直せます</span>
+            </>
+          ) : (
+            <>
+              <button
+                onClick={handleRetry}
+                className="px-5 py-2 text-sm rounded-sm border border-ink hover:bg-surface transition-colors"
+              >
+                もう一度解く
+              </button>
+              <span className="text-xs text-muted-foreground">間違えたところはノートを見直してから解き直そう</span>
+            </>
+          )}
+        </div>
+        {quizState === "submitted" && otherReviewCount > 0 && (
+          <Link href="/quiz-results" className="inline-block mt-3 text-sm text-red-pen underline underline-offset-2">
+            ほかに見直したいレッスンが {otherReviewCount} 件あります（小テスト結果で確認）
+          </Link>
+        )}
+      </div>
     </div>
   );
 }

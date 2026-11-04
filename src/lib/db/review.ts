@@ -53,7 +53,7 @@ export async function getUnitReviewData(
     lessonIds.length > 0
       ? supabase
           .from("memos")
-          .select("lesson_id, content, timestamp_seconds, created_at, posts(id)")
+          .select("lesson_id, content, timestamp_seconds, created_at")
           .eq("user_id", userId)
           .in("lesson_id", lessonIds)
           .order("created_at")
@@ -113,7 +113,6 @@ export async function getUnitReviewData(
           text: tiptapDocToText(m.content as Record<string, unknown>),
           createdAt: m.created_at,
           hasTimestamp: m.timestamp_seconds !== null,
-          shared: m.posts.length > 0,
         })),
       snippets: [...lesson.code_snippets].sort(byOrder).map((s) => {
         const state = codeStates.get(s.id);

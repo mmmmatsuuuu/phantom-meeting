@@ -22,7 +22,7 @@ export default function LessonMemoCards({ lessonId, grade, classNum, active }: P
   const { data: students, error, loading } = useLazyFetch<LessonMemoStudent[]>(
     `/api/teacher/lessons/${lessonId}/memos?grade=${grade}&class=${classNum}`,
     active,
-    "メモの取得に失敗しました"
+    "ノートの取得に失敗しました"
   );
 
   if (loading) {
@@ -59,7 +59,7 @@ export default function LessonMemoCards({ lessonId, grade, classNum, active }: P
       {/* サマリー */}
       <div className="rounded-xl border bg-card p-5 flex flex-wrap items-center gap-x-8 gap-y-3">
         <div>
-          <p className="text-xs text-muted-foreground">メモを書いた生徒</p>
+          <p className="text-xs text-muted-foreground">ノートを書いた生徒</p>
           <p className="text-4xl font-bold tabular-nums leading-tight">
             {memoStudentCount}
             <span className="text-lg font-medium text-muted-foreground">
@@ -71,12 +71,12 @@ export default function LessonMemoCards({ lessonId, grade, classNum, active }: P
         <div className="flex-1 min-w-[200px] space-y-2">
           <div className="h-2.5 rounded-full bg-muted overflow-hidden">
             <div
-              className="h-full rounded-full bg-indigo-500"
+              className="h-full rounded-full bg-ink"
               style={{ width: `${Math.round(memoRate * 100)}%` }}
             />
           </div>
           <p className="text-xs text-muted-foreground">
-            メモの合計 <span className="font-medium text-foreground tabular-nums">{memoTotal}件</span>
+            ノートの合計 <span className="font-medium text-foreground tabular-nums">{memoTotal}件</span>
           </p>
         </div>
       </div>
@@ -94,14 +94,14 @@ export default function LessonMemoCards({ lessonId, grade, classNum, active }: P
               </span>
               <Link
                 href={`/teacher/students/${student.id}`}
-                className="flex-1 text-sm font-medium truncate hover:text-indigo-600 transition-colors"
+                className="flex-1 text-sm font-medium truncate hover:text-ink transition-colors"
               >
                 {student.display_name}
               </Link>
               <span
                 className={`text-[10px] font-semibold px-1.5 py-0.5 rounded shrink-0 tabular-nums ${
                   student.memos.length > 0
-                    ? "bg-indigo-50 text-indigo-700 dark:bg-indigo-500/20 dark:text-indigo-300"
+                    ? "bg-surface text-ink"
                     : "bg-muted text-muted-foreground"
                 }`}
               >
@@ -113,7 +113,7 @@ export default function LessonMemoCards({ lessonId, grade, classNum, active }: P
             <div className="flex-1 overflow-y-auto p-3">
               {student.memos.length === 0 ? (
                 <div className="h-full rounded-lg border border-dashed flex items-center justify-center text-xs text-muted-foreground">
-                  メモはありません
+                  ノートはありません
                 </div>
               ) : (
                 <div className="space-y-2">

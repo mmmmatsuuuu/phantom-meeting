@@ -1,5 +1,6 @@
 import { redirect } from "next/navigation";
 import { getUserProfile } from "@/lib/supabase/server";
+import NavBar from "@/components/shared/nav-bar";
 
 export default async function AdminLayout({
   children,
@@ -16,5 +17,10 @@ export default async function AdminLayout({
     redirect("/");
   }
 
-  return <>{children}</>;
+  return (
+    <>
+      <NavBar />
+      {children}
+    </>
+  );
 }

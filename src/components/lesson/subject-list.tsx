@@ -12,13 +12,6 @@ import type { LessonBadge } from "@/lib/student-dashboard";
 import { sortUnitsNewestFirst } from "@/lib/contents-order";
 import ReviewPromptDialog from "@/components/student/review-prompt-dialog";
 
-const SUBJECT_COLORS = [
-  "from-indigo-500 to-indigo-600",
-  "from-violet-500 to-violet-600",
-  "from-sky-500 to-sky-600",
-  "from-teal-500 to-teal-600",
-];
-
 const COOKIE_KEY = "lesson_subjects_collapsed";
 const COOKIE_MAX_AGE = 60 * 60 * 24 * 365; // 1 year
 
@@ -45,37 +38,29 @@ function writeCollapsedIds(ids: Set<string>) {
 type Props = {
   subjects: SubjectWithUnits[];
   initialCollapsedIds: string[];
-  /** 生徒の学習状況バッジ（レッスンID → バッジ）。未指定なら非表示 */
+  /** 生徒の学習状況（レッスンID → ノートの有無と小テストの得点）。未指定なら非表示 */
   lessonBadges?: Record<string, LessonBadge>;
   /** 単元内に表示する自由制作の課題（単元ID → 課題） */
   makerEventsByUnit?: Record<string, { id: string; title: string }[]>;
 };
 
-function LessonStatusBadges({ badge }: { badge: LessonBadge }) {
+// 行の高さはルーズリーフの罫線の間隔（40px）にそろえる
+const ROW = "grid grid-cols-[44px_minmax(0,1fr)_auto] gap-2 h-10 leading-10";
+
+function LessonMarks({ badge }: { badge: LessonBadge }) {
   return (
-    <div className="flex items-center gap-1.5 shrink-0">
-      {badge.memoCount > 0 && (
-        <span className="text-xs px-1.5 py-0.5 rounded-full bg-muted text-muted-foreground">
-          📝 {badge.memoCount}
-        </span>
-      )}
+    <span className="text-xs leading-10 text-muted-foreground whitespace-nowrap">
+      {badge.memoCount > 0 && <span className="font-semibold text-ink">ノートあり</span>}
       {badge.hasQuiz &&
         (badge.attempted ? (
-          badge.needsReview ? (
-            <span className="text-xs px-2 py-0.5 rounded-full bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400 font-medium">
-              ⚠ {badge.latestRate}%
-            </span>
-          ) : (
-            <span className="text-xs px-2 py-0.5 rounded-full bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400 font-medium">
-              ✓ {badge.latestRate !== null ? `${badge.latestRate}%` : "済"}
-            </span>
-          )
-        ) : (
-          <span className="text-xs px-2 py-0.5 rounded-full border text-muted-foreground">
-            未受験
+          // 小テストの得点は答え合わせなので赤ペン
+          <span className="ml-2.5 font-semibold text-red-pen">
+            {badge.latestRate !== null ? badge.latestRate : "済"}
           </span>
+        ) : (
+          <span className="ml-2.5">未受験</span>
         ))}
-    </div>
+    </span>
   );
 }
 
@@ -97,7 +82,6 @@ export default function SubjectList({
       } else {
         next.add(id);
       }
-      // sync with browser cookie
       // read fresh state from cookie in case of multiple tabs
       const cookieIds = readCollapsedIds();
       if (next.has(id)) {
@@ -111,9 +95,8 @@ export default function SubjectList({
   };
 
   return (
-    <div className="space-y-4">
-      {subjects.map((subject, subjectIndex) => {
-        const colorClass = SUBJECT_COLORS[subjectIndex % SUBJECT_COLORS.length];
+    <div>
+      {subjects.map((subject) => {
         const isOpen = !collapsedIds.has(subject.id);
 
         return (
@@ -121,105 +104,62 @@ export default function SubjectList({
             key={subject.id}
             open={isOpen}
             onOpenChange={() => toggleSubject(subject.id)}
+            className="mt-7"
           >
-            <div className="rounded-xl border overflow-hidden shadow-sm">
-              {/* Subject color header */}
-              <CollapsibleTrigger asChild>
-                <button
-                  className={`w-full bg-gradient-to-r ${colorClass} px-5 py-4 text-white flex items-center justify-between cursor-pointer`}
-                >
-                  <h2 className="text-lg font-bold">{subject.name}</h2>
-                  <svg
-                    viewBox="0 0 24 24"
-                    fill="none"
-                    stroke="currentColor"
-                    strokeWidth={2.5}
-                    className={`w-5 h-5 transition-transform duration-200 ${isOpen ? "rotate-180" : ""}`}
-                  >
-                    <path
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      d="M19 9l-7 7-7-7"
-                    />
-                  </svg>
-                </button>
-              </CollapsibleTrigger>
+            <CollapsibleTrigger className="flex items-center gap-1.5 text-[13px] tracking-[0.1em] text-muted-foreground hover:text-foreground transition-colors">
+              {subject.name}
+              <svg
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth={2}
+                className={`w-3.5 h-3.5 transition-transform ${isOpen ? "" : "-rotate-90"}`}
+                aria-hidden="true"
+              >
+                <path strokeLinecap="round" strokeLinejoin="round" d="M19 9l-7 7-7-7" />
+              </svg>
+            </CollapsibleTrigger>
 
-              <CollapsibleContent>
-                <div className="bg-card divide-y">
-                  {/* 新しい単元を上に表示する。単元内のレッスンは授業の順のまま */}
-                  {sortUnitsNewestFirst(subject.units).map((unit) => (
-                    <div key={unit.id} className="px-5 py-4">
-                      <div className="flex items-center justify-between gap-2 mb-3">
-                        <h3 className="text-xs font-semibold tracking-widest text-muted-foreground uppercase">
-                          {unit.name}
-                        </h3>
-                        {unit.lessons.length > 0 && (
-                          <ReviewPromptDialog unitId={unit.id} unitName={unit.name} />
-                        )}
-                      </div>
-                      <div className="grid gap-2">
-                        {unit.lessons.map((lesson, index) => (
-                          <Link
-                            key={lesson.id}
-                            href={`/lessons/${lesson.id}`}
-                            className="flex items-center justify-between p-3 rounded-lg border bg-background hover:border-indigo-400 hover:bg-indigo-50/40 dark:hover:bg-indigo-950/40 hover:shadow-sm transition-all group"
-                          >
-                            <div className="flex items-center gap-3">
-                              <span className="flex items-center justify-center w-7 h-7 rounded-full bg-indigo-50 dark:bg-indigo-950 text-indigo-600 shrink-0">
-                                <svg
-                                  viewBox="0 0 24 24"
-                                  fill="currentColor"
-                                  className="w-3.5 h-3.5 ml-0.5"
-                                >
-                                  <path d="M8 5v14l11-7z" />
-                                </svg>
-                              </span>
-                              <div>
-                                <span className="text-xs text-muted-foreground mr-2">
-                                  #{index + 1}
-                                </span>
-                                <span className="text-sm font-medium">
-                                  {lesson.title}
-                                </span>
-                              </div>
-                            </div>
-                            <div className="flex items-center gap-2 shrink-0">
-                              {lessonBadges?.[lesson.id] && (
-                                <LessonStatusBadges badge={lessonBadges[lesson.id]} />
-                              )}
-                              <svg
-                                viewBox="0 0 24 24"
-                                fill="none"
-                                stroke="currentColor"
-                                strokeWidth={2}
-                                className="w-4 h-4 text-muted-foreground group-hover:text-indigo-500 transition-colors shrink-0"
-                              >
-                                <path
-                                  strokeLinecap="round"
-                                  strokeLinejoin="round"
-                                  d="M9 5l7 7-7 7"
-                                />
-                              </svg>
-                            </div>
-                          </Link>
-                        ))}
-                        {makerEventsByUnit?.[unit.id]?.map((event) => (
-                          <Link
-                            key={event.id}
-                            href={`/maker/${event.id}`}
-                            className="flex items-center gap-3 p-3 rounded-lg border border-amber-300 bg-amber-50/60 dark:bg-amber-950/20 hover:border-amber-500 hover:shadow-sm transition-all"
-                          >
-                            <span className="text-lg shrink-0">🛠</span>
-                            <span className="text-sm font-medium">{event.title}</span>
-                          </Link>
-                        ))}
-                      </div>
-                    </div>
+            <CollapsibleContent>
+              {/* 新しい単元を上に表示する。単元内のレッスンは授業の順のまま */}
+              {sortUnitsNewestFirst(subject.units).map((unit) => (
+                <section
+                  key={unit.id}
+                  className="loose-leaf mt-3 [&+&]:mt-6 pl-16 pr-7 pb-10 border border-rule-strong"
+                >
+                  <div className="flex items-end justify-between gap-3 h-20 pb-2">
+                    <h2 className="font-hand font-semibold text-[22px] leading-normal">{unit.name}</h2>
+                    {unit.lessons.length > 0 && (
+                      <ReviewPromptDialog unitId={unit.id} unitName={unit.name} />
+                    )}
+                  </div>
+                  {unit.lessons.map((lesson, index) => (
+                    <Link key={lesson.id} href={`/lessons/${lesson.id}`} className={`group ${ROW}`}>
+                      <span className="font-mono text-[13px] text-muted-foreground">
+                        {String(index + 1).padStart(2, "0")}
+                      </span>
+                      <span className="font-hand text-[17px] truncate group-hover:underline underline-offset-[5px]">
+                        {lesson.title}
+                      </span>
+                      {lessonBadges?.[lesson.id] ? (
+                        <LessonMarks badge={lessonBadges[lesson.id]} />
+                      ) : (
+                        <span />
+                      )}
+                    </Link>
                   ))}
-                </div>
-              </CollapsibleContent>
-            </div>
+                  {makerEventsByUnit?.[unit.id]?.map((event) => (
+                    <Link key={event.id} href={`/maker/${event.id}`} className={`group ${ROW}`}>
+                      <span className="text-[13px] text-muted-foreground">自由</span>
+                      <span className="font-hand font-semibold text-[17px] truncate group-hover:underline underline-offset-[5px]">
+                        {event.title}
+                      </span>
+                      <span />
+                    </Link>
+                  ))}
+                </section>
+              ))}
+            </CollapsibleContent>
           </Collapsible>
         );
       })}

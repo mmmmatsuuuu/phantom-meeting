@@ -88,7 +88,7 @@ export default function ContentsManager({ subjects: initialSubjects, initialSubj
   const handleDeleteLesson = async (lessonId: string, unitId: string) => {
     if (
       !confirm(
-        "このレッスンを削除しますか？\n\nこのレッスンに紐づくメモ・投稿・小テスト回答もすべて削除されます。この操作は取り消せません。"
+        "このレッスンを削除しますか？\n\nこのレッスンに紐づくノート・小テスト回答もすべて削除されます。この操作は取り消せません。"
       )
     )
       return;
@@ -179,7 +179,7 @@ export default function ContentsManager({ subjects: initialSubjects, initialSubj
     <div className="max-w-3xl mx-auto px-4 py-8">
       <div className="mb-6 flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-bold mb-1">📚 コンテンツ管理</h1>
+          <h1 className="font-hand font-semibold text-2xl mb-1">コンテンツ管理</h1>
           <p className="text-sm text-muted-foreground">
             科目ごとに単元を管理します。新しい単元が上に表示されます。レッスンは各単元から追加できます。
           </p>
@@ -385,7 +385,7 @@ export default function ContentsManager({ subjects: initialSubjects, initialSubj
                           href={`/teacher/lessons/new?unitId=${unit.id}`}
                           className="text-xs px-2 py-1 rounded border hover:bg-muted transition-colors"
                         >
-                          📺 レッスン追加
+                          レッスン追加
                         </Link>
                         <button
                           onClick={() =>
@@ -412,19 +412,25 @@ export default function ContentsManager({ subjects: initialSubjects, initialSubj
                       className="flex items-center gap-2 px-10 py-2 border-t bg-muted/20"
                     >
                       <span className="flex-1 text-sm text-muted-foreground">
-                        📺 {lesson.title}
+                        {lesson.title}
                       </span>
+                      <Link
+                        href={`/teacher/lessons/${lesson.id}/note-template`}
+                        className="text-xs px-2 py-1 rounded border hover:bg-muted transition-colors"
+                      >
+                        ノートのひな形
+                      </Link>
                       <Link
                         href={`/teacher/lessons/${lesson.id}/quiz/new`}
                         className="text-xs px-2 py-1 rounded border hover:bg-muted transition-colors"
                       >
-                        📝 小テスト
+                        小テスト
                       </Link>
                       <Link
                         href={`/teacher/lessons/${lesson.id}/code-snippets`}
                         className="text-xs px-2 py-1 rounded border hover:bg-muted transition-colors"
                       >
-                        💻 コード
+                        コード
                       </Link>
                       <button
                         onClick={() =>

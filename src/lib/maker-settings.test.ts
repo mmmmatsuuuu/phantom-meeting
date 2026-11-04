@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { listMakerClasses, parseMakerSettings } from "./maker-settings";
+import { listMakerClasses, parseMakerSettings, resolveGalleryClass } from "./maker-settings";
 
 describe("parseMakerSettings", () => {
   it("空や不正な値は空の設定にする", () => {
@@ -35,5 +35,22 @@ describe("listMakerClasses", () => {
 
   it("GCNN 形式でない番号を除く", () => {
     expect(listMakerClasses([5, 4101, 1001, 99999])).toEqual([]);
+  });
+});
+
+describe("resolveGalleryClass", () => {
+  it("URL の学年・組が正しければそれを使う", () => {
+    expect(resolveGalleryClass({ grade: "2", class: "3" }, 1101)).toEqual({ grade: 2, classNum: 3 });
+  });
+
+  it("URL の指定がない・不正なら、閲覧している生徒のクラス", () => {
+    expect(resolveGalleryClass({}, 1205)).toEqual({ grade: 1, classNum: 2 });
+    expect(resolveGalleryClass({ grade: "4", class: "1" }, 2315)).toEqual({ grade: 2, classNum: 3 });
+    expect(resolveGalleryClass({ grade: "1", class: "x" }, 2315)).toEqual({ grade: 2, classNum: 3 });
+  });
+
+  it("学籍番号もなければ 1年1組", () => {
+    expect(resolveGalleryClass({}, null)).toEqual({ grade: 1, classNum: 1 });
+    expect(resolveGalleryClass({}, 5)).toEqual({ grade: 1, classNum: 1 });
   });
 });

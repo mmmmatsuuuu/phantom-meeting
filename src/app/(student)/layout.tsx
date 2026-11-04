@@ -1,5 +1,6 @@
 import { redirect } from "next/navigation";
 import { getUser } from "@/lib/supabase/server";
+import NavBar from "@/components/shared/nav-bar";
 
 export default async function StudentLayout({
   children,
@@ -12,5 +13,10 @@ export default async function StudentLayout({
     redirect("/login");
   }
 
-  return <>{children}</>;
+  return (
+    <>
+      <NavBar />
+      {children}
+    </>
+  );
 }

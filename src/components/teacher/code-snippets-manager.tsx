@@ -177,7 +177,7 @@ export default function CodeSnippetsManager({
           <span className="text-sm font-medium">プレイグラウンドを有効にする</span>
         </label>
         <p className="text-xs text-muted-foreground mt-1">
-          有効にすると、生徒のレッスンページのメモ欄に「💻 コード」タブが表示されます。
+          有効にすると、生徒のレッスンページのノートの横に「コード」のインデックスが表示されます。
         </p>
       </div>
 

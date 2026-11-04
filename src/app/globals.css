@@ -1,13 +1,17 @@
 @import "tailwindcss";
 @import "tw-animate-css";
 
-@custom-variant dark (&:is(.dark *));
-
 @theme inline {
-  --radius-sm: calc(var(--radius) - 2px);
+  --radius-sm: calc(var(--radius) - 1px);
   --radius-md: var(--radius);
-  --radius-lg: calc(var(--radius) + 2px);
-  --radius-xl: calc(var(--radius) + 6px);
+  --radius-lg: calc(var(--radius) + 1px);
+  --radius-xl: calc(var(--radius) + 2px);
+  /* 紙と文具の質感に合わせ、角丸は大きくしない（docs/design.md） */
+  --radius-2xl: calc(var(--radius) + 2px);
+  --radius-3xl: calc(var(--radius) + 2px);
+  /* カードの影は使わない。ダイアログやメニューの影（md 以上）は重なりを示すため残す */
+  --shadow-xs: none;
+  --shadow-sm: none;
   --color-background: var(--background);
   --color-foreground: var(--foreground);
   --color-card: var(--card);
@@ -26,61 +30,62 @@
   --color-border: var(--border);
   --color-input: var(--input);
   --color-ring: var(--ring);
+
+  /* ruminy の紙とインク。値の理由は docs/design.md の「見た目の決まり」 */
+  --color-paper: var(--paper);
+  --color-sheet: var(--sheet);
+  --color-surface: var(--surface);
+  --color-ink: var(--ink);
+  --color-pencil: var(--pencil);
+  --color-rule: var(--rule);
+  --color-rule-strong: var(--rule-strong);
+  --color-red-pen: var(--red-pen);
+
+  /* 操作と状態は端末標準のサンセリフ、内容（先生や生徒が書いたもの）は Klee One */
+  --font-sans: system-ui, -apple-system, "Hiragino Sans", "Noto Sans JP", sans-serif;
+  --font-hand: "Klee One", system-ui, sans-serif;
+  --font-mono: ui-monospace, SFMono-Regular, Menlo, monospace;
 }
 
+/*
+ * ダークモードには対応しない（docs/design.md）。
+ * 紙の質感を暗い配色で出すのは難しいため、純白を避けた紙の色で夜もまぶしくないようにしている。
+ */
 :root {
-  /* New York スタイル: シャープでコンパクト */
-  --radius: 0.375rem;
+  color-scheme: light;
+  --radius: 0.125rem;
 
-  /* Zinc ベース */
-  --background: oklch(1 0 0);
-  --foreground: oklch(0.141 0.005 285.823); /* zinc-950 */
-  --card: oklch(1 0 0);
-  --card-foreground: oklch(0.141 0.005 285.823);
-  --popover: oklch(1 0 0);
-  --popover-foreground: oklch(0.141 0.005 285.823);
+  --paper: #efede6;
+  --sheet: #f8f7f2;
+  --surface: #e5e2d8;
+  --ink: #1d2b3f;
+  --pencil: #60605b;
+  --rule: #d6d3c7;
+  --rule-strong: #b3afa2;
+  /* 赤ペン：答え合わせと、直すところ・気をつけるところにだけ使う */
+  --red-pen: #b93a2b;
+  /* 方眼の線 */
+  --grid: rgb(29 43 63 / 0.055);
 
-  /* Indigo アクセント */
-  --primary: oklch(0.511 0.262 276.966); /* indigo-600 */
-  --primary-foreground: oklch(1 0 0);
-
-  /* Zinc セカンダリ・ミュート */
-  --secondary: oklch(0.967 0.001 286.375); /* zinc-100 */
-  --secondary-foreground: oklch(0.21 0.006 285.885); /* zinc-900 */
-  --muted: oklch(0.967 0.001 286.375);
-  --muted-foreground: oklch(0.552 0.016 285.938); /* zinc-500 */
-  --accent: oklch(0.967 0.001 286.375);
-  --accent-foreground: oklch(0.21 0.006 285.885);
-
-  --destructive: oklch(0.577 0.245 27.325);
-  --border: oklch(0.92 0.004 286.32); /* zinc-200 */
-  --input: oklch(0.92 0.004 286.32);
-  --ring: oklch(0.511 0.262 276.966); /* indigo-600 */
-}
-
-.dark {
-  --background: oklch(0.141 0.005 285.823); /* zinc-950 */
-  --foreground: oklch(0.985 0.001 286.375);
-  --card: oklch(0.21 0.006 285.885); /* zinc-900 */
-  --card-foreground: oklch(0.985 0.001 286.375);
-  --popover: oklch(0.21 0.006 285.885);
-  --popover-foreground: oklch(0.985 0.001 286.375);
-
-  /* Indigo（ダークモードは明るめ） */
-  --primary: oklch(0.673 0.182 276.935); /* indigo-400 */
-  --primary-foreground: oklch(0.257 0.09 281.288); /* indigo-950 */
-
-  --secondary: oklch(0.274 0.006 286.033); /* zinc-800 */
-  --secondary-foreground: oklch(0.985 0.001 286.375);
-  --muted: oklch(0.274 0.006 286.033);
-  --muted-foreground: oklch(0.705 0.015 286.067); /* zinc-400 */
-  --accent: oklch(0.274 0.006 286.033);
-  --accent-foreground: oklch(0.985 0.001 286.375);
-
-  --destructive: oklch(0.704 0.191 22.216);
-  --border: oklch(1 0 0 / 10%);
-  --input: oklch(1 0 0 / 15%);
-  --ring: oklch(0.673 0.182 276.935);
+  /* shadcn/ui の変数を紙とインクに対応させる */
+  --background: var(--paper);
+  --foreground: var(--ink);
+  --card: var(--sheet);
+  --card-foreground: var(--ink);
+  --popover: var(--sheet);
+  --popover-foreground: var(--ink);
+  --primary: var(--ink);
+  --primary-foreground: var(--sheet);
+  --secondary: var(--surface);
+  --secondary-foreground: var(--ink);
+  --muted: var(--surface);
+  --muted-foreground: var(--pencil);
+  --accent: var(--surface);
+  --accent-foreground: var(--ink);
+  --destructive: var(--red-pen);
+  --border: var(--rule);
+  --input: var(--rule-strong);
+  --ring: var(--ink);
 }
 
 @layer base {
@@ -89,6 +94,35 @@
   }
   body {
     @apply bg-background text-foreground;
+  }
+}
+
+@layer components {
+  /*
+   * 方眼の用紙。入力欄とノートに使う（コードエディタには使わない）。
+   * 目は 16px で、ノートの行の高さと余白も 16px の倍数にそろえる
+   */
+  .graph-paper {
+    background-color: var(--sheet);
+    background-image:
+      linear-gradient(var(--grid) 1px, transparent 1px),
+      linear-gradient(90deg, var(--grid) 1px, transparent 1px);
+    background-size: 16px 16px;
+    background-position: -1px -1px;
+  }
+
+  /*
+   * ルーズリーフ。目次で単元ごとに 1 枚使う。
+   * 左端にパンチ穴、その右に余白線、全体に 40px 間隔の罫線を引く（行の高さを罫線にそろえる）
+   */
+  .loose-leaf {
+    background-color: var(--sheet);
+    background-image:
+      radial-gradient(circle at 22px 20px, var(--paper) 0 6px, var(--rule-strong) 6.5px 7.5px, transparent 8px),
+      linear-gradient(90deg, transparent 47px, rgb(29 43 63 / 0.22) 47px 48px, transparent 48px),
+      repeating-linear-gradient(to bottom, transparent 0 39px, rgb(29 43 63 / 0.09) 39px 40px);
+    background-size: 44px 40px, 100% 100%, 100% 100%;
+    background-repeat: repeat-y, no-repeat, repeat;
   }
 }
 
@@ -233,13 +267,14 @@
   @apply max-w-full rounded-md my-2;
 }
 
-/* highlight.js シンタックスハイライト */
+/* highlight.js シンタックスハイライト。色は意味の区別に必要な最小限にする */
 .hljs-keyword,
 .hljs-selector-tag,
 .hljs-built_in,
 .hljs-name,
 .hljs-tag {
-  color: oklch(0.511 0.262 276.966); /* indigo (primary) */
+  color: var(--ink);
+  font-weight: 700;
 }
 
 .hljs-string,
@@ -251,14 +286,14 @@
 .hljs-template-variable,
 .hljs-type,
 .hljs-addition {
-  color: oklch(0.5 0.15 145); /* green */
+  color: #6b4e16;
 }
 
 .hljs-comment,
 .hljs-quote,
 .hljs-deletion,
 .hljs-meta {
-  color: oklch(0.552 0.016 285.938); /* zinc-500 (muted) */
+  color: var(--pencil);
   font-style: italic;
 }
 
@@ -266,18 +301,14 @@
 .hljs-regexp,
 .hljs-symbol,
 .hljs-variable,
-.hljs-template-variable,
-.hljs-link {
-  color: oklch(0.6 0.2 40); /* orange */
-}
-
+.hljs-link,
 .hljs-selector-id,
 .hljs-selector-class,
 .hljs-selector-attr,
 .hljs-selector-pseudo,
 .hljs-doctag,
 .hljs-attr {
-  color: oklch(0.5 0.2 220); /* blue */
+  color: #2b5f8a;
 }
 
 .hljs-emphasis {
@@ -286,4 +317,127 @@
 
 .hljs-strong {
   font-weight: bold;
+}
+
+/*
+ * ノートの本文。方眼（16px）に合わせて、行の高さと余白をすべて 16px の倍数にそろえる。
+ * 内容なので Klee One で書く。図や表は高さが自由なのでずれるが、方眼なら気にならない
+ */
+.note-content {
+  font-family: var(--font-hand);
+  font-size: 16px;
+  line-height: 32px;
+}
+.note-content p,
+.note-content li {
+  margin: 0;
+  font-size: 16px;
+  line-height: 32px;
+}
+.note-content h1,
+.note-content h2,
+.note-content h3 {
+  margin: 32px 0 0;
+  font-size: 20px;
+  font-weight: 600;
+  line-height: 32px;
+}
+.note-content > :first-child,
+.note-content .rich-content > :first-child {
+  margin-top: 0;
+}
+.note-content ul,
+.note-content ol {
+  margin: 0;
+  padding-left: 24px;
+}
+.note-content ul {
+  list-style: disc;
+}
+.note-content ol {
+  list-style: decimal;
+}
+/* 既存の .ProseMirror 向けの背景・角丸・余白が残らないよう、ノートでは明示的に打ち消す */
+.note-content blockquote {
+  margin: 0;
+  padding: 0 0 0 12px;
+  border-left: 3px solid var(--ink);
+  border-radius: 0;
+  background: none;
+  font-weight: 600;
+}
+.note-content blockquote p {
+  font-weight: 600;
+}
+.note-content hr {
+  margin: 15px 0 16px;
+  border: 0;
+  border-top: 1px solid var(--rule-strong);
+}
+.note-content code {
+  font-family: var(--font-mono);
+  font-size: 13px;
+  background: var(--surface);
+  padding: 0 4px;
+  border-radius: 0;
+}
+.note-content pre {
+  margin: 16px 0;
+  padding: 8px 12px;
+  border-radius: 0;
+  background: var(--sheet);
+  border: 1px solid var(--rule);
+  font-size: 13px;
+  line-height: 24px;
+  overflow-x: auto;
+}
+.note-content pre code {
+  background: transparent;
+  padding: 0;
+}
+.note-content table {
+  margin: 16px 0;
+  border-collapse: collapse;
+  width: 100%;
+}
+.note-content td,
+.note-content th {
+  border: 1px solid var(--rule-strong);
+  padding: 0 8px;
+  vertical-align: top;
+  min-width: 40px;
+}
+.note-content th {
+  background: var(--surface);
+  font-weight: 600;
+}
+.note-content img {
+  max-width: 100%;
+  margin: 16px 0;
+  border-radius: 0;
+  mix-blend-mode: multiply;
+}
+.note-content [data-node-view-wrapper] img {
+  margin: 0;
+}
+.note-content p.is-editor-empty:first-child::before {
+  color: var(--pencil);
+  content: attr(data-placeholder);
+  float: left;
+  pointer-events: none;
+  height: 0;
+}
+
+/* 小テストの問題文と解説。内容なので Klee One で書き、解説は赤ペンにする */
+.quiz-question .rich-content p,
+.quiz-question .rich-content li {
+  font-family: var(--font-hand);
+  font-size: 17px;
+  line-height: 1.9;
+}
+.quiz-explanation .rich-content p,
+.quiz-explanation .rich-content li {
+  font-family: var(--font-hand);
+  font-size: 16px;
+  color: var(--red-pen);
 }

@@ -42,7 +42,7 @@ function QuestionDetail({ question }: { question: QuizQuestion }) {
                 key={i}
                 className={`flex items-center gap-2 px-2 py-1 rounded text-xs ${
                   i === correct
-                    ? "bg-green-100 dark:bg-green-900/30 text-green-800 dark:text-green-300 font-medium"
+                    ? "bg-surface text-ink font-medium"
                     : "text-muted-foreground"
                 }`}
               >
@@ -431,7 +431,7 @@ export default function QuizExisting({ quiz }: Props) {
           disabled={deletingQuiz}
           className="shrink-0 text-sm px-3 py-1.5 rounded-md border text-destructive hover:bg-destructive/10 transition-colors disabled:opacity-40"
         >
-          {deletingQuiz ? "削除中..." : "🗑️ クイズを削除"}
+          {deletingQuiz ? "削除中..." : "クイズを削除"}
         </button>
       </div>
 

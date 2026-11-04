@@ -29,7 +29,7 @@ type Props = {
 };
 
 const INPUT_CLASS =
-  "w-full px-3 py-2 text-sm rounded-md border bg-background focus:outline-none focus:ring-2 focus:ring-ring disabled:opacity-60";
+  "graph-paper w-full px-4 font-hand text-base leading-8 rounded-sm border border-rule-strong focus:outline-none focus:border-ink disabled:opacity-60";
 
 export default function MakerWorkspace({
   eventId,
@@ -133,19 +133,19 @@ export default function MakerWorkspace({
     <div className="max-w-5xl mx-auto px-4 py-8 space-y-6">
       <div className="flex flex-wrap items-start justify-between gap-3">
         <div>
-          <p className="text-xs font-semibold text-indigo-600 mb-1">🛠 自由制作</p>
-          <h1 className="text-2xl font-bold">{eventTitle}</h1>
+          <p className="text-xs tracking-[0.1em] text-muted-foreground mb-1">自由制作</p>
+          <h1 className="font-hand font-semibold text-[28px] leading-normal">{eventTitle}</h1>
         </div>
         <Link
           href={`/maker/${eventId}/gallery`}
-          className="px-3 py-2 text-sm rounded-md border hover:bg-muted transition-colors"
+          className="px-3 py-2 text-sm rounded-sm border border-ink hover:bg-surface transition-colors"
         >
-          🎮 みんなの作品
+          作品展を見る
         </Link>
       </div>
 
       {eventDescription && (
-        <p className="text-sm leading-relaxed whitespace-pre-wrap">{eventDescription}</p>
+        <p className="px-6 py-4 bg-sheet border border-rule-strong font-hand leading-loose whitespace-pre-wrap">{eventDescription}</p>
       )}
 
       {!isOpen && (
@@ -154,7 +154,7 @@ export default function MakerWorkspace({
         </p>
       )}
       {isOpen && !hasStudentNumber && (
-        <p className="rounded-md border border-amber-300 bg-amber-50 dark:bg-amber-950/20 p-3 text-sm">
+        <p className="rounded-md border border-rule-strong bg-surface p-3 text-sm">
           提出には学籍番号が必要です。
           <Link href="/profile" className="underline ml-1">
             プロフィール
@@ -163,7 +163,7 @@ export default function MakerWorkspace({
         </p>
       )}
       {isHidden && (
-        <p className="rounded-md border border-red-300 bg-red-50 dark:bg-red-950/20 p-3 text-sm">
+        <p className="rounded-md border border-red-pen/50 bg-red-pen/10 p-3 text-sm">
           この作品は先生により公開停止されています。先生に確認してください。
         </p>
       )}
@@ -171,7 +171,7 @@ export default function MakerWorkspace({
       {(settings.prompts.length > 0 || settings.examples.length > 0) && (
         <details className="rounded-md border bg-card p-4">
           <summary className="cursor-pointer text-sm font-semibold">
-            💡 何を作るか迷ったら（作品例・AIに相談するプロンプト）
+            何を作るか迷ったら（作品例・AIに相談するプロンプト）
           </summary>
           <div className="mt-4 space-y-5">
             {settings.examples.length > 0 && (
@@ -205,7 +205,7 @@ export default function MakerWorkspace({
                         onClick={() => copyPrompt(index, prompt.body)}
                         className="px-2.5 py-1 text-xs rounded-md border hover:bg-muted transition-colors shrink-0"
                       >
-                        {copiedIndex === index ? "コピーしました" : "📋 コピー"}
+                        {copiedIndex === index ? "コピーしました" : "コピー"}
                       </button>
                     </div>
                     <p className="text-xs text-muted-foreground whitespace-pre-wrap">
@@ -280,7 +280,7 @@ export default function MakerWorkspace({
             onClick={handleSave}
             className="px-4 py-2 text-sm rounded-md border hover:bg-muted transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
           >
-            💾 保存
+            保存
           </SubmitButton>
           <SubmitButton
             loading={submitting}
@@ -289,10 +289,10 @@ export default function MakerWorkspace({
             onClick={handleSubmit}
             className="px-4 py-2 text-sm rounded-md bg-primary text-primary-foreground hover:opacity-90 transition-opacity disabled:opacity-50 disabled:cursor-not-allowed"
           >
-            {submittedAt ? "🚀 再提出" : "🚀 提出"}
+            {submittedAt ? "再提出" : "提出"}
           </SubmitButton>
           <p
-            className={`text-xs ${message?.isError ? "text-red-600 dark:text-red-400" : "text-muted-foreground"}`}
+            className={`text-xs ${message?.isError ? "text-red-pen" : "text-muted-foreground"}`}
           >
             {message?.text ??
               (isDirty

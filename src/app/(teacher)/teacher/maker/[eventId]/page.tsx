@@ -50,7 +50,7 @@ export default async function TeacherMakerEventPage({ params }: Props) {
         >
           ← 自由制作の一覧
         </Link>
-        <h1 className="text-2xl font-bold mt-1">{event.title}</h1>
+        <h1 className="font-hand font-semibold text-[26px] leading-normal mt-1">{event.title}</h1>
       </div>
 
       <section className="space-y-3">

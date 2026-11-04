@@ -5,6 +5,7 @@ import type { Lesson, Unit, Subject } from "@/lib/db/contents";
 import MemoToc from "@/components/memos/memo-toc";
 import MemoDownloadButton from "@/components/memos/memo-download-button";
 import RichContent from "@/components/shared/rich-content";
+import Mascot from "@/components/shared/mascot";
 
 type LessonWithMemos = Lesson & { memos: Memo[] };
 type UnitWithMemos = Unit & { lessons: LessonWithMemos[] };
@@ -47,27 +48,13 @@ export default async function MemosPage() {
 
   return (
     <div className="max-w-7xl mx-auto px-4 py-8">
-      <h1 className="text-2xl font-bold mb-6">メモ一覧</h1>
+      <h1 className="font-hand font-semibold text-[26px] leading-normal mb-6">ノート一覧</h1>
 
       {tree.length === 0 ? (
-        <div className="flex flex-col items-center justify-center py-20 text-center">
-          <div className="w-16 h-16 rounded-full bg-indigo-50 flex items-center justify-center mb-4">
-            <svg
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="currentColor"
-              strokeWidth={1.5}
-              className="w-8 h-8 text-indigo-400"
-            >
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                d="M16.862 4.487l1.687-1.688a1.875 1.875 0 112.652 2.652L10.582 16.07a4.5 4.5 0 01-1.897 1.13L6 18l.8-2.685a4.5 4.5 0 011.13-1.897l8.932-8.931zm0 0L19.5 7.125M18 14v4.75A2.25 2.25 0 0115.75 21H5.25A2.25 2.25 0 013 18.75V8.25A2.25 2.25 0 015.25 6H10"
-              />
-            </svg>
-          </div>
+        <div className="flex items-center gap-4 py-16">
+          <Mascot pose="rest" size={96} />
           <p className="text-muted-foreground text-sm">
-            まだメモがありません。授業ページでメモを作成してみましょう。
+            まだノートがありません。レッスンのページでノートを書いてみましょう。
           </p>
         </div>
       ) : (
@@ -92,9 +79,9 @@ export default async function MemosPage() {
               return (
                 <section key={subject.id} id={`subject-${subject.id}`}>
                   <div className="flex items-center gap-3 mb-5 border-b pb-3">
-                    <h2 className="text-xl font-bold">{subject.name}</h2>
+                    <h2 className="font-hand font-semibold text-xl">{subject.name}</h2>
                     <MemoDownloadButton
-                      filename={`メモ_${subject.name}.md`}
+                      filename={`ノート_${subject.name}.md`}
                       sections={subjectSections}
                     />
                   </div>
@@ -108,9 +95,9 @@ export default async function MemosPage() {
                       return (
                         <section key={unit.id} id={`unit-${unit.id}`}>
                           <div className="flex items-center gap-3 mb-4">
-                            <h3 className="text-lg font-semibold">{unit.name}</h3>
+                            <h3 className="font-hand font-semibold text-lg">{unit.name}</h3>
                             <MemoDownloadButton
-                              filename={`メモ_${subject.name}_${unit.name}.md`}
+                              filename={`ノート_${subject.name}_${unit.name}.md`}
                               sections={unitSections}
                             />
                           </div>
@@ -118,9 +105,9 @@ export default async function MemosPage() {
                             {unit.lessons.map((lesson) => (
                               <section key={lesson.id} id={`lesson-${lesson.id}`}>
                                 <div className="flex items-center gap-3 mb-3">
-                                  <h4 className="font-medium">{lesson.title}</h4>
+                                  <h4 className="font-hand font-semibold">{lesson.title}</h4>
                                   <MemoDownloadButton
-                                    filename={`メモ_${subject.name}_${unit.name}_${lesson.title}.md`}
+                                    filename={`ノート_${subject.name}_${unit.name}_${lesson.title}.md`}
                                     sections={[
                                       {
                                         lessonTitle: lesson.title,
@@ -135,20 +122,20 @@ export default async function MemosPage() {
                                     href={lesson.youtube_url}
                                     target="_blank"
                                     rel="noopener noreferrer"
-                                    className="text-xs text-indigo-600 hover:underline block mb-3"
+                                    className="text-xs text-ink hover:underline block mb-3"
                                   >
                                     動画
                                   </a>
                                 )}
-                                <div className="space-y-3 pl-4 border-l-2 border-indigo-100">
+                                <div className="space-y-3">
                                   {lesson.memos.map((memo) => (
                                     <div
                                       key={memo.id}
-                                      className="bg-card rounded-lg border p-4"
+                                      className="note-content graph-paper border border-rule-strong px-4 py-4"
                                     >
                                       {memo.timestamp_seconds !== null && (
-                                        <div className="text-xs text-indigo-600 font-mono mb-2">
-                                          ⏱ {formatTime(memo.timestamp_seconds)}
+                                        <div className="text-xs text-ink font-mono mb-2">
+                                          {formatTime(memo.timestamp_seconds)}
                                         </div>
                                       )}
                                       <RichContent

@@ -225,7 +225,7 @@ export default function QuizAnalytics({ subjects }: Props) {
                                 <Tooltip>
                                   <TooltipTrigger asChild>
                                     <div
-                                      className={`h-7 w-16 rounded-md flex items-center justify-center text-sm font-bold tabular-nums ring-1 ring-inset ring-black/5 dark:ring-white/10 cursor-default ${avgLevel.tile}`}
+                                      className={`h-7 w-16 rounded-md flex items-center justify-center text-sm font-bold tabular-nums ring-1 ring-inset ring-black/5 cursor-default ${avgLevel.tile}`}
                                     >
                                       {formatRate(lesson.avgCorrectRate)}
                                     </div>

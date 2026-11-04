@@ -13,8 +13,8 @@ const QUIZ_AI_PROMPT_TEMPLATE = `【実施した単元の計画】
 （ダウンロードしたCSVファイルを添付、または以下の文章を削除してここに貼り付ける）
 添付のCSVファイルを参照
 
-【生徒のメモ】
-（メモエクスポートのCSVファイルを添付、または以下の文章を削除してここに貼り付ける）
+【生徒のノート】
+（ノートエクスポートのCSVファイルを添付、または以下の文章を削除してここに貼り付ける）
 添付のCSVファイルを参照
 
 【次回の単元について】
@@ -32,7 +32,7 @@ const QUIZ_AI_PROMPT_TEMPLATE = `【実施した単元の計画】
 const MEMO_AI_PROMPT_TEMPLATE = `【実施した単元の計画】
 （ここに単元計画を貼り付ける）
 
-【生徒のメモ】
+【生徒のノート】
 （ダウンロードしたCSVファイルを添付、または以下の文章を削除してここに貼り付ける）
 添付のCSVファイルを参照
 
@@ -228,13 +228,13 @@ export default function DataExport({ subjects }: Props) {
         )}
       </div>
 
-      {/* 生徒のメモサンプル */}
+      {/* 生徒のノートサンプル */}
       <div className="rounded-lg border bg-card p-6 space-y-5">
         <div>
-          <h2 className="text-base font-semibold">生徒のメモサンプル</h2>
+          <h2 className="text-base font-semibold">生徒のノートサンプル</h2>
           <p className="text-sm text-muted-foreground mt-0.5">
-            単元内の各レッスンで生徒が残したメモをランダムにサンプリングして CSV でダウンロードします。
-            レッスンごとに各クラス2人ずつ（合計10人に満たない場合は10人まで追加）・複数メモは結合して出力します。
+            単元内の各レッスンで生徒が残したノートをランダムにサンプリングして CSV でダウンロードします。
+            レッスンごとに各クラス2人ずつ（合計10人に満たない場合は10人まで追加）・複数ノートは結合して出力します。
           </p>
         </div>
 

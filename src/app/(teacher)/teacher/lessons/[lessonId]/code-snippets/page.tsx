@@ -1,6 +1,6 @@
 import { notFound } from "next/navigation";
 import Link from "next/link";
-import { getLessonWithQuestions } from "@/lib/db/contents";
+import { getLessonWithUnit } from "@/lib/db/contents";
 import { getCodeSnippetsByLesson } from "@/lib/db/code-snippets";
 import CodeSnippetsManager from "@/components/teacher/code-snippets-manager";
 
@@ -12,7 +12,7 @@ export default async function CodeSnippetsPage({ params }: Props) {
   const { lessonId } = await params;
 
   const [lesson, snippets] = await Promise.all([
-    getLessonWithQuestions(lessonId),
+    getLessonWithUnit(lessonId),
     getCodeSnippetsByLesson(lessonId),
   ]);
 
@@ -30,7 +30,7 @@ export default async function CodeSnippetsPage({ params }: Props) {
         <span className="text-foreground font-medium">コーディングプレイグラウンド</span>
       </nav>
 
-      <h1 className="text-xl font-bold mb-6">💻 プレイグラウンド管理 — {lesson.title}</h1>
+      <h1 className="font-hand font-semibold text-2xl mb-6">プレイグラウンド管理：{lesson.title}</h1>
 
       <CodeSnippetsManager
         lessonId={lessonId}

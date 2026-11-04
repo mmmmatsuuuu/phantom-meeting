@@ -11,9 +11,9 @@ type Props = {
 };
 
 function rateColor(rate: number): string {
-  if (rate >= 80) return "text-green-600";
-  if (rate >= 60) return "text-amber-600";
-  return "text-red-500";
+  if (rate >= 80) return "text-ink";
+  if (rate >= 60) return "text-ink";
+  return "text-red-pen";
 }
 
 export default async function StudentDetailPage({ params }: Props) {
@@ -61,10 +61,10 @@ export default async function StudentDetailPage({ params }: Props) {
       label: "要復習",
       value: `${summary.reviewCount}`,
       sub: "レッスン",
-      valueClass: summary.reviewCount > 0 ? "text-red-500" : "text-green-600",
+      valueClass: summary.reviewCount > 0 ? "text-red-pen" : "text-ink",
     },
     {
-      label: "メモ",
+      label: "ノート",
       value: `${summary.memoCount}`,
       sub: "件",
       valueClass: "",
@@ -88,7 +88,7 @@ export default async function StudentDetailPage({ params }: Props) {
 
       {/* ヘッダー */}
       <div>
-        <h1 className="text-2xl font-bold mb-1">
+        <h1 className="font-hand font-semibold text-[26px] leading-normal mb-1">
           {profile.display_name}
           <span className="text-base font-normal text-muted-foreground ml-3 font-mono">
             {profile.student_number ?? "学籍番号未設定"}
@@ -153,7 +153,7 @@ export default async function StudentDetailPage({ params }: Props) {
                         <th className="px-4 py-2 font-medium text-center w-24">
                           受験回数
                         </th>
-                        <th className="px-4 py-2 font-medium text-center w-20">メモ</th>
+                        <th className="px-4 py-2 font-medium text-center w-20">ノート</th>
                       </tr>
                     </thead>
                     <tbody>

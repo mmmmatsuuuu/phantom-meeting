@@ -68,6 +68,31 @@ export async function createMemo(params: {
 }
 
 /**
+ * 自分のメモのレッスンIDを取得する（他人のメモは RLS で見えないため null）
+ */
+export async function getMemoLessonId(memoId: string): Promise<string | null> {
+  const supabase = await createClient();
+  const { data } = await supabase.from("memos").select("lesson_id").eq("id", memoId).maybeSingle();
+  return data?.lesson_id ?? null;
+}
+
+/**
+ * メモの内容を更新する（自分のメモだけ。RLS で判定）
+ */
+export async function updateMemo(memoId: string, content: TiptapContent): Promise<Memo | null> {
+  const supabase = await createClient();
+  const { data, error } = await supabase
+    .from("memos")
+    .update({ content })
+    .eq("id", memoId)
+    .select()
+    .maybeSingle();
+
+  if (error || !data) return null;
+  return data as Memo;
+}
+
+/**
  * ログインユーザーの全レッスンのメモ一覧を取得する
  */
 export async function getAllMemos(): Promise<Memo[]> {

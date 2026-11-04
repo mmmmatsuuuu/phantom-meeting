@@ -7,7 +7,8 @@ subjects
   └── units
         └── lessons
               ├── questions
-              ├── memos ──→ posts
+              ├── memo_templates（ノートのひな形。1 レッスンに 1 つ）
+              ├── memos ──→ posts（廃止予定）
               ├── quizzes
               │     ├── quiz_questions
               │     └── quiz_attempts
@@ -74,18 +75,33 @@ maker_events（自由制作。既存テーブルへは unit_id の一方向の�
 | order | int | 表示順 |
 | created_at | timestamptz | |
 
-### memos
+### memo_templates（ノートのひな形）
+| カラム | 型 | 備考 |
+|---|---|---|
+| lesson_id | uuid | PK、FK → lessons（on delete cascade） |
+| content | jsonb | tiptap JSON。穴埋めと発問を含むプリントのようなひな形 |
+| updated_by | uuid | nullable、FK → profiles（on delete set null） |
+| updated_at | timestamptz | |
+
+閲覧は認証ユーザー全員、作成・更新・削除は teacher/admin（RLS、`20261103000001_memo_templates.sql`）。
+
+### memos（画面上は「ノート」）
 | カラム | 型 | 備考 |
 |---|---|---|
 | id | uuid | PK |
 | lesson_id | uuid | FK → lessons |
 | user_id | uuid | FK → profiles |
 | content | jsonb | tiptap JSON |
-| timestamp_seconds | int | nullable、動画タイムスタンプ |
+| timestamp_seconds | int | nullable、動画タイムスタンプ（画面からは記録しなくなった） |
 | created_at | timestamptz | |
-| updated_at | timestamptz | |
+| updated_at | timestamptz | レッスンを開いたときに、最後に更新したノートを開くのに使う |
 
-### posts（共有投稿）
+画像は、そのレッスンの `memo_templates` にあるものだけを保存できる（API で検証）。
+
+### posts（共有投稿・廃止予定）
+
+画面と API からは使っていない。マージ後に別の PR でテーブルを削除する。
+
 | カラム | 型 | 備考 |
 |---|---|---|
 | id | uuid | PK |
@@ -93,7 +109,7 @@ maker_events（自由制作。既存テーブルへは unit_id の一方向の�
 | lesson_id | uuid | FK → lessons（クエリ効率化のため非正規化） |
 | user_id | uuid | FK → profiles（投稿者。自分の投稿判定・削除権限に使用） |
 | content | jsonb | 共有時点のスナップショット |
-| timestamp_seconds | int | nullable、投稿元メモのタイムスタンプ |
+| timestamp_seconds | int | nullable、投稿元ノートのタイムスタンプ |
 | created_at | timestamptz | |
 
 ### quizzes

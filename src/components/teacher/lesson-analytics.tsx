@@ -235,9 +235,9 @@ export default function LessonAnalytics({ subjects }: Props) {
           <div className="flex gap-1 border-b">
             {(
               [
-                { key: "quiz", label: "📝 小テスト" },
-                ...(playgroundEnabled ? [{ key: "code", label: "💻 コード" } as const] : []),
-                { key: "memo", label: "📋 メモ" },
+                { key: "quiz", label: "小テスト" },
+                ...(playgroundEnabled ? [{ key: "code", label: "コード" } as const] : []),
+                { key: "memo", label: "ノート" },
               ] as { key: Tab; label: string }[]
             ).map((tab) => (
               <button
@@ -254,7 +254,7 @@ export default function LessonAnalytics({ subjects }: Props) {
             ))}
           </div>
 
-          {/* コード・メモは一度開いた結果を保持するため、非表示にするだけでアンマウントしない */}
+          {/* コード・ノートは一度開いた結果を保持するため、非表示にするだけでアンマウントしない */}
           {playgroundEnabled && (
             <div hidden={effectiveTab !== "code"}>
               <LessonCodeCards
@@ -337,7 +337,7 @@ export default function LessonAnalytics({ subjects }: Props) {
                   <span className="font-medium text-foreground">{quizData.lessonTitle}</span>
                   ・対象生徒 {quizData.students.length}人
                   {hasQuiz && `・受験済み ${attemptedCount}人`}
-                  ・メモ記入 {memoStudentCount}人
+                  ・ノート記入 {memoStudentCount}人
                 </p>
               </div>
             </div>
@@ -402,7 +402,7 @@ export default function LessonAnalytics({ subjects }: Props) {
                           );
                         })}
                         <th aria-hidden className="w-2" />
-                        <th className="font-medium px-2 py-1.5 w-14">メモ</th>
+                        <th className="font-medium px-2 py-1.5 w-14">ノート</th>
                       </tr>
                     </thead>
                     <tbody>
@@ -416,7 +416,7 @@ export default function LessonAnalytics({ subjects }: Props) {
                             <td className="sticky left-0 z-10 bg-card px-2 py-1 rounded-md group-hover:bg-muted/60 transition-colors">
                               <Link
                                 href={`/teacher/students/${row.userId}`}
-                                className="flex items-baseline gap-2 hover:text-indigo-600 transition-colors"
+                                className="flex items-baseline gap-2 hover:text-ink transition-colors"
                               >
                                 <span className="text-xs text-muted-foreground font-mono tabular-nums">
                                   {row.studentNumber ?? "—"}
@@ -430,7 +430,7 @@ export default function LessonAnalytics({ subjects }: Props) {
                               <>
                                 <td className="p-0">
                                   <div
-                                    className={`${TILE} w-16 text-sm font-bold tabular-nums ring-1 ring-inset ring-black/5 dark:ring-white/10 ${levelOf(scoreRate).tile}`}
+                                    className={`${TILE} w-16 text-sm font-bold tabular-nums ring-1 ring-inset ring-black/5 ${levelOf(scoreRate).tile}`}
                                   >
                                     {scoreRate !== null ? `${row.score}/${row.maxScore}` : "—"}
                                   </div>
@@ -457,8 +457,8 @@ export default function LessonAnalytics({ subjects }: Props) {
                             </td>
                             <td className="p-0">
                               {row.memoCount > 0 ? (
-                                <div className={`${TILE} w-14 bg-indigo-50 text-indigo-700 dark:bg-indigo-500/20 dark:text-indigo-300`}>
-                                  📝 {row.memoCount}
+                                <div className={`${TILE} w-14 bg-surface text-ink`}>
+                                  ノート {row.memoCount}
                                 </div>
                               ) : (
                                 <div className={`${TILE} w-14 text-muted-foreground font-normal`}>—</div>

@@ -7,7 +7,7 @@ export default async function StudentsPage() {
   return (
     <div className="max-w-4xl mx-auto px-4 py-8">
       <div className="mb-6">
-        <h1 className="text-2xl font-bold mb-1">生徒一覧</h1>
+        <h1 className="font-hand font-semibold text-[26px] leading-normal mb-1">生徒一覧</h1>
         <p className="text-sm text-muted-foreground">
           学籍番号・備考をインラインで編集できます。表示名の変更はできません。
         </p>

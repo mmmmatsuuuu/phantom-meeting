@@ -1,8 +1,8 @@
 /**
- * AI 振り返りプロンプト（Phase 19b）の生成。
+ * AI 振り返りプロンプトの生成。
  *
  * 生徒1人×1単元の学習データ（API で取得・テキスト化済み）から、生徒が自分の使いたい AI に
- * 貼り付けるプロンプトを組み立てる。仕様は docs/roadmap.md の Phase 19b を参照。
+ * 貼り付けるプロンプトを組み立てる。仕様と決めた理由は docs/review-prompt.md を参照。
  * ブラウザでも動く純粋関数（オプションの切り替えをその場で反映するため）。
  */
 
@@ -28,7 +28,6 @@ export type ReviewMemo = {
   text: string;
   createdAt: string;
   hasTimestamp: boolean;
-  shared: boolean;
 };
 
 export type ReviewSnippet = {
@@ -112,7 +111,7 @@ const TEMPLATE_HEAD = `# ロール
 
 最初の返信では、まずデータから読み取れることを、次の観点ごとに2〜3文で簡潔に伝えてください（詳しいアドバイスはまだ書かないでください）。
 - 小テストの結果
-- メモの傾向
+- ノートの傾向
 - コードの書き方（データに「コード」がある場合のみ）
 
 そのうえで、どのようなアドバイスがほしいか質問をしてください。質問を思いつかない生徒もいるので、以下のような例を提示してください。
@@ -128,7 +127,7 @@ const TEMPLATE_HEAD = `# ロール
 （データの読み方）
 - 得点率は自動採点の問題（選択式・並び替え）だけで計算しています。記述式は生徒の自己採点のため、得点率に含みません
 - 小テストは何度でも受け直せます
-- 日付は受験・メモ作成の日です`;
+- 日付は受験・ノート作成の日です`;
 
 const TEMPLATE_TAIL =
   "最初の返信は、観点ごとの簡潔な読み取りと、どのようなアドバイスがほしいかの質問だけにしてください。";
@@ -334,27 +333,27 @@ function memoStatsSection(lessons: NumberedLesson[]): string {
     const dates = [...new Set(memos.map((m) => shortDateFormat.format(new Date(m.createdAt))))];
     return (
       `| ${cell(`${no} ${lesson.title}`)} | ${memos.length} | ${chars} | ` +
-      `${memos.filter((m) => m.hasTimestamp).length} | ${memos.filter((m) => m.shared).length} | ` +
+      `${memos.filter((m) => m.hasTimestamp).length} | ` +
       `${dates.length > 0 ? dates.join(", ") : "―"} |`
     );
   });
   return [
-    "### メモの取り方",
-    "| レッスン | 件数 | 合計文字数 | 動画の時刻つき | クラスに共有 | 作成日 |",
-    "|---|---|---|---|---|---|",
+    "### ノートの取り方",
+    "| レッスン | 件数 | 合計文字数 | 動画の時刻つき | 作成日 |",
+    "|---|---|---|---|---|",
     ...rows,
   ].join("\n");
 }
 
 function memoExcerptSection(lessons: NumberedLesson[], limit: number | null): string {
-  if (limit === null) return `### メモの抜粋\n${TRIMMED_NOTE}`;
+  if (limit === null) return `### ノートの抜粋\n${TRIMMED_NOTE}`;
   const items = lessons
     .map(({ lesson, no }) => {
       const joined = lesson.memos.map((m) => m.text).filter((t) => t !== "").join("／");
       return joined ? `- ${no} ${lesson.title}：${truncate(joined, limit)}` : null;
     })
     .filter((item): item is string => item !== null);
-  return [`### メモの抜粋（各レッスン${limit}字まで）`, ...(items.length > 0 ? items : ["なし"])].join("\n");
+  return [`### ノートの抜粋（各レッスン${limit}字まで）`, ...(items.length > 0 ? items : ["なし"])].join("\n");
 }
 
 function codeSection(lessons: NumberedLesson[], included: Set<string>): string {

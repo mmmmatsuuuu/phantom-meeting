@@ -7,11 +7,6 @@ import type { SubjectWithUnits } from "@/lib/db/contents";
 import type { CodeLanguage } from "@/lib/db/code-snippets";
 import SubmitButton from "@/components/shared/submit-button";
 
-type QuestionInput = {
-  id: string;
-  content: string;
-};
-
 type CodeSnippetInput = {
   id: string;
   title: string;
@@ -45,9 +40,6 @@ export default function LessonNewForm({ subjects, defaultUnitId }: Props) {
   const [title, setTitle] = useState("");
   const [youtubeUrl, setYoutubeUrl] = useState("");
   const [showPreview, setShowPreview] = useState(false);
-  const [questions, setQuestions] = useState<QuestionInput[]>([
-    { id: "1", content: "" },
-  ]);
   const [enablePlayground, setEnablePlayground] = useState(false);
   const [codeSnippets, setCodeSnippets] = useState<CodeSnippetInput[]>([]);
   const [isSaving, setIsSaving] = useState(false);
@@ -56,23 +48,6 @@ export default function LessonNewForm({ subjects, defaultUnitId }: Props) {
   const selectedSubject = subjects.find((s) => s.id === subjectId);
   const units = selectedSubject?.units ?? [];
   const videoId = extractVideoId(youtubeUrl);
-
-  const addQuestion = () => {
-    setQuestions((prev) => [
-      ...prev,
-      { id: String(Date.now()), content: "" },
-    ]);
-  };
-
-  const removeQuestion = (id: string) => {
-    setQuestions((prev) => prev.filter((q) => q.id !== id));
-  };
-
-  const updateQuestion = (id: string, content: string) => {
-    setQuestions((prev) =>
-      prev.map((q) => (q.id === id ? { ...q, content } : q))
-    );
-  };
 
   const addCodeSnippet = () => {
     setCodeSnippets((prev) => [
@@ -108,7 +83,6 @@ export default function LessonNewForm({ subjects, defaultUnitId }: Props) {
         unitId,
         title: title.trim(),
         youtubeUrl: youtubeUrl.trim(),
-        questions: questions.map((q) => q.content).filter((c) => c.trim() !== ""),
         enablePlayground,
         codeSnippets: codeSnippets
           .filter((s) => s.initialCode.trim() !== "")
@@ -131,9 +105,9 @@ export default function LessonNewForm({ subjects, defaultUnitId }: Props) {
   return (
     <div className="max-w-3xl mx-auto px-4 py-8">
       <div className="mb-8">
-        <h1 className="text-2xl font-bold mb-1">📺 レッスンを登録する</h1>
+        <h1 className="font-hand font-semibold text-2xl mb-1">レッスンを登録する</h1>
         <p className="text-sm text-muted-foreground">
-          動画と ❓ 発問を登録して、生徒の探究を促しましょう。
+          動画を登録します。ノートのひな形（穴埋めと発問）は、登録したあとにコンテンツ管理から作れます。
         </p>
       </div>
 
@@ -216,7 +190,7 @@ export default function LessonNewForm({ subjects, defaultUnitId }: Props) {
                 disabled={!videoId}
                 className="px-3 py-2 rounded-md border text-sm hover:bg-muted transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
               >
-                🔍 プレビュー
+                プレビュー
               </button>
             </div>
             {showPreview && videoId && (
@@ -233,52 +207,6 @@ export default function LessonNewForm({ subjects, defaultUnitId }: Props) {
           </div>
         </div>
 
-        {/* 発問 */}
-        <div className="p-5 rounded-md border bg-card space-y-4">
-          <div>
-            <h2 className="text-xs font-semibold text-muted-foreground uppercase tracking-widest mb-1">
-              ❓ 発問
-            </h2>
-            <p className="text-xs text-muted-foreground">
-              正解のない問いを設定しましょう。生徒のメモ・思考のきっかけになります。
-            </p>
-          </div>
-
-          <div className="space-y-3">
-            {questions.map((q, i) => (
-              <div key={q.id} className="flex gap-2 items-start">
-                <div className="flex-1 space-y-1">
-                  <label className="text-xs text-muted-foreground">
-                    Q{i + 1}
-                  </label>
-                  <textarea
-                    className="w-full px-3 py-2 rounded-md border bg-background text-sm resize-none focus:outline-none focus:ring-2 focus:ring-ring"
-                    rows={2}
-                    placeholder="生徒への発問を入力してください..."
-                    value={q.content}
-                    onChange={(e) => updateQuestion(q.id, e.target.value)}
-                  />
-                </div>
-                <button
-                  onClick={() => removeQuestion(q.id)}
-                  disabled={questions.length === 1}
-                  className="mt-5 p-2 rounded-md text-muted-foreground hover:text-destructive hover:bg-destructive/10 transition-colors disabled:opacity-30 disabled:cursor-not-allowed"
-                  aria-label="発問を削除"
-                >
-                  🗑️
-                </button>
-              </div>
-            ))}
-          </div>
-
-          <button
-            onClick={addQuestion}
-            className="text-sm text-muted-foreground hover:text-foreground transition-colors"
-          >
-            ＋ 発問を追加
-          </button>
-        </div>
-
         {/* コーディングプレイグラウンド */}
         <div className="p-5 rounded-md border bg-card space-y-4">
           <label className="flex items-center gap-2 cursor-pointer">
@@ -289,14 +217,14 @@ export default function LessonNewForm({ subjects, defaultUnitId }: Props) {
               className="w-4 h-4"
             />
             <span className="text-xs font-semibold text-muted-foreground uppercase tracking-widest">
-              💻 コーディングプレイグラウンドを有効にする
+              コーディングプレイグラウンドを有効にする
             </span>
           </label>
 
           {enablePlayground && (
             <>
               <p className="text-xs text-muted-foreground">
-                生徒がメモ欄で切り替えて実行できる初期コードを登録します（任意）。
+                生徒がノート欄で切り替えて実行できる初期コードを登録します（任意）。
               </p>
 
               <div className="space-y-3">
@@ -332,7 +260,7 @@ export default function LessonNewForm({ subjects, defaultUnitId }: Props) {
                         className="p-1.5 rounded-md text-muted-foreground hover:text-destructive hover:bg-destructive/10 transition-colors"
                         aria-label="コード例を削除"
                       >
-                        🗑️
+                        削除
                       </button>
                     </div>
                     <textarea

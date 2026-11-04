@@ -46,7 +46,7 @@ export default function MemoToc({ subjects }: Props) {
   }, [subjects]);
 
   return (
-    <nav aria-label="メモ目次">
+    <nav aria-label="ノート目次">
       <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide mb-3">
         目次
       </p>
@@ -57,8 +57,8 @@ export default function MemoToc({ subjects }: Props) {
               href={`#subject-${subject.id}`}
               className={`block py-1 px-2 font-medium rounded transition-colors ${
                 activeId === `subject-${subject.id}`
-                  ? "text-indigo-600 bg-indigo-50"
-                  : "text-foreground hover:text-indigo-600 hover:bg-muted"
+                  ? "text-ink bg-surface"
+                  : "text-foreground hover:text-ink hover:bg-muted"
               }`}
             >
               {subject.name}
@@ -70,8 +70,8 @@ export default function MemoToc({ subjects }: Props) {
                     href={`#unit-${unit.id}`}
                     className={`block py-0.5 px-2 rounded transition-colors ${
                       activeId === `unit-${unit.id}`
-                        ? "text-indigo-600 bg-indigo-50"
-                        : "text-muted-foreground hover:text-indigo-600 hover:bg-muted"
+                        ? "text-ink bg-surface"
+                        : "text-muted-foreground hover:text-ink hover:bg-muted"
                     }`}
                   >
                     {unit.name}
@@ -83,8 +83,8 @@ export default function MemoToc({ subjects }: Props) {
                           href={`#lesson-${lesson.id}`}
                           className={`block py-0.5 px-2 rounded transition-colors text-xs ${
                             activeId === `lesson-${lesson.id}`
-                              ? "text-indigo-600 bg-indigo-50"
-                              : "text-muted-foreground hover:text-indigo-600 hover:bg-muted"
+                              ? "text-ink bg-surface"
+                              : "text-muted-foreground hover:text-ink hover:bg-muted"
                           }`}
                         >
                           {lesson.title}

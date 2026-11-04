@@ -153,7 +153,7 @@ export default function StudentsTable({ initialProfiles }: Props) {
     if (sortKey !== col)
       return <span className="ml-1 text-muted-foreground/40">↕</span>;
     return (
-      <span className="ml-1 text-indigo-500">
+      <span className="ml-1 text-ink">
         {sortOrder === "asc" ? "↑" : "↓"}
       </span>
     );
@@ -271,7 +271,7 @@ export default function StudentsTable({ initialProfiles }: Props) {
                   <td className="px-4 py-2.5 font-medium">
                     <Link
                       href={`/teacher/students/${profile.id}`}
-                      className="hover:text-indigo-600 hover:underline transition-colors"
+                      className="hover:text-ink hover:underline transition-colors"
                     >
                       {profile.display_name}
                     </Link>

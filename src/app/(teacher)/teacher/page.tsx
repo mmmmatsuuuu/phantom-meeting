@@ -1,95 +1,72 @@
 import Link from "next/link";
 
-type HubCard = {
+type HubLink = {
   href: string;
-  emoji: string;
   title: string;
   description: string;
 };
 
-const CREATE_CARDS: HubCard[] = [
+const CREATE_LINKS: HubLink[] = [
   {
     href: "/teacher/contents",
-    emoji: "📚",
     title: "コンテンツ管理",
-    description: "科目・単元・レッスンの追加・編集・削除。レッスン登録や小テスト作成もここから",
+    description: "科目・単元・レッスンの追加と編集。ノートのひな形と小テストもここから",
   },
   {
     href: "/teacher/maker",
-    emoji: "🛠",
     title: "自由制作",
-    description: "生徒が自分で決めたプログラムを制作・提出・共有する課題の配信と、クラスごとの公開管理",
+    description: "生徒が作るものを決めて制作・提出する課題の配信と、クラスごとの公開",
   },
 ];
 
-const OBSERVE_CARDS: HubCard[] = [
+const OBSERVE_LINKS: HubLink[] = [
   {
     href: "/teacher/analytics",
-    emoji: "📈",
     title: "分析",
-    description: "小テストの正答率・コーディングの取り組み・メモから生徒のつまずきを把握する",
+    description: "小テストの正答率、コードの取り組み、ノートから、つまずきを把握する",
   },
   {
     href: "/teacher/students",
-    emoji: "👥",
     title: "生徒一覧",
-    description: "生徒の学籍番号・備考の確認とインライン編集",
+    description: "学籍番号・備考の確認と編集",
   },
   {
     href: "/teacher/data-export",
-    emoji: "📤",
     title: "データエクスポート",
-    description: "小テスト結果・メモを CSV 出力して AI 分析に活用する",
+    description: "小テスト結果・ノートを CSV で書き出し、AI での分析に使う",
   },
 ];
 
-function CardGrid({ cards }: { cards: HubCard[] }) {
+/** 教員画面は一覧性を優先し、カードや絵文字の飾りを使わない（docs/design.md） */
+function LinkList({ heading, links }: { heading: string; links: HubLink[] }) {
   return (
-    <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-3">
-      {cards.map((card) => (
+    <section className="mt-6">
+      <h2 className="pb-1 border-b border-ink text-[13px] font-semibold tracking-[0.08em] text-muted-foreground">
+        {heading}
+      </h2>
+      {links.map((link) => (
         <Link
-          key={card.href}
-          href={card.href}
-          className="bg-card border rounded-xl p-5 hover:border-indigo-400 hover:shadow-sm transition-all group"
+          key={link.href}
+          href={link.href}
+          className="group grid grid-cols-[200px_minmax(0,1fr)] gap-4 py-3 border-b border-rule"
         >
-          <div className="flex items-center gap-2.5 mb-2">
-            <span className="text-2xl">{card.emoji}</span>
-            <h3 className="font-semibold group-hover:text-indigo-600 transition-colors">
-              {card.title}
-            </h3>
-          </div>
-          <p className="text-sm text-muted-foreground leading-relaxed">
-            {card.description}
-          </p>
+          <span className="font-semibold group-hover:underline underline-offset-4">{link.title}</span>
+          <span className="text-[13px] text-muted-foreground">{link.description}</span>
         </Link>
       ))}
-    </div>
+    </section>
   );
 }
 
 export default function TeacherHubPage() {
   return (
-    <div className="max-w-4xl mx-auto px-4 py-8 space-y-10">
-      <div>
-        <h1 className="text-2xl font-bold mb-1">教師ページ</h1>
-        <p className="text-sm text-muted-foreground">
-          授業づくりと生徒の学習状況の確認は、ここからすべての機能にアクセスできます。
-        </p>
-      </div>
-
-      <section className="space-y-3">
-        <h2 className="text-sm font-semibold text-muted-foreground tracking-wide">
-          📖 授業をつくる
-        </h2>
-        <CardGrid cards={CREATE_CARDS} />
-      </section>
-
-      <section className="space-y-3">
-        <h2 className="text-sm font-semibold text-muted-foreground tracking-wide">
-          👀 生徒をみる
-        </h2>
-        <CardGrid cards={OBSERVE_CARDS} />
-      </section>
+    <div className="max-w-3xl mx-auto px-4 py-6">
+      <h1 className="font-hand font-semibold text-[26px] leading-normal">教師ページ</h1>
+      <p className="text-[13px] text-muted-foreground">
+        授業づくりと生徒の学習状況の確認は、ここからすべての機能にアクセスできます。
+      </p>
+      <LinkList heading="授業をつくる" links={CREATE_LINKS} />
+      <LinkList heading="生徒をみる" links={OBSERVE_LINKS} />
     </div>
   );
 }

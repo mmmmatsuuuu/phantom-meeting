@@ -20,23 +20,14 @@ export type DashboardSummary = {
   memoCount: number;
 };
 
-export type NextAction = {
-  type: "review" | "continue";
-  lessonId: string;
-  lessonTitle: string;
-  latestRate: number | null;
-};
-
 export type StudentDashboard = {
   summary: DashboardSummary;
-  nextActions: NextAction[];
   lessonBadges: Record<string, LessonBadge>;
 };
 
-const MAX_REVIEW_ACTIONS = 2;
-
 /**
- * コンテンツツリー・受験状況・メモ件数から生徒ダッシュボードの表示データを組み立てる
+ * コンテンツツリー・受験状況・メモ件数から、学習状況のまとめとレッスンごとの状況を組み立てる。
+ * まとめは教員の生徒詳細で、レッスンごとの状況は生徒の目次と教員の生徒詳細で使う
  */
 export function buildStudentDashboard(
   subjects: SubjectWithUnits[],
@@ -48,8 +39,6 @@ export function buildStudentDashboard(
   const statusByQuiz = new Map(statuses.map((s) => [s.quizId, s]));
 
   const lessonBadges: Record<string, LessonBadge> = {};
-  const reviewCandidates: NextAction[] = [];
-  let continueCandidate: NextAction | null = null;
 
   let totalQuizCount = 0;
   let attemptedQuizCount = 0;
@@ -57,7 +46,6 @@ export function buildStudentDashboard(
   let memoCount = 0;
   const attemptedRates: number[] = [];
 
-  // subjects は order 順に整列済みのため、レッスンの出現順 = 学習順として扱う
   for (const subject of subjects) {
     for (const unit of subject.units) {
       for (const lesson of unit.lessons) {
@@ -86,23 +74,7 @@ export function buildStudentDashboard(
           attemptedQuizCount++;
           if (latestRate !== null) attemptedRates.push(latestRate);
         }
-        if (needsReview) {
-          reviewCount++;
-          reviewCandidates.push({
-            type: "review",
-            lessonId: lesson.id,
-            lessonTitle: lesson.title,
-            latestRate,
-          });
-        }
-        if (!attempted && continueCandidate === null) {
-          continueCandidate = {
-            type: "continue",
-            lessonId: lesson.id,
-            lessonTitle: lesson.title,
-            latestRate: null,
-          };
-        }
+        if (needsReview) reviewCount++;
 
         lessonBadges[lesson.id] = {
           hasQuiz: true,
@@ -114,11 +86,6 @@ export function buildStudentDashboard(
       }
     }
   }
-
-  // 要復習（得点率が低い順）を最優先、次に未受験の最初のレッスン
-  reviewCandidates.sort((a, b) => (a.latestRate ?? 0) - (b.latestRate ?? 0));
-  const nextActions: NextAction[] = reviewCandidates.slice(0, MAX_REVIEW_ACTIONS);
-  if (continueCandidate) nextActions.push(continueCandidate);
 
   const avgRate =
     attemptedRates.length > 0
@@ -135,7 +102,6 @@ export function buildStudentDashboard(
       reviewCount,
       memoCount,
     },
-    nextActions,
     lessonBadges,
   };
 }

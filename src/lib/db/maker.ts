@@ -164,13 +164,18 @@ export async function canViewMakerGallery(eventId: string): Promise<boolean> {
 }
 
 /** RLS により、生徒には公開中の作品と自分の作品、教員には全提出物が返る */
-export async function getMakerGalleryItems(eventId: string): Promise<MakerGalleryItem[]> {
+export async function getMakerGalleryItems(
+  eventId: string,
+  /** 学籍番号の範囲（クラス単位で取得するとき）。省略すると全員分 */
+  range?: { min: number; max: number }
+): Promise<MakerGalleryItem[]> {
   const supabase = await createClient();
-  const { data } = await supabase
+  let query = supabase
     .from("maker_submissions")
     .select("user_id, student_number, title, description, submitted_at, hidden_at")
-    .eq("event_id", eventId)
-    .order("student_number", { ascending: true, nullsFirst: false });
+    .eq("event_id", eventId);
+  if (range) query = query.gte("student_number", range.min).lte("student_number", range.max);
+  const { data } = await query.order("student_number", { ascending: true, nullsFirst: false });
   return data ?? [];
 }
 
