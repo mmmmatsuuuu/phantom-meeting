@@ -58,7 +58,7 @@
 | 層 | 処理 | 場所 |
 |---|---|---|
 | SC | レッスン・小テスト・ノートのひな形を並列取得し、続けて受験状況とコード例を並列取得して、要復習件数を算出 | `app/(student)/lessons/[lessonId]/page.tsx` |
-| lib/db | レッスンを単元・科目つきでネスト select で取得（発問は取得しない） | `contents.ts` `getLessonWithUnit` |
+| lib/db | レッスンを単元・科目つきでネスト select で取得 | `contents.ts` `getLessonWithUnit` |
 | lib/db | 小テストと設問をネスト select で取得 | `quizzes.ts` `getQuizWithQuestions` |
 | lib/db | ノートのひな形を取得 | `memo-templates.ts` `getMemoTemplate` |
 | フロント | 動画・小テストのタブ切り替え、ノート・コードの紙の端のインデックス | `components/lesson/lesson-content.tsx`、`lesson-tabs.tsx`、`lesson-side-panel.tsx` |
@@ -123,7 +123,7 @@
 | フロント | ダイアログを開いたときだけ単元の学習データを取得（`useLazyFetch`）、ノート本文の有無の切り替え、プレビュー・文字数の表示、クリップボードへのコピー | `components/student/review-prompt-dialog.tsx` |
 | フロント | プロンプトの組み立て（受験の推移・間違えた問題などの整形）と10,000字の上限処理（ノート本文の短縮・省略 → コードを後半のレッスンから取り込む） | `lib/review-prompt.ts` `buildReviewPrompt`（純粋関数。単体テストあり） |
 | API | ログイン確認（本人のデータのみ返す） | `api/units/[unitId]/review-data/route.ts` |
-| lib/db | 単元→レッスン→発問・小テストの設問・初期コードをネスト select で取得し、本人の受験記録（回答をネスト）・ノート・コードの保存内容の3クエリを並列取得。問題文・ノートの tiptap JSON のテキスト化、回答・正解のテキスト化 | `review.ts` `getUnitReviewData`（回答・正解のテキスト化は `quizzes.ts` `toAnswerText` / `toCorrectAnswerText`） |
+| lib/db | 単元→レッスン→小テストの設問・初期コードをネスト select で取得し、本人の受験記録（回答をネスト）・ノート・コードの保存内容の3クエリを並列取得。問題文・ノートの tiptap JSON のテキスト化、回答・正解のテキスト化 | `review.ts` `getUnitReviewData`（回答・正解のテキスト化は `quizzes.ts` `toAnswerText` / `toCorrectAnswerText`） |
 | DB | 本人のデータは既存の RLS の範囲で読める。教師・管理者は RLS 上全生徒を読めるため、lib/db ですべて本人の ID で絞り込む | RLS（`quiz_attempts`・`memos`・`code_states`） |
 
 ### プロフィール（`/profile`）
@@ -158,8 +158,8 @@
 | API | 教師確認と入力値の検証 | `api/contents/**/route.ts` |
 | lib/db | 科目・単元の作成・更新・削除 | `contents.ts` |
 | lib/db | レッスンの作成：単元内のレッスン数から表示順を決め、レッスン→初期コードの順に挿入 | `contents.ts` `createLesson` |
-| DB | コンテンツの作成・更新・削除は教師のみ、閲覧は認証ユーザー全員 | RLS（`subjects`・`units`・`lessons`・`questions`） |
-| DB | レッスン削除時に、ノート・投稿・小テストなどを連鎖削除 | 外部キーの `on delete cascade` |
+| DB | コンテンツの作成・更新・削除は教師のみ、閲覧は認証ユーザー全員 | RLS（`subjects`・`units`・`lessons`） |
+| DB | レッスン削除時に、ノート・ひな形・小テストなどを連鎖削除 | 外部キーの `on delete cascade` |
 
 ### ノートのひな形（`/teacher/lessons/[lessonId]/note-template`）
 
@@ -269,6 +269,7 @@
 | `on_auth_user_created` | トリガー | 上記を `auth.users` の INSERT 後に実行 | 同上 |
 | `set_updated_at()` / `memos_set_updated_at` | トリガー | `memos` 更新時に `updated_at` を更新 | 同上 |
 | `tiptap_to_text(doc)` | 関数 | tiptap の JSON からテキストを取り出す（アプリの `tiptapDocToText` と同じ規則）。`unit_memo_export_samples` で使用 | `20260930000001_unit_export_stats.sql` |
+| `maker_viewable_event_ids()` | 関数（`security definer`） | ログインユーザーのクラスが作品展を閲覧できる課題の ID を返す。`maker_submissions` の RLS で `event_id in (select ...)` として使い、1 クエリにつき 1 回だけ評価する | `20261104000003_maker_gallery_rls.sql` |
 
 ### アプリから呼び出す SQL 関数（RPC）
 
@@ -280,19 +281,26 @@
 | `unit_quiz_export_stats(unit_id, min, max)` | 単元内の小テストについて、学籍番号が範囲内の生徒ごとに最新受験を特定し、設問ごとにクラス別の正答数・回答数、選択肢ごとの回答数、記述式の回答のランダム3件を返す | `quizzes.ts` `getUnitQuizResultsForExport` | `20260930000001_unit_export_stats.sql` |
 | `unit_memo_export_samples(unit_id, min, max)` | 単元内のレッスンごとに、各クラス2人ずつ（10人未満なら10人まで追加）の生徒を抽出し、1人分のノートのテキストを結合して返す | `memos.ts` `getUnitMemoSamplesForExport` | 同上 |
 
+自由制作の 2 つは、例外として `security definer`（RLS を越えて読み書きするため、関数の中で本人と条件を確かめる）。
+
+| 名前 | 処理 | 呼び出し元 | 定義 |
+|---|---|---|---|
+| `maker_can_view_gallery(event_id)` | ログインユーザーのクラスが、その課題の作品展を閲覧できるか（`maker_viewable_event_ids()` を使う） | `maker.ts` `canViewMakerGallery` | `20261101000001_maker_festival.sql`、`20261104000003_maker_gallery_rls.sql` |
+| `submit_maker_work(event_id)` | 本人の下書きを提出物にコピーする（生徒に `hidden_at` を書き換えさせないため、提出物への書き込みはこの関数だけ） | `maker.ts` `submitMakerWork` | `20261101000001_maker_festival.sql` |
+
 ### RLS の概要
 
 | テーブル | 閲覧 | 作成・更新・削除 |
 |---|---|---|
 | `profiles` | 本人／教師は生徒のみ／管理者は全件 | 本人が更新（`role` は変更不可）／教師は生徒を更新（`role` は変更不可）／管理者は全件更新（作成はトリガー） |
-| `subjects`・`units`・`lessons`・`questions` | 認証ユーザー全員 | 教師・管理者のみ |
+| `subjects`・`units`・`lessons` | 認証ユーザー全員 | 教師・管理者のみ |
 | `quizzes`・`quiz_questions` | 認証ユーザー全員 | 教師・管理者のみ |
 | `code_snippets` | 認証ユーザー全員 | 教師・管理者のみ |
 | `memos` | 本人／教師・管理者は全件 | 本人のみ |
 | `memo_templates` | 認証ユーザー全員 | 教師・管理者のみ |
-| `posts` | 認証ユーザー全員 | 作成は本人のノートからのみ／削除は本人または教師・管理者（画面と API からは使っていない。テーブルは削除予定） |
 | `quiz_attempts`・`quiz_attempt_answers` | 本人／教師・管理者は全件 | 作成は本人のみ（更新・削除なし） |
 | `code_states` | 本人／教師・管理者は全件 | 作成・更新は本人のみ |
+| `maker_submissions` | 本人／教師・管理者は全件／作品展を開放されたクラスの生徒は公開中の作品 | 作成・更新は `submit_maker_work` 経由のみ／公開停止は教師・管理者 |
 
 ### インデックス（主キー・一意制約以外）
 
@@ -302,6 +310,7 @@
 | `quiz_attempt_answers` | `attempt_id`、`question_id` |
 | `code_snippets` | `lesson_id` |
 | `code_states` | `snippet_id` |
+| `maker_submissions` | `(event_id, student_number)`（作品展をクラス単位で取得する用） |
 
 ---
 

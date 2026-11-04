@@ -406,58 +406,6 @@ export type Database = {
           },
         ]
       }
-      posts: {
-        Row: {
-          content: Json
-          created_at: string
-          id: string
-          lesson_id: string
-          memo_id: string
-          timestamp_seconds: number | null
-          user_id: string
-        }
-        Insert: {
-          content?: Json
-          created_at?: string
-          id?: string
-          lesson_id: string
-          memo_id: string
-          timestamp_seconds?: number | null
-          user_id: string
-        }
-        Update: {
-          content?: Json
-          created_at?: string
-          id?: string
-          lesson_id?: string
-          memo_id?: string
-          timestamp_seconds?: number | null
-          user_id?: string
-        }
-        Relationships: [
-          {
-            foreignKeyName: "posts_lesson_id_fkey"
-            columns: ["lesson_id"]
-            isOneToOne: false
-            referencedRelation: "lessons"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "posts_memo_id_fkey"
-            columns: ["memo_id"]
-            isOneToOne: false
-            referencedRelation: "memos"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "posts_user_id_fkey"
-            columns: ["user_id"]
-            isOneToOne: false
-            referencedRelation: "profiles"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
       profiles: {
         Row: {
           created_at: string
@@ -487,38 +435,6 @@ export type Database = {
           student_number?: number | null
         }
         Relationships: []
-      }
-      questions: {
-        Row: {
-          content: string
-          created_at: string
-          id: string
-          lesson_id: string
-          order: number
-        }
-        Insert: {
-          content: string
-          created_at?: string
-          id?: string
-          lesson_id: string
-          order?: number
-        }
-        Update: {
-          content?: string
-          created_at?: string
-          id?: string
-          lesson_id?: string
-          order?: number
-        }
-        Relationships: [
-          {
-            foreignKeyName: "questions_lesson_id_fkey"
-            columns: ["lesson_id"]
-            isOneToOne: false
-            referencedRelation: "lessons"
-            referencedColumns: ["id"]
-          },
-        ]
       }
       quiz_attempt_answers: {
         Row: {
@@ -741,6 +657,7 @@ export type Database = {
     }
     Functions: {
       maker_can_view_gallery: { Args: { p_event_id: string }; Returns: boolean }
+      maker_viewable_event_ids: { Args: never; Returns: string[] }
       my_role: { Args: never; Returns: Database["public"]["Enums"]["role"] }
       quiz_question_stats: {
         Args: {

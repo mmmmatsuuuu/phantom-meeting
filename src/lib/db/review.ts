@@ -6,10 +6,10 @@ import type { ReviewData, ReviewLesson } from "@/lib/review-prompt";
 const byOrder = <T extends { order: number }>(a: T, b: T) => a.order - b.order;
 
 /**
- * AI 振り返りプロンプト（Phase 19b）用に、指定ユーザーの1単元分の学習データを取得する。
+ * AI 振り返りプロンプト用に、指定ユーザーの1単元分の学習データを取得する。
  *
- * - 単元の構成（レッスン・発問・小テストの設問・初期コード）を1クエリで取得し、
- *   本人の受験記録・メモ・コードを並列で取得する（1人×1単元なので行数上限の影響はない）
+ * - 単元の構成（レッスン・小テストの設問・初期コード）を1クエリで取得し、
+ *   本人の受験記録・ノート・コードを並列で取得する（1人×1単元なので行数上限の影響はない）
  * - 教師・管理者は RLS 上は全生徒のデータを読めるため、本人以外のデータが混ざらないよう
  *   すべて userId で明示的に絞り込む
  */
@@ -26,7 +26,6 @@ export async function getUnitReviewData(
       subjects(name),
       lessons(
         id, title, order,
-        questions(content, order),
         quizzes(id, quiz_questions(id, order, type, content, options, correct_answer)),
         code_snippets(id, title, language, initial_code, order)
       )`
@@ -81,7 +80,6 @@ export async function getUnitReviewData(
     return {
       id: lesson.id,
       title: lesson.title,
-      questions: [...lesson.questions].sort(byOrder).map((q) => q.content),
       quiz: quiz && {
         questions: quizQuestions.map((q, i) => ({
           id: q.id,
