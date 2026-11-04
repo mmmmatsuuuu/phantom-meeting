@@ -109,7 +109,7 @@ maker_events（自由制作。既存テーブルへは unit_id の一方向の�
 | lesson_id | uuid | FK → lessons（クエリ効率化のため非正規化） |
 | user_id | uuid | FK → profiles（投稿者。自分の投稿判定・削除権限に使用） |
 | content | jsonb | 共有時点のスナップショット |
-| timestamp_seconds | int | nullable、投稿元メモのタイムスタンプ |
+| timestamp_seconds | int | nullable、投稿元ノートのタイムスタンプ |
 | created_at | timestamptz | |
 
 ### quizzes

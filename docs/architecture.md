@@ -51,9 +51,9 @@ Supabase（PostgREST）は1リクエストで返す行数に上限がある（`s
 
 | 状況 | 置き場所 | 例 |
 |---|---|---|
-| 返る行数が常に少ない（数十〜数百行） | `lib/db/` でネスト select → JS で整形 | 科目・単元・レッスンのツリー、1生徒分のメモ件数 |
-| 行数が生徒数・受験回数に比例して増え、1000行を超えうる | **DB の SQL 関数（RPC）で集計**し、結果だけ返す | 学年全体の設問別正答率、学年全体のメモ件数 |
-| 集計ではなく中身そのものを表示し、1000行を超えうる | まず対象を絞れないか検討する（画面の単位を小さくして上限内に収める）。絞れない場合は `lib/db/` で `.range()` によるページ取得 | レッスン別分析はクラス単位に限定（1クラスなら受験記録・メモは上限内） |
+| 返る行数が常に少ない（数十〜数百行） | `lib/db/` でネスト select → JS で整形 | 科目・単元・レッスンのツリー、1生徒分のノート件数 |
+| 行数が生徒数・受験回数に比例して増え、1000行を超えうる | **DB の SQL 関数（RPC）で集計**し、結果だけ返す | 学年全体の設問別正答率、学年全体のノート件数 |
+| 集計ではなく中身そのものを表示し、1000行を超えうる | まず対象を絞れないか検討する（画面の単位を小さくして上限内に収める）。絞れない場合は `lib/db/` で `.range()` によるページ取得 | レッスン別分析はクラス単位に限定（1クラスなら受験記録・ノートは上限内） |
 
 RPC は「多くの行を集計して小さな結果にする」ために使う。個別のデータ（生徒ごとの回答内容など）を JSON に詰めて行数を減らす目的では使わない。
 
@@ -88,20 +88,19 @@ Supabase 無料枠の Auth API 呼び出し回数を抑えるため、認証確�
 ## UIレイアウト（レッスンページ）
 
 ```
-┌─────────────────────┬──────────────┐
-│  [動画] [小テスト]  │              │
-│                     │  自分のメモ  │
-│   動画 or 小テスト  │  （tiptap）  │
-│                     │              │
-├─────────────────────┤              │
-│  共有されたメモ一覧  │              │
-└─────────────────────┴──────────────┘
+┌───────────────────────┬────────────────────┐
+│  [動画] [小テスト]    │  [ノート] [コード] │
+│                       │                    │
+│   動画 or 小テスト    │   ノート（tiptap） │
+│                       │   or プレイグラウンド │
+│                       │                    │
+└───────────────────────┴────────────────────┘
 ```
 
-- 左：動画・小テストをタブで切り替え
-- 右：自分のメモ（常時表示、タブ切り替えで消えない）。`lessons.enable_playground` が有効なレッスンでは「📝 メモ ⇄ 💻 コード」の切り替えタブが上部に表示される（コーディングプレイグラウンド、Phase 21）
-- 左下：クラスに共有されたメモの一覧（小テスト完了後にアンロック）
-- タイトル直下に生徒本人の学習状況ステータスバー（直近得点率・受験回数・メモ件数）を表示
+- PC での利用を前提に、左右に並べる（スマホには対応しない）
+- 左：動画と小テストをタブで切り替える
+- 右：ノート。`lessons.enable_playground` が有効なレッスンでは、紙の端のインデックスでコードに切り替えられる
+- 切り替えても、ノートとプレイグラウンドはアンマウントせず非表示にするだけ（未保存の内容を失わないため）
 
 ---
 
@@ -112,6 +111,7 @@ src/
 ├── app/
 │   ├── (auth)/                                          # ログイン・コールバック
 │   │   ├── login/page.tsx
+│   │   ├── login/dev/route.ts                           # 開発環境専用のダミーアカウントでのログイン（本番では 404）
 │   │   └── auth/callback/route.ts
 │   ├── (admin)/                                         # 管理者用ルートグループ
 │   │   └── layout.tsx                                   # admin ロール確認のみ（配下ページは現状なし）
@@ -136,12 +136,14 @@ src/
 │   │       ├── students/
 │   │       │   ├── page.tsx                               # 生徒一覧（検索・インライン編集）
 │   │       │   └── [userId]/page.tsx                      # 生徒個人詳細（サマリー・単元別・レッスン別）
-│   │       └── data-export/page.tsx                       # 小テスト結果・メモの CSV エクスポート
+│   │       ├── maker/                                     # 自由制作：課題の一覧と作成、課題の設定、提出状況
+│   │       └── data-export/page.tsx                       # 小テスト結果・ノートの CSV エクスポート
 │   ├── (student)/                                       # 生徒用ページ群
 │   │   ├── layout.tsx                                   # ログイン確認
-│   │   ├── page.tsx                                     # レッスン一覧 + 学習状況ダッシュボード
-│   │   ├── lessons/[lessonId]/page.tsx                  # レッスンページ（動画・発問・メモ・小テスト・ステータスバー）
-│   │   ├── memos/page.tsx                               # メモ一覧・Markdownダウンロード
+│   │   ├── page.tsx                                     # 目次（単元ごとのルーズリーフ）
+│   │   ├── lessons/[lessonId]/page.tsx                  # レッスンページ（動画・小テスト・ノート・コード）
+│   │   ├── memos/page.tsx                               # ノート一覧・Markdownダウンロード
+│   │   ├── maker/[eventId]/                             # 自由制作：制作・提出（page.tsx）、作品展（gallery/）
 │   │   ├── quiz-results/page.tsx                        # 小テスト受験履歴一覧
 │   │   └── profile/page.tsx                             # プロフィール編集
 │   ├── api/
@@ -149,7 +151,7 @@ src/
 │   │   │   ├── route.ts                                 # 初期コード更新・削除（teacher/admin）
 │   │   │   └── state/route.ts                           # 生徒の編集内容の保存（本人のみ）
 │   │   ├── contents/
-│   │   │   ├── lessons/route.ts                         # レッスン作成（発問・初期コードも一括）
+│   │   │   ├── lessons/route.ts                         # レッスン作成（初期コードも一括）
 │   │   │   ├── lessons/[lessonId]/route.ts              # プレイグラウンド有効/無効の切り替え・レッスン削除
 │   │   │   ├── subjects/route.ts                        # 科目作成
 │   │   │   ├── subjects/[subjectId]/route.ts            # 科目更新・削除
@@ -162,9 +164,10 @@ src/
 │   │   ├── lessons/[lessonId]/code-snippets/
 │   │   │   ├── route.ts                                 # 初期コード追加（teacher/admin）
 │   │   │   └── [snippetId]/move/route.ts                # 初期コードの並び替え（teacher/admin）
+│   │   ├── maker/events/                                # 自由制作：課題・下書き・提出・公開停止・作品展の開放・書き出し
 │   │   ├── memos/
-│   │   │   ├── route.ts                                 # メモ一覧・作成
-│   │   │   └── [memoId]/route.ts                        # メモ削除
+│   │   │   ├── route.ts                                 # ノート一覧・作成
+│   │   │   └── [memoId]/route.ts                        # ノート更新・削除
 │   │   ├── profile/route.ts                             # プロフィール更新
 │   │   ├── quiz-questions/[questionId]/route.ts         # 問題削除
 │   │   ├── quizzes/
@@ -177,11 +180,11 @@ src/
 │   │   └── teacher/
 │   │       ├── quiz-analytics/route.ts                  # 単元別ヒートマップ用データ
 │   │       ├── lessons/[lessonId]/
-│   │       │   ├── memos/route.ts                         # レッスン別：クラス全員分のメモ（生徒ごと）
+│   │       │   ├── memos/route.ts                         # レッスン別：クラス全員分のノート（生徒ごと）
 │   │       │   ├── quiz-analytics/route.ts                # レッスン別：生徒×設問の回答一覧
 │   │       │   └── code-analytics/route.ts                # レッスン別：生徒×コードスニペットの実行状況
 │   │       └── units/[unitId]/
-│   │           ├── memo-export/route.ts                   # メモ CSV エクスポート
+│   │           ├── memo-export/route.ts                   # ノート CSV エクスポート
 │   │           └── quiz-export/route.ts                   # 小テスト結果 CSV エクスポート
 │   ├── icon.tsx                                  # Favicon（ヤギの顔を切り出して生成。src/lib/mascot-icon.tsx）
 │   ├── apple-icon.tsx                            # ホーム画面用アイコン（紙の色の背景つき）
@@ -201,6 +204,7 @@ src/
 │   │   ├── quiz-section.tsx                             # 小テスト（答案用紙と赤ペンの答え合わせ・DnD対応・提出後の要復習ナッジ）
 │   │   ├── subject-list.tsx                             # 目次（単元ごとのルーズリーフ。ノートの有無と小テストの得点）
 │   │   └── video-player.tsx
+│   ├── maker/                                           # 自由制作（制作画面・作品展・提出状況・課題の設定・作品展の開放）
 │   ├── student/
 │   │   ├── lesson-attempt-history.tsx                   # 小テスト結果一覧の受験履歴表示
 │   │   └── review-prompt-dialog.tsx                     # 「AIで振り返る」ダイアログ（プロンプトのプレビュー・コピー）
@@ -214,6 +218,7 @@ src/
 │   │   ├── site-logo.tsx                         # ヘッダーのロゴ（ヤギの顔と ruminy）
 │   │   ├── mascot.tsx                            # ヤギの絵（場面ごとのポーズ。docs/mascot.md）
 │   │   ├── login-button.tsx
+│   │   ├── dev-login-panel.tsx                          # 開発環境専用：ダミーアカウントの選択（ログイン画面）
 │   │   ├── submit-button.tsx                            # 送信系ボタン共通コンポーネント（多重送信防止）
 │   │   ├── rich-content.tsx                             # tiptap JSON 表示（読み取り専用）
 │   │   ├── resizable-image-node.tsx                     # 画像リサイズ対応ノード
@@ -227,9 +232,9 @@ src/
 │       ├── quiz-form.tsx                                # 小テスト作成フォーム（JSONインポート対応）
 │       ├── quiz-question-editor.tsx                     # 問題エディタ（tiptap・画像ペースト対応）
 │       ├── quiz-analytics.tsx                           # 単元別ヒートマップ
-│       ├── lesson-analytics.tsx                         # レッスン別：📝小テスト/💻コード/📋メモのサブタブ切り替え
+│       ├── lesson-analytics.tsx                         # レッスン別：小テスト/コード/ノートのサブタブ切り替え
 │       ├── lesson-code-cards.tsx                        # レッスン別「コード」タブ：生徒ごとのカード表示
-│       ├── lesson-memo-cards.tsx                        # レッスン別「メモ」タブ：生徒ごとのカード表示
+│       ├── lesson-memo-cards.tsx                        # レッスン別「ノート」タブ：生徒ごとのカード表示
 │       ├── analytics-tabs.tsx                           # 分析ページのタブ切り替えUI
 │       ├── rate-bar.tsx                                 # 分析画面共通：正答率・得点率の横棒
 │       ├── student-picker.tsx                           # 生徒別分析：検索付き生徒リスト
@@ -241,19 +246,24 @@ src/
 │   │   ├── client.ts                                    # createBrowserClient
 │   │   ├── server.ts                                    # createServerClient・getUser・getUserProfile（React.cache）
 │   │   ├── middleware.ts                                # updateSession（getClaims による JWT 検証）
-│   │   └── types.ts                                     # Supabase 自動生成型（手動追記あり）
+│   │   └── types.ts                                     # Supabase 自動生成型（supabase gen types の出力そのまま）
 │   ├── api/
 │   │   ├── auth.ts                                      # requireUser / requireTeacher（API Route 用認証ガード）
 │   │   └── params.ts                                    # 学年・クラスのクエリ解析（API Route 用。不正なら 400）
 │   ├── db/                                              # データアクセス層
 │   │   ├── code-snippets.ts                             # 初期コードCRUD・並び替え・生徒の編集内容の保存
-│   │   ├── contents.ts                                  # 科目・単元・レッスン・発問
+│   │   ├── contents.ts                                  # 科目・単元・レッスン
 │   │   ├── memos.ts                                     # ノート（memos）の CRUD（生徒・教師向け）・件数集計
-│   │   ├── memo-templates.ts                     # ノートのひな形の取得・保存・削除、ノートの内容の検証（画像はひな形のものだけ）
+│   │   ├── maker.ts                                     # 自由制作の課題・下書き・提出・作品展
+│   │   ├── memo-templates.ts                            # ノートのひな形の取得・保存・削除、ノートの内容の検証（大きさ・画像）
 │   │   ├── quizzes.ts                                   # 小テスト・提出記録・分析・エクスポート集計
 │   │   ├── review.ts                                    # AIで振り返る：本人の1単元分の学習データ
 │   │   └── users.ts                                     # プロフィール・生徒一覧
 │   ├── contents-order.ts                                # コンテンツ管理：単元を新しい順に並べる（純粋関数）
+│   ├── dev-login.ts                                     # 開発環境専用：ダミーアカウントでのログインを有効にする条件
+│   ├── maker-python-runner.ts                           # 自由制作：他の生徒のコードを隔離して動かす（sandbox iframe 内の Worker）
+│   ├── maker-roster.ts                                  # 自由制作：提出状況の一覧の組み立て（純粋関数）
+│   ├── maker-settings.ts                                # 自由制作：課題設定・クラスの扱い（純粋関数）
 │   ├── review-prompt.ts                                 # AIで振り返る：プロンプトの組み立てと上限処理（純粋関数）
 │   ├── student-dashboard.ts                             # 生徒の目次のバッジ・教員の生徒個人詳細の集計ロジック（純粋関数）
 │   ├── student-number.ts                                # 学籍番号（GCNN 形式）の範囲算出・学年／クラスの取り出し
@@ -269,5 +279,5 @@ src/
 │   ├── tiptap-utils.ts                                  # tiptap JSON ⇔ プレーンテキスト変換、画像の抽出と検証
 │   ├── mascot-icon.tsx                                  # アイコン用にヤギの顔を切り出す（next/og）
 │   └── utils.ts                                         # shadcn/ui ユーティリティ
-└── proxy.ts                                             # middleware.ts のエントリポイント
+└── proxy.ts                                             # Next.js のプロキシ（旧 middleware）。lib/supabase/middleware.ts の updateSession を呼ぶ
 ```

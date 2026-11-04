@@ -46,17 +46,22 @@
 | ドラッグ&ドロップ | @dnd-kit（小テスト並び替え問題） |
 | 画像ホスティング | ImageKit |
 | アナリティクス | Vercel Analytics / Speed Insights |
-| AI | Claude API（Anthropic）※将来：発問自動生成 |
+| AI | API 連携なし（AIで振り返る・データエクスポートは、プロンプトを生徒・教師が自分の AI に貼り付ける） |
 
 ## ドキュメント
 
-- [設計概要](docs/design.md)
-- [機能設計](docs/features.md)
-- [アーキテクチャ](docs/architecture.md)（処理の配置方針を含む）
-- [処理の配置一覧](docs/processing-map.md)
-- [技術スタック](docs/tech-stack.md)
-- [DBスキーマ](docs/schema.md)
-- [実装ロードマップ](docs/roadmap.md)
+| ドキュメント | 内容 |
+|---|---|
+| [設計](docs/design.md) | 目的・名前・コンセプト・見た目の決まりと、その理由 |
+| [機能設計](docs/features.md) | 各機能の仕様と決めた理由、廃止・見送りした機能 |
+| [アーキテクチャ](docs/architecture.md) | データアクセスと処理の配置の方針、フォルダ構成 |
+| [処理の配置一覧](docs/processing-map.md) | 画面ごとに、どの処理をどの層（フロント・API・DB）に置いたか |
+| [DBスキーマ](docs/schema.md) | テーブルの定義と関係 |
+| [技術スタック](docs/tech-stack.md) | 使っている技術と選んだ理由、デプロイ構成 |
+| [ロードマップ](docs/roadmap.md) | これまでのフェーズと、これからの予定 |
+| [AIで振り返る](docs/review-prompt.md) | 生徒向けの振り返りプロンプトの仕様と理由 |
+| [ノートのひな形の JSON](docs/note-template-json.md) / [小テストの JSON](docs/quiz-json.md) | 生成 AI に下書きを作らせて取り込むときの形式と指示文の例 |
+| [ヤギの絵](docs/mascot.md) | マスコットの一覧と生成の指示文 |
 
 ## 開発
 
@@ -80,7 +85,6 @@ supabase start
 #    SUPABASE_AUTH_EXTERNAL_GOOGLE_CLIENT_ID=...
 #    SUPABASE_AUTH_EXTERNAL_GOOGLE_SECRET=...
 #    IMAGEKIT_PRIVATE_KEY=...                                  # 画像アップロード機能を使う場合
-#    NEXT_PUBLIC_IMAGEKIT_URL_ENDPOINT=...
 
 # 3. アプリコンテナを起動（http://localhost:3000）
 docker compose up
@@ -116,3 +120,15 @@ docker compose exec app npm audit       # 依存パッケージの既知の脆�
 docker compose down
 supabase stop
 ```
+
+## 進捗
+
+- [x] 動画・ノート・小テストの基本の流れ（Phase 0〜15.9）
+- [x] データの利活用（エクスポート・AIで振り返る、Phase 19）
+- [x] 分析と導線の整理（Phase 20）
+- [x] コーディングプレイグラウンド（Phase 21〜22）
+- [x] 自由制作（Phase 24）
+- [x] ruminy へのリニューアル（Phase 25）
+- [ ] `posts` テーブルの削除
+
+フェーズごとの内容とウェイトリストは [docs/roadmap.md](docs/roadmap.md)。
