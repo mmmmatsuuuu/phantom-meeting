@@ -42,8 +42,6 @@ export type ReviewSnippet = {
 export type ReviewLesson = {
   id: string;
   title: string;
-  /** 発問 */
-  questions: string[];
   quiz: {
     questions: ReviewQuizQuestion[];
     /** 新しい順 */
@@ -198,7 +196,6 @@ function renderPrompt(
     wrongQuestionsSection(lessons),
     frequentlyMissedSection(lessons),
     shortAnswerSection(lessons),
-    hatsumonSection(lessons),
     memoStatsSection(lessons),
   ];
   if (options.includeMemoText) sections.push(memoExcerptSection(lessons, memoLimit));
@@ -317,13 +314,6 @@ function shortAnswerSection(lessons: NumberedLesson[]): string {
     }
   }
   return ["### 記述式（最新の回答・自己採点）", ...(items.length > 0 ? items : ["なし"])].join("\n");
-}
-
-function hatsumonSection(lessons: NumberedLesson[]): string {
-  const items = lessons
-    .filter(({ lesson }) => lesson.questions.length > 0)
-    .map(({ lesson, no }) => `- ${no} ${lesson.title}：${lesson.questions.join(" ／ ")}`);
-  return ["### 発問", ...(items.length > 0 ? items : ["なし"])].join("\n");
 }
 
 function memoStatsSection(lessons: NumberedLesson[]): string {

@@ -68,7 +68,7 @@ from (
 where p.id = sub.user_id;
 
 -- ---------------------------------------------------------------------
--- 2. 科目・単元・レッスン・発問
+-- 2. 科目・単元・レッスン
 -- ---------------------------------------------------------------------
 
 insert into public.subjects (id, name, "order", created_by) values
@@ -84,14 +84,6 @@ insert into public.lessons (id, unit_id, title, youtube_url, "order", enable_pla
   ('00000000-0000-0000-0000-000000002003', '00000000-0000-0000-0000-000000001102', '変数と出力',         'https://www.youtube.com/watch?v=jNQXAC9IVRw', 0, true),
   ('00000000-0000-0000-0000-000000002004', '00000000-0000-0000-0000-000000001102', '条件分岐',           'https://www.youtube.com/watch?v=jNQXAC9IVRw', 1, true),
   ('00000000-0000-0000-0000-000000002005', '00000000-0000-0000-0000-000000001102', '繰り返し処理',       'https://www.youtube.com/watch?v=jNQXAC9IVRw', 2, true);
-
-insert into public.questions (lesson_id, content, "order") values
-  ('00000000-0000-0000-0000-000000002001', 'CPUとメモリ、それぞれの役割を自分の言葉で説明してみましょう。', 0),
-  ('00000000-0000-0000-0000-000000002001', '身の回りの機器でCPUとメモリが使われている例を考えてみましょう。', 1),
-  ('00000000-0000-0000-0000-000000002002', 'コンピュータが2進数を使う理由を考えてみましょう。', 0),
-  ('00000000-0000-0000-0000-000000002003', '変数に名前をつけるときに気をつけるとよいことは何でしょうか。', 0),
-  ('00000000-0000-0000-0000-000000002004', '身の回りの「もし〜なら」で考える場面を挙げてみましょう。', 0),
-  ('00000000-0000-0000-0000-000000002005', '同じ作業を繰り返すとき、手作業とプログラムでは何が違うでしょうか。', 0);
 
 -- ---------------------------------------------------------------------
 -- 3. 小テスト（各レッスンに1つ、選択式2・記述式1・並び替え1の構成で統一）
@@ -419,7 +411,7 @@ begin
 end $$;
 
 -- ---------------------------------------------------------------------
--- 6. メモ・共有投稿・プレイグラウンド編集内容（一部の生徒のみ）
+-- 6. ノート・プレイグラウンド編集内容（一部の生徒のみ）
 -- ---------------------------------------------------------------------
 
 do $$
@@ -429,34 +421,20 @@ declare
   s3 uuid := ('00000000-0000-0000-0000-' || lpad('1201', 12, '0'))::uuid;
   s4 uuid := ('00000000-0000-0000-0000-' || lpad('2101', 12, '0'))::uuid;
   s5 uuid := ('00000000-0000-0000-0000-' || lpad('1103', 12, '0'))::uuid;
-  memo1 uuid := gen_random_uuid();
-  memo2 uuid := gen_random_uuid();
-  memo3 uuid := gen_random_uuid();
 begin
-  insert into public.memos (id, lesson_id, user_id, content, timestamp_seconds) values
-    (memo1, '00000000-0000-0000-0000-000000002001', s1,
+  insert into public.memos (lesson_id, user_id, content, timestamp_seconds) values
+    ('00000000-0000-0000-0000-000000002001', s1,
       '{"type":"doc","content":[{"type":"paragraph","content":[{"type":"text","text":"CPUは頭脳、メモリは作業机のようなものだと理解した。"}]}]}'::jsonb,
       45),
-    (memo2, '00000000-0000-0000-0000-000000002001', s2,
+    ('00000000-0000-0000-0000-000000002001', s2,
       '{"type":"doc","content":[{"type":"paragraph","content":[{"type":"text","text":"メモリの容量が大きいと同時にたくさんの作業ができる、という説明が分かりやすかった。"}]}]}'::jsonb,
       null),
-    (memo3, '00000000-0000-0000-0000-000000002003', s3,
+    ('00000000-0000-0000-0000-000000002003', s3,
       '{"type":"doc","content":[{"type":"codeBlock","attrs":{"language":"python"},"content":[{"type":"text","text":"name = \"わたし\"\nprint(name, \"です\")"}]},{"type":"paragraph","content":[{"type":"text","text":"変数の中身をprintで確認できるのが便利。"}]}]}'::jsonb,
-      12);
-
-  insert into public.memos (lesson_id, user_id, content, timestamp_seconds) values
+      12),
     ('00000000-0000-0000-0000-000000002004', s4,
       '{"type":"doc","content":[{"type":"paragraph","content":[{"type":"text","text":"if文のelseを忘れがちなので気をつけたい。"}]}]}'::jsonb,
       null);
-
-  -- 一部のメモをクラスに共有投稿
-  insert into public.posts (memo_id, lesson_id, user_id, content, timestamp_seconds) values
-    (memo1, '00000000-0000-0000-0000-000000002001', s1,
-      '{"type":"doc","content":[{"type":"paragraph","content":[{"type":"text","text":"CPUは頭脳、メモリは作業机のようなものだと理解した。"}]}]}'::jsonb,
-      45),
-    (memo3, '00000000-0000-0000-0000-000000002003', s3,
-      '{"type":"doc","content":[{"type":"codeBlock","attrs":{"language":"python"},"content":[{"type":"text","text":"name = \"わたし\"\nprint(name, \"です\")"}]},{"type":"paragraph","content":[{"type":"text","text":"変数の中身をprintで確認できるのが便利。"}]}]}'::jsonb,
-      12);
 
   -- プレイグラウンドの編集内容（保存済みコード・直近の実行結果）。
   -- 教師向け「コード実行状況」テーブル（Phase 22c）の確認用に、複数レッスン・

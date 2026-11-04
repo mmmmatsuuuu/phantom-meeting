@@ -180,7 +180,7 @@ export async function createLesson(params: {
 
 /**
  * レッスン詳細を単元・科目つきで取得する（ネスト select で1クエリ）。
- * 発問はノートのひな形に移ったため取得しない（振り返りのプロンプトは review.ts で別に取得する）
+ * 発問はノートのひな形の中に置くため、レッスンには持たない
  */
 export async function getLessonWithUnit(lessonId: string): Promise<LessonWithUnit | null> {
   const supabase = await createClient();

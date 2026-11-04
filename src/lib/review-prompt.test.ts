@@ -14,7 +14,6 @@ const NOW = new Date("2026-10-03T16:00:00Z");
 function lesson(overrides: Partial<ReviewLesson> & { id: string }): ReviewLesson {
   return {
     title: `レッスン${overrides.id}`,
-    questions: [],
     quiz: null,
     memos: [],
     snippets: [],
@@ -169,20 +168,19 @@ describe("buildReviewPrompt: 小テスト", () => {
   });
 });
 
-describe("buildReviewPrompt: 発問・メモ", () => {
+describe("buildReviewPrompt: ノート", () => {
   const memoLesson = lesson({
     id: "1",
-    questions: ["なぜ色の作り方が違うのか？"],
     memos: [
       { text: "RGBは光", createdAt: "2026-09-10T01:00:00Z", hasTimestamp: true },
       { text: "CMYはインク", createdAt: "2026-09-10T02:00:00Z", hasTimestamp: false },
     ],
   });
 
-  it("発問とメモの取り方（件数・文字数・時刻つき・作成日）を載せる", () => {
+  it("ノートの取り方（件数・文字数・時刻つき・作成日）を載せ、発問の節は出さない", () => {
     const { text } = build(unit([memoLesson]));
-    expect(text).toContain("- 1 レッスン1：なぜ色の作り方が違うのか？");
     expect(text).toContain("| 1 レッスン1 | 2 | 12 | 1 | 9/10 |");
+    expect(text).not.toContain("### 発問");
   });
 
   it("メモの本文は「／」で結合して載せ、含めない設定なら抜粋の節ごと出さない", () => {
