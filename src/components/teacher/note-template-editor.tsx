@@ -1,8 +1,8 @@
 "use client";
 
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
-import { useEditor, EditorContent, type JSONContent } from "@tiptap/react";
+import { useEditor, EditorContent, type EditorOptions, type JSONContent } from "@tiptap/react";
 import { toast } from "sonner";
 import MemoToolbar from "@/components/lesson/memo-toolbar";
 import SubmitButton from "@/components/shared/submit-button";
@@ -15,6 +15,12 @@ import {
 } from "@/components/ui/dialog";
 import { createNoteExtensions } from "@/lib/tiptap/note-extensions";
 import { isTiptapDoc, type TiptapDoc } from "@/lib/tiptap-utils";
+import { useCodeBlockState } from "@/lib/hooks/use-code-block-state";
+
+// useEditor は拡張を参照で比べるため、描画のたびに作り直さない
+const EXTENSIONS = createNoteExtensions({
+  placeholder: "穴埋め（【　　】）と「考えてみよう」を入れて、プリントのように書きます",
+});
 
 type UploadResponse = { data: { url: string; fileId: string } | null; error: string | null };
 
@@ -32,23 +38,14 @@ export default function NoteTemplateEditor({ lessonId, initialContent }: Props) 
   const [exists, setExists] = useState(initialContent !== null);
   const [saving, setSaving] = useState(false);
   const [isUploading, setIsUploading] = useState(false);
-  const [codeBlockLang, setCodeBlockLang] = useState("");
-  const [isCodeBlockActive, setIsCodeBlockActive] = useState(false);
+  const { codeBlockLang, isCodeBlockActive, sync: syncCodeBlock } = useCodeBlockState();
   const [importOpen, setImportOpen] = useState(false);
   const [importText, setImportText] = useState("");
   const [importError, setImportError] = useState<string | null>(null);
 
-  const editor = useEditor({
-    immediatelyRender: false,
-    content: (initialContent ?? undefined) as JSONContent | undefined,
-    extensions: createNoteExtensions("穴埋め（【　　】）と「考えてみよう」を入れて、プリントのように書きます"),
-    // ボタン操作でコードブロックにしたときもカーソルは動かないため、エディタのすべての変化で判定し直す
-    onTransaction: ({ editor }) => {
-      const active = editor.isActive("codeBlock");
-      setIsCodeBlockActive(active);
-      setCodeBlockLang(active ? (editor.getAttributes("codeBlock").language ?? "") : "");
-    },
-    editorProps: {
+  // useEditor は editorProps を参照で比べるため、描画のたびに作り直さない
+  const editorProps = useMemo<EditorOptions["editorProps"]>(
+    () => ({
       attributes: { class: "note-content min-h-[416px] px-4 py-4 focus:outline-none" },
       handlePaste(view, event) {
         const items = Array.from(event.clipboardData?.items ?? []);
@@ -59,6 +56,7 @@ export default function NoteTemplateEditor({ lessonId, initialContent }: Props) 
         setIsUploading(true);
         const formData = new FormData();
         formData.append("file", file);
+        formData.append("purpose", "note-template");
         fetch("/api/images/upload", { method: "POST", body: formData })
           .then((res) => res.json() as Promise<UploadResponse>)
           .then((json) => {
@@ -76,7 +74,16 @@ export default function NoteTemplateEditor({ lessonId, initialContent }: Props) 
           .finally(() => setIsUploading(false));
         return true;
       },
-    },
+    }),
+    []
+  );
+
+  const editor = useEditor({
+    immediatelyRender: false,
+    content: (initialContent ?? undefined) as JSONContent | undefined,
+    extensions: EXTENSIONS,
+    onTransaction: ({ editor }) => syncCodeBlock(editor),
+    editorProps,
   });
 
   const handleSave = async () => {
@@ -88,7 +95,12 @@ export default function NoteTemplateEditor({ lessonId, initialContent }: Props) 
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ content: editor.getJSON() }),
       });
-      if (!res.ok) throw new Error();
+      if (!res.ok) {
+        // 長すぎるときなど、直し方が分かる文言はそのまま出す
+        const json = (await res.json().catch(() => null)) as { error?: string } | null;
+        toast.error(json?.error ?? "保存に失敗しました。もう一度お試しください");
+        return;
+      }
       setExists(true);
       toast.success("ひな形を保存しました");
       router.refresh();

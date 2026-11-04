@@ -1,6 +1,6 @@
 import { notFound } from "next/navigation";
 import Link from "next/link";
-import { getLessonWithQuestions } from "@/lib/db/contents";
+import { getLessonWithUnit } from "@/lib/db/contents";
 import { getQuizWithQuestions, getStudentQuizStatuses, isReviewNeeded } from "@/lib/db/quizzes";
 import { getMemoTemplate } from "@/lib/db/memo-templates";
 import {
@@ -18,7 +18,7 @@ export default async function LessonPage({ params }: Props) {
   const { lessonId } = await params;
 
   const [lesson, quiz, profile, template] = await Promise.all([
-    getLessonWithQuestions(lessonId),
+    getLessonWithUnit(lessonId),
     getQuizWithQuestions(lessonId),
     getUserProfile(),
     getMemoTemplate(lessonId),
@@ -27,19 +27,18 @@ export default async function LessonPage({ params }: Props) {
   if (!lesson) return notFound();
   if (!profile) return notFound();
 
-  // 小テストを出したあとに、ほかに見直すべきレッスンがあるかを伝えるため、自分の受験状況を取得する
-  const statuses = await getStudentQuizStatuses(profile.userId);
+  const [statuses, codeSnippets, initialCodeStates] = await Promise.all([
+    // 小テストを出したあとに、ほかに見直すべきレッスンがあるかを伝えるため、自分の受験状況を取得する
+    getStudentQuizStatuses(profile.userId),
+    // プレイグラウンドが有効なレッスンのみ、コード例と自分の編集内容を取得
+    lesson.enable_playground ? getCodeSnippetsByLesson(lessonId) : Promise.resolve([]),
+    lesson.enable_playground
+      ? getStudentCodeStatesByLesson(lessonId, profile.userId)
+      : Promise.resolve({}),
+  ]);
   const otherReviewCount = statuses.filter(
     (s) => s.quizId !== quiz?.id && isReviewNeeded(s)
   ).length;
-
-  // プレイグラウンドが有効なレッスンのみ、コード例と自分の編集内容を取得
-  const [codeSnippets, initialCodeStates] = lesson.enable_playground
-    ? await Promise.all([
-        getCodeSnippetsByLesson(lessonId),
-        getStudentCodeStatesByLesson(lessonId, profile.userId),
-      ])
-    : [[], {}];
 
   const { unit } = lesson;
 

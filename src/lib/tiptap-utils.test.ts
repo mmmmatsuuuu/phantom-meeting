@@ -3,6 +3,8 @@ import {
   collectImageSrcs,
   findDisallowedImages,
   isTiptapDoc,
+  isWithinNoteSize,
+  MAX_NOTE_BYTES,
   textToTiptapDoc,
   tiptapDocToText,
 } from "@/lib/tiptap-utils";
@@ -42,6 +44,27 @@ describe("isTiptapDoc", () => {
     expect(isTiptapDoc("doc")).toBe(false);
     expect(isTiptapDoc({ type: "paragraph", content: [] })).toBe(false);
     expect(isTiptapDoc({ type: "doc" })).toBe(false);
+  });
+});
+
+describe("isWithinNoteSize", () => {
+  const docOfBytes = (bytes: number) => {
+    const empty = { type: "doc", content: [{ type: "text", text: "" }] };
+    const overhead = JSON.stringify(empty).length;
+    return { type: "doc", content: [{ type: "text", text: "a".repeat(bytes - overhead) }] };
+  };
+
+  it("上限ちょうどまでは収まる", () => {
+    expect(isWithinNoteSize(docOfBytes(MAX_NOTE_BYTES))).toBe(true);
+  });
+
+  it("上限を 1 バイトでも超えると収まらない", () => {
+    expect(isWithinNoteSize(docOfBytes(MAX_NOTE_BYTES + 1))).toBe(false);
+  });
+
+  it("日本語は 1 文字 3 バイトで数える", () => {
+    const text = "あ".repeat(Math.floor(MAX_NOTE_BYTES / 3));
+    expect(isWithinNoteSize({ type: "doc", content: [{ type: "text", text }] })).toBe(false);
   });
 });
 

@@ -156,8 +156,8 @@ src/
 │   │   │   ├── units/route.ts                           # 単元作成
 │   │   │   └── units/[unitId]/route.ts                  # 単元更新・削除
 │   │   ├── images/
-│   │   │   ├── upload/route.ts                          # ImageKit アップロード（認証済みのみ）
-│   │   │   └── [fileId]/route.ts                        # ImageKit 削除
+│   │   │   ├── upload/route.ts                          # ImageKit アップロード（教師のみ。用途ごとにフォルダを分ける）
+│   │   │   └── [fileId]/route.ts                        # ImageKit 削除（教師のみ）
 │   │   ├── lessons/[lessonId]/memo-template/route.ts    # ノートのひな形の保存・削除（teacher/admin）
 │   │   ├── lessons/[lessonId]/code-snippets/
 │   │   │   ├── route.ts                                 # 初期コード追加（teacher/admin）
@@ -202,8 +202,6 @@ src/
 │   │   ├── subject-list.tsx                             # 目次（単元ごとのルーズリーフ。ノートの有無と小テストの得点）
 │   │   └── video-player.tsx
 │   ├── student/
-│   │   ├── dashboard-summary.tsx                        # ホームの学習状況サマリー4カード
-│   │   ├── next-actions.tsx                             # 「つぎにやること」（要復習・未受験レッスン）
 │   │   ├── lesson-attempt-history.tsx                   # 小テスト結果一覧の受験履歴表示
 │   │   └── review-prompt-dialog.tsx                     # 「AIで振り返る」ダイアログ（プロンプトのプレビュー・コピー）
 │   ├── memos/
@@ -257,15 +255,16 @@ src/
 │   │   └── users.ts                                     # プロフィール・生徒一覧
 │   ├── contents-order.ts                                # コンテンツ管理：単元を新しい順に並べる（純粋関数）
 │   ├── review-prompt.ts                                 # AIで振り返る：プロンプトの組み立てと上限処理（純粋関数）
-│   ├── student-dashboard.ts                             # 生徒ダッシュボード・個人詳細の集計ロジック（純粋関数）
+│   ├── student-dashboard.ts                             # 生徒の目次のバッジ・教員の生徒個人詳細の集計ロジック（純粋関数）
 │   ├── student-number.ts                                # 学籍番号（GCNN 形式）の範囲算出・学年／クラスの取り出し
 │   ├── rate-level.ts                                    # 分析画面共通：正答率の段階（40/70/90%）と色・表示形式
 │   ├── hooks/
+│   │   ├── use-code-block-state.ts                      # エディタのカーソル位置がコードブロックか・その言語を追うフック（ツールバー用）
 │   │   └── use-lazy-fetch.ts                            # 必要になったときだけ取得し、同じ URL なら再取得しないフック
 │   ├── pyodide-runner.ts                                # Pyodide による Python 実行（jsDelivr CDNから読み込み）
 │   ├── js-runner.ts                                     # サンドボックスiframeによる JavaScript 実行
 │   ├── tiptap/
-│   │   ├── note-extensions.ts                         # ノートとひな形のエディタで共通の拡張機能
+│   │   ├── note-extensions.ts                         # ノート・ひな形・小テストのエディタと表示（rich-content）で共通の拡張機能
 │   │   └── resizable-image-extension.ts                 # 画像リサイズ拡張
 │   ├── tiptap-utils.ts                                  # tiptap JSON ⇔ プレーンテキスト変換、画像の抽出と検証
 │   ├── mascot-icon.tsx                                  # アイコン用にヤギの顔を切り出す（next/og）

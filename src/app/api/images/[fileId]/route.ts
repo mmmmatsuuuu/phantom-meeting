@@ -15,7 +15,8 @@ export async function DELETE(req: NextRequest, { params }: Params) {
   }
 
   const authHeader = Buffer.from(`${privateKey}:`).toString("base64");
-  const ikRes = await fetch(`https://api.imagekit.io/v1/files/${fileId}`, {
+  // 秘密鍵つきで呼ぶため、fileId に "/" や ".." が入っても別の API を呼ばないようにエンコードする
+  const ikRes = await fetch(`https://api.imagekit.io/v1/files/${encodeURIComponent(fileId)}`, {
     method: "DELETE",
     headers: { Authorization: `Basic ${authHeader}` },
   });

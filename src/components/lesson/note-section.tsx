@@ -1,10 +1,11 @@
 "use client";
 
-import { useCallback, useEffect, useImperativeHandle, useRef, useState, type Ref } from "react";
-import { useEditor, EditorContent, type JSONContent } from "@tiptap/react";
+import { useCallback, useEffect, useImperativeHandle, useMemo, useRef, useState, type Ref } from "react";
+import { useEditor, EditorContent, type EditorOptions, type JSONContent } from "@tiptap/react";
 import type { Memo } from "@/lib/db/memos";
 import type { TiptapDoc } from "@/lib/tiptap-utils";
 import { createNoteExtensions } from "@/lib/tiptap/note-extensions";
+import { useCodeBlockState } from "@/lib/hooks/use-code-block-state";
 import MemoToolbar from "@/components/lesson/memo-toolbar";
 import SubmitButton from "@/components/shared/submit-button";
 import Mascot from "@/components/shared/mascot";
@@ -23,6 +24,20 @@ export type NoteSectionHandle = {
 
 const EMPTY_DOC: JSONContent = { type: "doc", content: [{ type: "paragraph" }] };
 
+// useEditor は editorProps も参照で比べるため、モジュールの定数にする
+const EDITOR_PROPS: EditorOptions["editorProps"] = {
+  attributes: { class: "note-content min-h-[416px] px-4 py-4 focus:outline-none" },
+  // 生徒は画像を入れられない（使えるのは、ひな形に先生が入れた画像だけ）
+  handlePaste(_, event) {
+    const items = Array.from(event.clipboardData?.items ?? []);
+    return items.some((item) => item.type.startsWith("image/"));
+  },
+  handleDrop(_, event) {
+    const files = Array.from((event as DragEvent).dataTransfer?.files ?? []);
+    return files.some((file) => file.type.startsWith("image/"));
+  },
+};
+
 // 開いているノート。"new" はまだ保存していない新しいノート
 type Active = { kind: "none" } | { kind: "new" } | { kind: "memo"; id: string };
 
@@ -36,38 +51,29 @@ export default function NoteSection({ lessonId, template, ref }: Props) {
   const [dirty, setDirty] = useState(false);
   const [saving, setSaving] = useState(false);
   const [message, setMessage] = useState<{ text: string; isError: boolean } | null>(null);
-  const [codeBlockLang, setCodeBlockLang] = useState("");
-  const [isCodeBlockActive, setIsCodeBlockActive] = useState(false);
+  const { codeBlockLang, isCodeBlockActive, sync: syncCodeBlock } = useCodeBlockState();
   // 最後に保存した（または開いた）時点の内容。今の内容と比べて未保存の変更を判定する
   const savedRef = useRef(JSON.stringify(EMPTY_DOC));
 
+  // useEditor は拡張を参照で比べるため、描画のたびに作り直さない
+  const extensions = useMemo(
+    () =>
+      createNoteExtensions({
+        placeholder: template
+          ? "穴を埋めたり、自由に書き換えたりしよう"
+          : "動画を見て分かったことや、考えたことを書こう",
+      }),
+    [template]
+  );
+
   const editor = useEditor({
     immediatelyRender: false,
-    extensions: createNoteExtensions(
-      template ? "穴を埋めたり、自由に書き換えたりしよう" : "動画を見て分かったことや、考えたことを書こう"
-    ),
+    extensions,
     onUpdate: ({ editor }) => {
       setDirty(JSON.stringify(editor.getJSON()) !== savedRef.current);
     },
-    // ボタン操作でコードブロックにしたときもカーソルは動かないため、選択の変化ではなく
-    // エディタのすべての変化で判定し直す（ツールバーの言語の欄と、選択中のボタンの表示に使う）
-    onTransaction: ({ editor }) => {
-      const isCode = editor.isActive("codeBlock");
-      setIsCodeBlockActive(isCode);
-      setCodeBlockLang(isCode ? (editor.getAttributes("codeBlock").language ?? "") : "");
-    },
-    editorProps: {
-      attributes: { class: "note-content min-h-[416px] px-4 py-4 focus:outline-none" },
-      // 生徒は画像を入れられない（使えるのは、ひな形に先生が入れた画像だけ）
-      handlePaste(_, event) {
-        const items = Array.from(event.clipboardData?.items ?? []);
-        return items.some((item) => item.type.startsWith("image/"));
-      },
-      handleDrop(_, event) {
-        const files = Array.from((event as DragEvent).dataTransfer?.files ?? []);
-        return files.some((file) => file.type.startsWith("image/"));
-      },
-    },
+    onTransaction: ({ editor }) => syncCodeBlock(editor),
+    editorProps: EDITOR_PROPS,
   });
 
   const open = useCallback(

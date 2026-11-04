@@ -4,14 +4,12 @@ import type { Database } from "@/lib/supabase/types";
 export type Subject = Database["public"]["Tables"]["subjects"]["Row"];
 export type Unit = Database["public"]["Tables"]["units"]["Row"];
 export type Lesson = Database["public"]["Tables"]["lessons"]["Row"];
-export type Question = Database["public"]["Tables"]["questions"]["Row"];
 
 export type UnitWithLessons = Unit & { lessons: Lesson[] };
 export type SubjectWithUnits = Subject & { units: UnitWithLessons[] };
 
-export type LessonWithQuestions = Lesson & {
+export type LessonWithUnit = Lesson & {
   unit: Unit & { subject: Subject };
-  questions: Question[];
 };
 
 /**
@@ -181,23 +179,18 @@ export async function createLesson(params: {
 }
 
 /**
- * レッスン詳細と発問を取得する（ネスト select で1クエリ）
+ * レッスン詳細を単元・科目つきで取得する（ネスト select で1クエリ）。
+ * 発問はノートのひな形に移ったため取得しない（振り返りのプロンプトは review.ts で別に取得する）
  */
-export async function getLessonWithQuestions(
-  lessonId: string
-): Promise<LessonWithQuestions | null> {
+export async function getLessonWithUnit(lessonId: string): Promise<LessonWithUnit | null> {
   const supabase = await createClient();
 
-  const { data: lesson, error: lessonError } = await supabase
+  const { data: lesson, error } = await supabase
     .from("lessons")
-    .select("*, unit:units(*, subject:subjects(*)), questions(*)")
+    .select("*, unit:units(*, subject:subjects(*))")
     .eq("id", lessonId)
     .single();
 
-  if (lessonError || !lesson) return null;
-
-  return {
-    ...lesson,
-    questions: [...lesson.questions].sort((a, b) => a.order - b.order),
-  };
+  if (error || !lesson) return null;
+  return lesson;
 }

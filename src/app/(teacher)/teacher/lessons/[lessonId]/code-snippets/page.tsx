@@ -1,6 +1,6 @@
 import { notFound } from "next/navigation";
 import Link from "next/link";
-import { getLessonWithQuestions } from "@/lib/db/contents";
+import { getLessonWithUnit } from "@/lib/db/contents";
 import { getCodeSnippetsByLesson } from "@/lib/db/code-snippets";
 import CodeSnippetsManager from "@/components/teacher/code-snippets-manager";
 
@@ -12,7 +12,7 @@ export default async function CodeSnippetsPage({ params }: Props) {
   const { lessonId } = await params;
 
   const [lesson, snippets] = await Promise.all([
-    getLessonWithQuestions(lessonId),
+    getLessonWithUnit(lessonId),
     getCodeSnippetsByLesson(lessonId),
   ]);
 

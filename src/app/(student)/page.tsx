@@ -17,8 +17,7 @@ export default async function HomePage() {
     getMakerEventsByUnit(),
   ]);
 
-  // 目次の各行に出すノートの有無と小テストの得点に使う。
-  // 学習状況のまとめ（DashboardSummaryCards・NextActions）は、機能として残したまま画面には出していない
+  // 目次の各行に出すノートの有無と小テストの得点に使う
   let dashboard: StudentDashboard | null = null;
   if (profile) {
     const [quizPairs, statuses, memoCounts] = await Promise.all([

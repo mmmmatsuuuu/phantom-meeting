@@ -1,6 +1,12 @@
 import { createClient } from "@/lib/supabase/server";
 import type { Json } from "@/lib/supabase/types";
-import { collectImageSrcs, findDisallowedImages, isTiptapDoc, type TiptapDoc } from "@/lib/tiptap-utils";
+import {
+  collectImageSrcs,
+  findDisallowedImages,
+  isTiptapDoc,
+  isWithinNoteSize,
+  type TiptapDoc,
+} from "@/lib/tiptap-utils";
 
 /**
  * 保存しようとしているノートの内容を確かめる。問題があればエラーの文言を返す。
@@ -8,6 +14,7 @@ import { collectImageSrcs, findDisallowedImages, isTiptapDoc, type TiptapDoc } f
  */
 export async function validateMemoContent(lessonId: string, content: unknown): Promise<string | null> {
   if (!isTiptapDoc(content)) return "content must be a tiptap document";
+  if (!isWithinNoteSize(content)) return "ノートが長すぎます。いくつかのノートに分けてください";
   if (findDisallowedImages(content, []).length === 0) return null;
 
   const template = await getMemoTemplate(lessonId);

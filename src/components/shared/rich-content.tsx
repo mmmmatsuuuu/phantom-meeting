@@ -1,27 +1,11 @@
 "use client";
 
 import { useEditor, EditorContent } from "@tiptap/react";
-import StarterKit from "@tiptap/starter-kit";
-import Link from "@tiptap/extension-link";
-import CodeBlockLowlight from "@tiptap/extension-code-block-lowlight";
-import { Table } from "@tiptap/extension-table";
-import TableRow from "@tiptap/extension-table-row";
-import TableCell from "@tiptap/extension-table-cell";
-import TableHeader from "@tiptap/extension-table-header";
-import { ResizableImage } from "@/lib/tiptap/resizable-image-extension";
-import { createLowlight } from "lowlight";
-import javascript from "highlight.js/lib/languages/javascript";
-import python from "highlight.js/lib/languages/python";
-import c from "highlight.js/lib/languages/c";
-import xml from "highlight.js/lib/languages/xml";
-import css from "highlight.js/lib/languages/css";
+import { createNoteExtensions } from "@/lib/tiptap/note-extensions";
 
-const lowlight = createLowlight();
-lowlight.register("javascript", javascript);
-lowlight.register("python", python);
-lowlight.register("c", c);
-lowlight.register("xml", xml);
-lowlight.register("css", css);
+// useEditor は拡張と editorProps を参照で比べるため、描画のたびに作り直さない
+const extensions = createNoteExtensions({ openLinksOnClick: true });
+const editorProps = { attributes: { class: "rich-content" } };
 
 type Props = {
   content: Record<string, unknown>;
@@ -32,21 +16,8 @@ export default function RichContent({ content }: Props) {
     editable: false,
     immediatelyRender: false,
     content,
-    extensions: [
-      StarterKit.configure({ codeBlock: false }),
-      Link.configure({ openOnClick: true }),
-      CodeBlockLowlight.configure({ lowlight }),
-      Table.configure({ resizable: false }),
-      TableRow,
-      TableCell,
-      TableHeader,
-      ResizableImage,
-    ],
-    editorProps: {
-      attributes: {
-        class: "rich-content",
-      },
-    },
+    extensions,
+    editorProps,
   });
 
   if (!editor) return null;
