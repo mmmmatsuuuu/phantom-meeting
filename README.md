@@ -129,6 +129,6 @@ supabase stop
 - [x] コーディングプレイグラウンド（Phase 21〜22）
 - [x] 自由制作（Phase 24）
 - [x] ruminy へのリニューアル（Phase 25）
-- [ ] `posts` テーブルの削除
+- [ ] DB の後片付け（`posts` テーブルの削除、`questions` テーブルの扱い、作品展の RLS）
 
 フェーズごとの内容とウェイトリストは [docs/roadmap.md](docs/roadmap.md)。
