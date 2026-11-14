@@ -145,7 +145,7 @@
 |---|---|---|
 | SC | 各機能へのリンクのみ（データ取得なし） | `app/(teacher)/teacher/page.tsx` |
 
-### コンテンツ管理・レッスン登録（`/teacher/contents/[subjectId]`、`/teacher/lessons/new`）
+### コンテンツ管理・レッスン登録・編集（`/teacher/contents/[subjectId]`、`/teacher/lessons/new`、`/teacher/lessons/[lessonId]/edit`）
 
 | 層 | 処理 | 場所 |
 |---|---|---|
@@ -155,9 +155,11 @@
 | フロント | 単元を新しい順（order の降順、同じ order なら作成日時の新しい順）に並べる。単元内のレッスンは授業の順 | `lib/contents-order.ts` `sortUnitsNewestFirst` |
 | フロント | 科目・単元の作成・名前変更・削除、レッスン削除の操作 | `components/teacher/contents-manager.tsx` |
 | フロント | レッスン登録フォーム（YouTube URL・初期コード）。発問はノートのひな形に入れるため、登録フォームでは扱わない | `components/teacher/lesson-new-form.tsx` |
+| フロント | レッスン編集フォーム（タイトル・YouTube URL）。登録・編集のあとは、そのレッスンの科目のページ（`/teacher/contents/[subjectId]`）に戻る | `components/teacher/lesson-edit-form.tsx` |
 | API | 教師確認と入力値の検証 | `api/contents/**/route.ts` |
 | lib/db | 科目・単元の作成・更新・削除 | `contents.ts` |
 | lib/db | レッスンの作成：単元内のレッスン数から表示順を決め、レッスン→初期コードの順に挿入 | `contents.ts` `createLesson` |
+| API / lib/db | レッスンの更新：`PUT /api/contents/lessons/[lessonId]` は、プレイグラウンドの切り替え（`enablePlayground`）か、タイトル・URL の変更（`title` と `youtubeUrl`）のどちらかを受ける | `api/contents/lessons/[lessonId]/route.ts` → `contents.ts` `updateLesson` |
 | DB | コンテンツの作成・更新・削除は教師のみ、閲覧は認証ユーザー全員 | RLS（`subjects`・`units`・`lessons`） |
 | DB | レッスン削除時に、ノート・ひな形・小テストなどを連鎖削除 | 外部キーの `on delete cascade` |
 

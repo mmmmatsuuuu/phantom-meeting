@@ -96,7 +96,7 @@ export default function LessonNewForm({ subjects, defaultUnitId }: Props) {
     setIsSaving(false);
     if (res.status === 201) {
       toast.success("レッスンを登録しました");
-      router.push("/");
+      router.push(`/teacher/contents/${subjectId}`);
     } else {
       toast.error("登録に失敗しました");
     }
