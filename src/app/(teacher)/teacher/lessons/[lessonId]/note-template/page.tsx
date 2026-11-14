@@ -21,7 +21,7 @@ export default async function NoteTemplatePage({ params }: Props) {
   return (
     <div className="max-w-3xl mx-auto px-4 py-6">
       <nav className="flex items-center gap-1.5 text-sm text-muted-foreground mb-4">
-        <Link href="/teacher/contents" className="hover:text-foreground transition-colors">
+        <Link href={`/teacher/contents/${lesson.unit.subject_id}`} className="hover:text-foreground transition-colors">
           コンテンツ管理
         </Link>
         <span>/</span>

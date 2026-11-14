@@ -40,9 +40,11 @@ function createEmptyQuestion(type: QuizQuestionType): QuestionFormData {
 
 type Props = {
   lessonId: string;
+  /** 作成後に戻る先（そのレッスンの科目のコンテンツ管理ページ） */
+  returnHref: string;
 };
 
-export default function QuizForm({ lessonId }: Props) {
+export default function QuizForm({ lessonId, returnHref }: Props) {
   const router = useRouter();
   const [title, setTitle] = useState("");
   const [questions, setQuestions] = useState<QuestionFormData[]>([
@@ -229,7 +231,7 @@ export default function QuizForm({ lessonId }: Props) {
 
     if (res.ok) {
       toast.success("クイズを作成しました");
-      router.push("/teacher/contents");
+      router.push(returnHref);
     } else {
       toast.error("クイズの作成に失敗しました");
     }
