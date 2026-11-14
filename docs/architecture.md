@@ -125,6 +125,7 @@ src/
 │   │       ├── lessons/
 │   │       │   ├── new/page.tsx                         # レッスン登録
 │   │       │   └── [lessonId]/
+│   │       │       ├── edit/page.tsx                    # レッスンの編集（タイトル・YouTube URL）
 │   │       │       ├── quiz/new/page.tsx                # 小テスト作成
 │   │       │       ├── code-snippets/page.tsx           # コーディングプレイグラウンド管理（有効化・初期コード）
 │   │       │       └── note-template/page.tsx          # ノートのひな形の編集
@@ -228,6 +229,7 @@ src/
 │       ├── contents-manager.tsx                         # 1科目分の単元・レッスン管理UI（単元は新しい順）
 │       ├── subject-tabs.tsx                             # コンテンツ管理の科目タブ（＋科目追加）
 │       ├── lesson-new-form.tsx
+│       ├── lesson-edit-form.tsx                         # レッスンのタイトル・YouTube URL の編集
 │       ├── quiz-existing.tsx
 │       ├── quiz-form.tsx                                # 小テスト作成フォーム（JSONインポート対応）
 │       ├── quiz-question-editor.tsx                     # 問題エディタ（tiptap・画像ペースト対応）

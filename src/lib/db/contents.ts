@@ -116,6 +116,21 @@ export async function deleteUnit(id: string): Promise<boolean> {
 }
 
 /**
+ * レッスンのタイトルと YouTube URL を更新する
+ */
+export async function updateLesson(
+  id: string,
+  params: { title: string; youtubeUrl: string }
+): Promise<boolean> {
+  const supabase = await createClient();
+  const { error } = await supabase
+    .from("lessons")
+    .update({ title: params.title, youtube_url: params.youtubeUrl })
+    .eq("id", id);
+  return !error;
+}
+
+/**
  * レッスンを削除する（関連する memos / posts / quizzes も CASCADE で削除される）
  */
 export async function deleteLesson(id: string): Promise<boolean> {
