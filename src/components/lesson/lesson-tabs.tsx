@@ -24,7 +24,9 @@ export default function LessonTabs({ youtubeUrl, quiz, otherReviewCount }: Props
     }`;
 
   return (
-    <div>
+    // 動画を見ながらノートを取れるよう、動画タブの間はヘッダーの下に固定する。
+    // 小テストは長くなり、固定すると下の問題が見えなくなるので固定しない
+    <div className={activeTab === "video" ? "sticky top-20" : ""}>
       <div className="flex gap-[22px] border-b border-rule-strong mb-4">
         <button onClick={() => setActiveTab("video")} className={tabClass("video")}>
           動画
