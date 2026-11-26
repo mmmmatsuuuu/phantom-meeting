@@ -164,73 +164,76 @@ export default function MakerSubmissionsBoard({ eventId, classes, roster: initia
           )}
         </div>
 
-        {selected ? (
-          <div className="rounded-lg border bg-card p-4 space-y-4 min-w-0">
-            <div className="flex flex-wrap items-start justify-between gap-2">
-              <div>
-                <h2 className="text-lg font-bold">
-                  {selected.studentNumber ?? "番号なし"} {selected.displayName}
-                </h2>
-                <p className="text-xs text-muted-foreground">
-                  {STATUS_LABELS[selected.status].label}
-                  {selected.hasUnsubmittedChanges && "（提出後に下書きが更新されています）"}
-                </p>
+        {/* 横並び（lg 以上）のとき、生徒一覧をスクロールしても右の詳細が見えるよう追従させる */}
+        <div className="min-w-0 lg:sticky lg:top-20 lg:max-h-[calc(100vh-6rem)] lg:overflow-y-auto">
+          {selected ? (
+            <div className="rounded-lg border bg-card p-4 space-y-4 min-w-0">
+              <div className="flex flex-wrap items-start justify-between gap-2">
+                <div>
+                  <h2 className="text-lg font-bold">
+                    {selected.studentNumber ?? "番号なし"} {selected.displayName}
+                  </h2>
+                  <p className="text-xs text-muted-foreground">
+                    {STATUS_LABELS[selected.status].label}
+                    {selected.hasUnsubmittedChanges && "（提出後に下書きが更新されています）"}
+                  </p>
+                </div>
+                {(selected.status === "submitted" || selected.status === "hidden") && (
+                  <SubmitButton
+                    loading={updating}
+                    loadingLabel="変更中..."
+                    onClick={() => toggleHidden(selected)}
+                    className="px-3 py-1.5 text-xs rounded-md border hover:bg-muted transition-colors disabled:opacity-50"
+                  >
+                    {selected.status === "hidden" ? "公開を再開" : "公開停止"}
+                  </SubmitButton>
+                )}
               </div>
-              {(selected.status === "submitted" || selected.status === "hidden") && (
-                <SubmitButton
-                  loading={updating}
-                  loadingLabel="変更中..."
-                  onClick={() => toggleHidden(selected)}
-                  className="px-3 py-1.5 text-xs rounded-md border hover:bg-muted transition-colors disabled:opacity-50"
-                >
-                  {selected.status === "hidden" ? "公開を再開" : "公開停止"}
-                </SubmitButton>
+              {updateError && <p className="text-xs text-red-pen">{updateError}</p>}
+              {loadError && <p className="text-sm text-red-pen">{loadError}</p>}
+
+              {detail && !shown && (
+                <p className="py-8 text-center text-sm text-muted-foreground">
+                  まだ何も保存されていません
+                </p>
+              )}
+
+              {shown && (
+                <>
+                  <section className="space-y-1">
+                    <h3 className="text-sm font-semibold">課題設定</h3>
+                    <p className="text-sm leading-relaxed whitespace-pre-wrap">
+                      {detail?.work?.plan || "（未記入）"}
+                    </p>
+                  </section>
+                  <section className="space-y-1">
+                    <h3 className="text-sm font-semibold">
+                      作品名{!detail?.submission && "（下書き）"}
+                    </h3>
+                    <p className="text-sm">{shown.title || "（未記入）"}</p>
+                  </section>
+                  <section className="space-y-1">
+                    <h3 className="text-sm font-semibold">説明</h3>
+                    <p className="text-sm leading-relaxed whitespace-pre-wrap">
+                      {shown.description || "（未記入）"}
+                    </p>
+                  </section>
+                  <section className="space-y-2">
+                    <h3 className="text-sm font-semibold">コード</h3>
+                    <pre className="text-xs font-mono bg-muted/40 rounded p-3 overflow-x-auto">
+                      {shown.code || "（未記入）"}
+                    </pre>
+                    {shown.code && <MakerConsole key={selected.userId} code={shown.code} />}
+                  </section>
+                </>
               )}
             </div>
-            {updateError && <p className="text-xs text-red-pen">{updateError}</p>}
-            {loadError && <p className="text-sm text-red-pen">{loadError}</p>}
-
-            {detail && !shown && (
-              <p className="py-8 text-center text-sm text-muted-foreground">
-                まだ何も保存されていません
-              </p>
-            )}
-
-            {shown && (
-              <>
-                <section className="space-y-1">
-                  <h3 className="text-sm font-semibold">課題設定</h3>
-                  <p className="text-sm leading-relaxed whitespace-pre-wrap">
-                    {detail?.work?.plan || "（未記入）"}
-                  </p>
-                </section>
-                <section className="space-y-1">
-                  <h3 className="text-sm font-semibold">
-                    作品名{!detail?.submission && "（下書き）"}
-                  </h3>
-                  <p className="text-sm">{shown.title || "（未記入）"}</p>
-                </section>
-                <section className="space-y-1">
-                  <h3 className="text-sm font-semibold">説明</h3>
-                  <p className="text-sm leading-relaxed whitespace-pre-wrap">
-                    {shown.description || "（未記入）"}
-                  </p>
-                </section>
-                <section className="space-y-2">
-                  <h3 className="text-sm font-semibold">コード</h3>
-                  <pre className="text-xs font-mono bg-muted/40 rounded p-3 overflow-x-auto">
-                    {shown.code || "（未記入）"}
-                  </pre>
-                  {shown.code && <MakerConsole key={selected.userId} code={shown.code} />}
-                </section>
-              </>
-            )}
-          </div>
-        ) : (
-          <p className="py-16 text-center text-sm text-muted-foreground">
-            生徒を選ぶと、課題設定と作品が表示されます
-          </p>
-        )}
+          ) : (
+            <p className="py-16 text-center text-sm text-muted-foreground">
+              生徒を選ぶと、課題設定と作品が表示されます
+            </p>
+          )}
+        </div>
       </div>
     </div>
   );
